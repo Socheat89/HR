@@ -1,0 +1,378 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #333;
+    color: white;
+    height: 100vh;
+    padding: 20px;
+}
+
+.sidebar h2 {
+    margin-bottom: 20px;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar ul li a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.sidebar ul li a.active {
+    background-color: #555;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+}
+
+.employee-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.employee-table th, .employee-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.employee-table th {
+    background-color: #f4f4f4;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f4f4f4;
+}
+
+.register-container, .login-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    text-align: center;
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #28a745;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+p {
+    margin-top: 15px;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* --- Loan Section Styles (scoped additions) --- */
+.loan-section {
+    margin-top: 16px;
+}
+
+/* Cards and containers */
+.card-base {
+    background: #1f2937; /* slate-800 */
+    border: 1px solid #374151; /* slate-700 */
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Table wrapper */
+.table-container {
+    width: 100%;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #0f172a; /* slate-900 */
+}
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.table-container thead th {
+    background: #111827; /* gray-900 */
+    color: #e5e7eb; /* gray-200 */
+    text-align: left;
+    padding: 12px 14px;
+    font-weight: 600;
+    border-bottom: 1px solid #374151;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.table-container tbody td {
+    padding: 12px 14px;
+    color: #e5e7eb;
+    border-top: 1px solid #1f2937;
+}
+.table-container tbody tr:nth-child(odd) {
+    background: #0b1221;
+}
+.table-container tbody tr:hover {
+    background: #0d1830;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+.status-active { color: #ffffff; background: #22c55e; border-color: #16a34a; }
+.status-paused {
+    color: #92400e; /* amber-800 */
+    background: #fef3c7; /* amber-100 */
+    border-color: #f59e0b; /* amber-500 */
+}
+.status-closed {
+    color: #991b1b; /* red-800 */
+    background: #fee2e2; /* red-100 */
+    border-color: #ef4444; /* red-500 */
+}
+
+/* Form controls (used in loan forms) */
+.form-label {
+    display: block;
+    color: #e5e7eb;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.form-input,
+.form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #e5e7eb;
+}
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: #3b82f6; /* blue-500 */
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
+}
+
+/* Input group with currency prefix */
+.input-group {
+    display: flex;
+    align-items: center;
+}
+.input-group .input-group-text {
+    background: #111827;
+    color: #e5e7eb;
+    padding: 10px 12px;
+    border: 1px solid #374151;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+}
+.input-group .form-input {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Buttons used in loan actions */
+.btn-base {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn-primary { background: #2563eb; color: #fff; border-color: #1d4ed8; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-success { background: #16a34a; color: #fff; border-color: #15803d; }
+.btn-success:hover { background: #15803d; }
+.btn-secondary { background: #374151; color: #e5e7eb; border-color: #4b5563; }
+.btn-secondary:hover { background: #4b5563; }
+.btn-danger { background: #dc2626; color: #fff; border-color: #b91c1c; }
+.btn-danger:hover { background: #b91c1c; }
+
+/* Utility text colors used in loan table */
+.text-text-secondary { color: #9ca3af; }
+.text-red-400 { color: #f87171; }
+.text-yellow-300 { color: #fde047; }
+.text-accent-hover { color: #22d3ee; }
+
+/* Responsive grid & flex helpers (minimal) */
+.grid { display: grid; }
+.grid-cols-1 { grid-template-columns: 1fr; }
+@media (min-width: 640px) { .sm\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); } }
+.gap-4 { gap: 1rem; }
+.gap-3 { gap: 0.75rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+/* Flex utilities used in the loan section */
+.flex { display: flex; }
+.flex-wrap { flex-wrap: wrap; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.items-end { align-items: flex-end; }
+.inline-flex { display: inline-flex; }
+.inline-block { display: inline-block; }
+.space-x-2 > * + * { margin-left: 0.5rem; }
+.text-center { text-align: center; }
+
+/* Table header hiding in print (if needed) */
+@media print {
+    .no-print { display: none !important; }
+}
+
+/* --- Loan table header & rows to match screenshot --- */
+.loan-table thead tr {
+    background: #0d6efd; /* Bootstrap blue */
+}
+.loan-table thead th {
+    background: transparent;
+    color: #ffffff;
+    border-bottom: none;
+    font-weight: 700;
+}
+.loan-table thead th:first-child { border-top-left-radius: 10px; }
+.loan-table thead th:last-child  { border-top-right-radius: 10px; }
+
+.loan-table tbody td {
+    color: #1f2937; /* slate-800 */
+    border-top: 1px solid #e5e7eb; /* gray-200 */
+}
+.loan-table tbody tr:nth-child(odd) { background: #ffffff; }
+.loan-table tbody tr:nth-child(even) { background: #f9fafb; }
+.loan-table tbody tr:hover { background: #eef2ff; }
+
+/* Inputs inside loan table actions: light theme */
+.loan-table .input-group .input-group-text {
+    background: #ffffff;
+    color: #1f2937;
+    border-color: #d1d5db; /* gray-300 */
+    height: 28px;
+    display: flex;
+    align-items: center;
+    border-radius: 6px 0 0 6px;
+}
+.loan-table .form-input,
+.loan-table .form-select {
+    background: #ffffff;
+    color: #111827; /* gray-900 */
+    border-color: #d1d5db;
+    height: 28px;
+    padding: 4px 8px;
+}
+.loan-table .form-input { border-radius: 0 6px 6px 0; }
+.loan-table .btn-base { height: 28px; border-radius: 6px; padding: 6px 10px; }
+.loan-table .btn-success { background: #22c55e; border-color: #16a34a; }
+.loan-table .btn-danger { background: #ef4444; border-color: #dc2626; }
+
+/* subtle inset look for controls */
+.loan-table .form-input,
+.loan-table .form-select,
+.loan-table .input-group .input-group-text {
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* Action cell: keep controls on one line */
+.loan-table td.actions-cell {
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 4px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+.loan-table .inline-flex {
+    flex-wrap: nowrap;
+    gap: 4px !important;
+}
+
+/* Responsive adjustments for loan table actions */
+@media (max-width: 768px) {
+    .loan-table td.actions-cell {
+        white-space: normal;
+    }
+    .loan-table .actions-cell .inline-flex {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+    }
+    .loan-table .actions-cell .input-group,
+    .loan-table .actions-cell .form-input,
+    .loan-table .actions-cell .form-select {
+        max-width: none !important;
+        width: 100% !important;
+    }
+    .loan-table .actions-cell .input-group .form-input {
+        width: 100% !important;
+    }
+    .loan-table .actions-cell .btn-base {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Blur effect for restricted salary information */
+.blur {
+    filter: blur(5px);
+    user-select: none;
+}

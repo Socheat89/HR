@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer XO Game</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .board { display: grid; grid-template-columns: repeat(3, 100px); gap: 5px; justify-content: center; }
+        .cell { width: 100px; height: 100px; font-size: 2em; display: flex; align-items: center; justify-content: center; border: 1px solid black; cursor: pointer; }
+        .cell.disabled { pointer-events: none; background: #ddd; }
+        .score { font-size: 20px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Multiplayer XO Game</h1>
+    <p class="score">X: <span id="x-score">0</span> | O: <span id="o-score">0</span></p>
+    <div class="board" id="board"></div>
+    <button onclick="resetGame()">Reset</button>
+
+    <script>
+        const socket = io("http://localhost:3000");
+        const boardElement = document.getElementById("board");
+        let player = prompt("Enter your name:");
+
+        function fetchBoard() {
+            fetch("game.php")
+                .then(response => response.json())
+                .then(data => {
+                    boardElement.innerHTML = "";
+                    document.getElementById("x-score").textContent = data.x_score;
+                    document.getElementById("o-score").textContent = data.o_score;
+
+                    data.board.split('').forEach((cell, index) => {
+                        const cellElement = document.createElement("div");
+                        cellElement.classList.add("cell");
+                        if (cell !== ' ') cellElement.classList.add("disabled");
+                        cellElement.textContent = cell;
+                        cellElement.onclick = () => makeMove(index);
+                        boardElement.appendChild(cellElement);
+                    });
+                });
+        }
+
+        function makeMove(index) {
+            socket.emit("move", { index, player });
+        }
+
+        socket.on("update", fetchBoard);
+        fetchBoard();
+    </script>
+</body>
+</html>

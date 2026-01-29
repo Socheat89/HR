@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://i.ibb.co/0QFffT3/Head-2.png" type="image/png">
+  <title>Leaflet Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      height: 70vh;
+    }
+
+    .search-container {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      display: flex;
+      gap: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .search-box {
+      padding: 8px 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      flex: 1;
+      transition: all 0.3s ease-in-out;
+    }
+
+    .search-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .search-btn:hover {
+      background: #0056b3;
+    }
+
+    /* Add animation when the search is clicked */
+    .search-box.animate {
+      transform: scale(1.1);
+      border-color: #0056b3;
+    }
+
+    .search-btn.animate {
+      background: #28a745;
+      animation: bounce 0.5s ease;
+    }
+
+    /* Keyframes for button animation */
+    @keyframes bounce {
+      0% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-5px);
+      }
+      100% {
+        transform: translateY(0);
+      }
+    }
+
+    .customer-list {
+      margin: 20px;
+    }
+
+    .customer-list h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .customer-list ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .customer-list li {
+      margin: 5px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background: #f9f9f9;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .customer-list li:hover {
+      background: #e6f7ff;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Search box -->
+  <div class="search-container">
+    <input type="text" id="searchBox" class="search-box" placeholder="Search for a location" />
+    <button id="searchBtn" class="search-btn">Search</button>
+  </div>
+
+  <!-- Customer list -->
+  <div class="customer-list">
+    <h2>Customer List</h2>
+    <ul id="customerList">
+      <!-- List of customers will be dynamically added here -->
+    </ul>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+  <script>
+    const map = L.map('map').setView([11.5530547, 104.9297937], 13); // Initial map view
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Create a routing control
+    const routingControl = L.Routing.control({
+      waypoints: [],
+      routeWhileDragging: true,
+      createMarker: function () { return null; } // Hide markers
+    }).addTo(map);
+
+    // List of customers
+    const customers = [
+    { name: "ហ៊ាហ៊ី បាត់ដំបង", coordinates: [11.5702581, 104.9198611] },
+      { name: "ប្អូនអាវឿនកំពង់សោម", coordinates: [11.5155068, 104.8925076] },
+      { name: "លី ណែតកម្ពុជាក្រោម", coordinates: [11.56728, 104.894436] },
+      { name: "ខ្ទិះកាហ្វេពិភពថ្មីអ៊ីអន2", coordinates: [11.5961807, 104.8869043] },
+      { name: "Can Coffee ទួលគោក", coordinates: [11.5829479, 104.8874364] },
+      { name: "ហ៊ាទ្រី", coordinates: [11.578066, 104.86756] },
+      { name: "ប៊ីប៊ីកាហ្វេសំណង់12", coordinates: [11.561684, 104.892944] },
+      { name: "តូប06 ផ្ទះបឹងសាឡាង", coordinates: [11.549744, 104.896248] },
+      { name: "ហ៊ា310 ដាក់ចំការដូង", coordinates: [11.523322, 104.880406] },
+      { name: "ចែមុំ ច្រាំចំរេះ", coordinates: [11.630933, 104.897762] },
+      { name: "ចាន់ថាណូគា", coordinates: [11.5526768, 104.8877593] },
+      { name: "បុរីពិភពថ្មីចំការដូង", coordinates: [11.511724, 104.879493] },
+      { name: "ផ្ទះ81តូប77", coordinates: [11.564972, 104.902791] },
+      { name: "APE Hospitality Solutions", coordinates: [11.567203, 104.892277] },
+      { name: "Sarouen Y គិរីរម្យចាស់", coordinates: [11.555094, 104.916977] },
+      { name: "ស្រីពេជ្រកាហ្វេដូងកាំកូ", coordinates: [11.593352, 104.900833] },
+      { name: "Mr. Sophoan", coordinates: [11.539021, 104.936745] },
+      { name: "ជីនជីន កាហ្វេ", coordinates: [11.572593, 104.924317] },
+      { name: "សុខឆេង គូរស្រូវ២", coordinates: [11.442069, 104.891019] },
+      { name: "កាហ្វេដូងក្រអូបទួលពង្រ", coordinates: [11.516533, 104.854617] },
+      { name: "ថាំង ទ្រី ច្បារអំពៅ", coordinates: [11.536043, 104.936263] },
+      { name: "72លក់គ្រឿងផ្លាស្ទិក ច្បារអំពៅ", coordinates: [11.531512, 104.939254] },
+      { name: "ឃ្វីប៊ីកាហ្វេច្បាអមពៅ", coordinates: [11.515902, 104.892359] },
+      { name: "ស៊ុនចេង ច្បារអំពៅ", coordinates: [11.533291, 104.934599] },
+      { name: "ហ៊ា ផ្សារក្រមួន ចាក់អង្រែ", coordinates: [11.500542, 104.93354] },
+      { name: "វួចសេង ច្បារអំពៅ", coordinates: [11.53537, 104.934487] },
+      { name: "ចែចាន់ ច្បាអំពៅ", coordinates: [11.5377838, 104.9347247] },
+      { name: "ចែវ៉ាន់ច្បាអំពៅ", coordinates: [11.535346, 104.934515] },
+      { name: "ចែវី តាខ្មៅ", coordinates: [11.483087, 104.947058] },
+      { name: "តូប កល្យាណ(អាមួយ)", coordinates: [11.483, 104.944875] },
+      { name: "អ៊ីចំរើន ច្បារអំពៅ", coordinates: [11.533275, 104.934193] },
+      { name: "Jin ទួលគោក", coordinates: [11.574505, 104.894865] },
+      { name: "the Barista town", coordinates: [11.49428, 105.091489] },
+      { name: "ស៊ែនដ៍បេឃឺរី ទួលគោក", coordinates: [11.58095, 104.89866] },
+      { name: "បេនឡាន.ម៉េងហ្គេច កំពង់ធំ", coordinates: [11.532061, 104.88423] },
+      { name: "Mr.Sophorn", coordinates: [11.527482, 104.988525] },
+      { name: "DMR ប៉េងហួតបឹងស្នោរ", coordinates: [11.530456, 104.958722] },
+      { name: "ចែអុីមច្បារអំពៅ", coordinates: [11.524364, 104.938173] },
+      { name: "ស៊ូស៊ូ កាហ្វេ", coordinates: [11.565586, 104.902127] },
+      { name: "កាហ្វេកែវយក្ស", coordinates: [11.507509, 104.883506] },
+      { name: "ហ៊ា ផ្សារតូច", coordinates: [11.600486, 104.913777] },
+      { name: "លីមួយ ផ្សារតូច", coordinates: [11.587921, 104.914434] },
+      { name: "តបចែ ចាន់រី", coordinates: [11.575128, 104.875528] },
+      { name: "Chip", coordinates: [11.589762, 104.874074] },
+      { name: "តូប18ខ20", coordinates: [11.563149, 104.900029] },
+      { name: "ឃ្វីនប៊ី កាហ្វេ", coordinates: [11.553299, 104.917095] },
+      { name: "ទ័រហៃ", coordinates: [11.541657, 104.906452] },
+      { name: "អុីតាំងអេង កំពុងចាម", coordinates: [11.566061, 104.910068] },
+      { name: "ប្រាក់សម្បត្តិ", coordinates: [11.475612, 104.951007] },
+      { name: "Srey na Hen", coordinates: [11.570734, 104.919931] },
+      { name: "ចែពៅ2002", coordinates: [11.555443, 104.879578] },
+      { name: "Mao Vina ឆ្លូងក្រចេះ", coordinates: [11.565549, 104.910275] },
+      { name: "KC ន័រតុន", coordinates: [11.589117, 104.928851] },
+      { name: "ស៊ែនដ៍បេឃឺរី ជិតវ៉ាន់ដា", coordinates: [11.549697, 104.903716] },
+      { name: "08 ខ20", coordinates: [11.559677, 104.896936] },
+      { name: "ហាំងណាំ បឹងត្របែក", coordinates: [11.541844, 104.919574] },
+      { name: "ចិនសារ", coordinates: [11.566411, 104.909505] },
+      { name: "នំ កូននាង", coordinates: [11.546331, 104.907841] },
+      { name: "S H Shopភ្នំពេញថ្មី", coordinates: [11.57483, 104.881704] },
+      { name: "តូបអុីអុីផ្សារតាខ្មៅ", coordinates: [11.488293, 104.942455] },
+      { name: "លីនណាសំណង់១២", coordinates: [11.561524, 104.890562] },
+      { name: "សុខ ខេង", coordinates: [11.588061, 104.913831] },
+      { name: "សំណាង តែគុជ និង ការហ្វេដូងក្រអូប", coordinates: [11.586837, 104.918263] },
+      { name: "ការហ្វេ CK ន័រតុន", coordinates: [11.588477, 104.931031] },
+      { name: "បេនឡាន ហ៊ាម៉ាប់ សៀមរាប", coordinates: [11.543466, 104.876192] },
+      { name: "វ៉ែនតា កាហ្វេ", coordinates: [11.567736, 104.916136] },
+      { name: "កាហ្វេ ភ្នំពេញ", coordinates: [11.5899939, 104.8739799] },
+      { name: "ទី ទី ផ្សារតូច ផ្ទះលេខ18D", coordinates: [11.598023, 104.909485] },
+      { name: "ផ្ទះ06អូឬស្សី", coordinates: [11.563614, 104.918081] },
+      { name: "វូច ព្រីមមា", coordinates: [11.577372, 104.905817] },
+      { name: "ឃ្លាំងចែ2002", coordinates: [11.55952, 104.879298] },
+      { name: "ផ្ទះចែ2002", coordinates: [11.556677, 104.879531] },
+      { name: "123", coordinates: [11.552433, 104.879093] },
+      { name: "72 PC", coordinates: [11.519594, 104.912018] },
+      { name: "ឃ្វីនប៊ី កាហ្វេ", coordinates: [11.551447, 104.911967] },
+      { name: "តូប138", coordinates: [11.55136111, 104.9008056] },
+      { name: "126 ផ្សារអូរឬស្សី", coordinates: [11.56422222, 104.9173611] },
+      { name: "ចិន្ថាជើងឯក", coordinates: [11.49158333, 104.9006944] },
+      { name: "Sophea Choun", coordinates: [11.5530547, 104.9297937] },
+    { name: "Don muth", coordinates: [11.5646377, 104.8968057] },
+    { name: " Je Mey", coordinates: [11.5489339, 104.9239684] },
+    { name: "Lonh KimSher", coordinates: [11.5666388, 104.9289657] },
+    { name: "Srun Lora Mey", coordinates: [11.5834337, 104.9000735] },
+    { name: "តូប 551ប្ដី", coordinates: [11.515877, 104.94559] },
+    { name: "បេនឡាន សុភាពសៀមរាប", coordinates: [11.542355, 104.874332] },
+    { name: "KCទូតចិន", coordinates: [11.546496, 104.909808] },
+    { name: "ម្លិះសរ", coordinates: [11.553585, 104.90195] },
+    { name: "មួន កាហ្វេ", coordinates: [11.517551, 104.921986] },
+    { name: "លិនណាសំណង12 ដាក់ផ្ទះ", coordinates: [11.557998, 104.892896] },
+    { name: "Fan កាហ្វេ 7មករា", coordinates: [11.561664, 104.892956] },
+    { name: "Oxygen Coffeee កាំកូស៊ីធី", coordinates: [11.592253, 104.894434] },
+    { name: "ខ្ទិះកាហ្វេ", coordinates: [11.592054, 104.894415] },
+    { name: "មីក្រូម៉ាត ជ្រោយចង្វា", coordinates: [11.58719, 104.927249] },
+    { name: "ស្រីពេជ្រ សៀមរាប", coordinates: [11.557731, 104.899647] },
+    { name: "Kiri ទួលគោក", coordinates: [11.574014, 104.900657] },
+    { name: "លីនី ផ្សារចាស់", coordinates: [11.572597, 104.924301] },
+    { name: "លីហេង តាខ្មៅ", coordinates: [11.482841, 104.9445] },
+    { name: "សេនបេកឃីរី ទួលគោក", coordinates: [11.576298, 104.883106] },
+    { name: "ស្រី កែវ", coordinates: [11.539268, 104.916899] },
+    { name: "លៀងផ្សារតាខ្មៅចាស់", coordinates: [11.511269, 104.936685] },
+    { name: "បេនឡាន ផ្ទះពូចិត្រ", coordinates: [11.57935, 104.915274] },
+    { name: "ចំការ សែនសុខ", coordinates: [11.5896082, 104.8743224] },
+    { name: "Chorda Vong", coordinates: [11.529071, 104.918403] },
+    { name: "ម៉ាតកាហ្វេ ព្រៃវែង", coordinates: [11.584503, 104.914457] },
+    { name: "Cambodia bagel", coordinates: [11.560064, 104.930246] },
+    { name: "Yellow Cup", coordinates: [11.628131, 104.886544] },
+    { name: "RonYah គីឡូលេខ7", coordinates: [11.633404, 104.89245] },
+    { name: "ស្រី ពេជ្រ", coordinates: [11.55038, 104.892438] },
+    { name: "កាហ្វេដូងក្រអូប", coordinates: [11.525517, 104.853259] },
+    { name: "Saint 132 & Street 265", coordinates: [11.565472, 104.8912387] },
+    { name: "Oxygen coffee សាខាពេទ្យលោកសង្ឃ", coordinates: [11.565472, 104.8912387] },
+    { name: "Sovithon Hin ទួលគោក", coordinates: [11.5765915, 104.8972377] },
+    { name: "Pichchanudom", coordinates: [11.5716967, 104.920794] },
+    { name: "Samnang ផ្លូវ2011 ឧញ្ញាទ្រីហេង", coordinates: [11.595388, 104.85335] },
+    { name: "Annda Arabica coffee", coordinates: [11.5827778, 104.9168056] },
+    { name: "តែបៃតងដូង-មុខតាសារ៉ន", coordinates: [11.5664444, 104.9018889] },
+    { name: "បុរីមង្គលភ្នំពេញ គម្រោង១ ទួលសង្កែផ្ទះB19", coordinates: [11.6012222, 104.9024167] },
+    { name: "ចែ លីលី, ផ្សារតាខ្មៅ", coordinates: [11.468805, 104.943981] }
+    ];
+
+    let markers = [];
+
+    // Function to add markers to the map for the search result
+    function addMarkers(customer) {
+      // Remove any existing markers
+      markers.forEach(marker => map.removeLayer(marker));
+
+      // Add marker for the searched customer
+      const marker = L.marker(customer.coordinates)
+        .addTo(map)
+        .bindPopup(`<b>${customer.name}</b>`);
+      markers.push(marker);
+
+      // Center the map on the customer
+      map.setView(customer.coordinates, 14);
+    }
+
+    // Function to display customer list based on search
+    function displayCustomerList(filteredCustomers) {
+      const customerList = document.getElementById('customerList');
+      customerList.innerHTML = ''; // Clear the current list
+
+      filteredCustomers.forEach(customer => {
+        const li = document.createElement('li');
+        li.classList.add('list-group-item');
+        li.textContent = customer.name;
+        li.addEventListener('click', function () {
+          // Open customer location in Google Maps
+          const [lat, lng] = customer.coordinates;
+          window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+        });
+        customerList.appendChild(li);
+      });
+    }
+
+    // Initial customer list display
+    displayCustomerList(customers);
+
+    // Search functionality with filtering
+    const searchBox = document.getElementById('searchBox');
+    const searchBtn = document.getElementById('searchBtn');
+    searchBtn.addEventListener('click', function () {
+      const searchTerm = searchBox.value.toLowerCase();
+      const filteredCustomers = customers.filter(customer => customer.name.toLowerCase().includes(searchTerm));
+
+      // Add animation effect on click
+      searchBox.classList.add('animate');
+      searchBtn.classList.add('animate');
+      
+      // Reset the animation classes after the animation ends
+      setTimeout(() => {
+        searchBox.classList.remove('animate');
+        searchBtn.classList.remove('animate');
+      }, 500); // The time must match the duration of the animation
+
+      if (filteredCustomers.length > 0) {
+        displayCustomerList(filteredCustomers);
+        addMarkers(filteredCustomers[0]); // Add only the first result marker
+      } else {
+        alert('Customer not found!');
+        // Clear the map if no customer is found
+        markers.forEach(marker => map.removeLayer(marker));
+      }
+    });
+
+    // Add click event to the map
+    map.on('click', function (e) {
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+      // Open the clicked location in Google Maps
+      window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ក្រុមហ៊ុន SKSK - ផលិតផល និងសេវាកម្មបច្ចេកវិទ្យា">
+    <meta name="description" lang="en" content="SKSK Company - Technology Products and Services">
+    <meta property="og:title" content="ក្រុមហ៊ុន SKSK - បច្ចេកវិទ្យា និងសេវាកម្ម">
+    <meta property="og:description" content="ស្វែងរកផលិតផល និងសេវាកម្មបច្ចេកវិទ្យាដ៏ល្អបំផុតជាមួយក្រុមហ៊ុន SKSK។">
+    <meta property="og:image" content="https://i.ibb.co/wFjYfKQ2/logo-SKSK-01.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>ព័ត៌មានក្រុមហ៊ុន</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <style>
+        body {
+            font-family: 'Noto Sans Khmer', Arial, sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Custom Colors */
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-blue-500 { background-color: #3b82f6; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-gray-200 { background-color: #e5e7eb; }
+        .text-green-500 { color: #22c55e; }
+        .bg-green-500 { background-color: #22c55e; }
+        .text-gray-600 { color: #4b5563; }
+        .hover\:bg-blue-700:hover { background-color: #1d4ed8; }
+        .hover\:bg-green-600:hover { background-color: #16a34a; }
+        .hover\:text-green-600:hover { color: #16a34a; }
+
+        /* Hero Section Swiper */
+        .heroSwiper {
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 16px;
+        }
+        .hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* About Section */
+        #about {
+            position: relative;
+            background: linear-gradient(135deg, #ccfbf1 0%, #c7d2fe 100%);
+            padding: 80px 0;
+        }
+        #about::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/soft-pad.png');
+            opacity: 0.15;
+            z-index: 1;
+        }
+        #about .container { position: relative; z-index: 2; }
+        .about-card {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            margin: 0 auto;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .about-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+        .about-card h2 {
+            color: #1e3a8a;
+            position: relative;
+            padding-bottom: 10px;
+            animation: fadeInDown 1.2s ease-in-out;
+        }
+        .about-card h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: #22c55e;
+            border-radius: 2px;
+        }
+        .about-card p.lead {
+            color: #4b5563;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-top: 20px;
+            animation: fadeInUp 1.2s ease-in-out;
+        }
+
+        /* Animation Keyframes */
+        @keyframes fadeInDown {
+            0% { opacity: 0; transform: translateY(-30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Products Section */
+        .main-card {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            text-align: center;
+        }
+        .sub-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            padding: 20px 10px 30px 10px;
+            min-height: 320px;
+        }
+        .sub-card img {
+            width: 90%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            loading: lazy;
+        }
+        .sub-card .content {
+            flex: 1;
+            margin: 10px 0;
+            font-size: 1rem;
+            color: #4b5563;
+        }
+        .sub-card .title-line {
+            color: #22c55e;
+            text-decoration: none;
+            font-weight: bold;
+            background-color: white;
+            padding: 10px 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-top: auto;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+        .sub-card .title-line:hover {
+            color: #16a34a;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .sub-card .title-line:active {
+            transform: scale(0.95);
+            color: #14532d;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .sub-card .title-line:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3);
+        }
+
+        /* Product Details Section */
+        #product-details { display: none; }
+        .details-card {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 900px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .details-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+        .details-card h2 {
+            color: #1e3a8a;
+            font-size: 2rem;
+            position: relative;
+            padding-bottom: 10px;
+            animation: fadeInDown 1.2s ease-in-out;
+        }
+        .details-card h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: #22c55e;
+            border-radius: 2px;
+        }
+        .details-card p, .details-card ul {
+            color: #4b5563;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-top: 20px;
+        }
+        .details-card ul { padding-left: 20px; }
+        .details-card li { margin-bottom: 10px; }
+
+        /* Partners Section */
+        .partner-logo {
+            width: 160px;
+            height: 120px;
+            object-fit: contain;
+            margin: 1rem auto;
+            background: #fff;
+            loading: lazy;
+        }
+
+        /* Navigation Animations */
+        .nav-hr-anim {
+            position: relative;
+            transition: color 0.2s;
+        }
+        .nav-hr-anim::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 2px;
+            width: 0;
+            height: 2px;
+            background: #22c55e;
+            border-radius: 2px;
+            transition: width 0.3s cubic-bezier(.4,0,.2,1);
+        }
+        .nav-hr-anim:hover,
+        .nav-hr-anim:focus {
+            color: #ffffff !important;
+        }
+        .nav-hr-anim:hover::after,
+        .nav-hr-anim:focus::after {
+            width: 100%;
+        }
+
+        /* Navbar Shrink */
+        .navbar-shrink {
+            padding-top: 0.25rem !important;
+            padding-bottom: 0.25rem !important;
+            transition: padding 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .navbar-shrink .navbar-brand img {
+            width: 80px !important;
+            transition: width 0.3s;
+        }
+        .navbar-shrink .navbar-brand span {
+            font-size: 1.1rem !important;
+            transition: font-size 0.3s;
+        }
+
+        /* Back to Top Button */
+        #backToTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            z-index: 9999;
+            background: #22c55e;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 1.7rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #backToTopBtn:hover { background: #16a34a; }
+
+        /* Footer */
+        footer {
+            background-color: #05165E;
+            color: #ffffff;
+            text-align: center;
+            padding: 1.5rem 0;
+            border-radius: 16px 16px 0 0;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        footer p {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+        footer:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 575.98px) {
+            .heroSwiper { height: 300px; margin-top: 20px; }
+            .hero-section .text-lg-start { text-align: center !important; }
+            #about { padding: 50px 0; }
+            #about h2 { font-size: 2rem; }
+            #about p.lead { font-size: 1rem; padding: 0 15px; }
+            .about-card { padding: 20px; }
+            .main-card { grid-template-columns: repeat(2, 1fr); }
+            .sub-card { min-height: 350px; padding: 15px 5px 20px 5px; }
+            .sub-card img { height: 150px; }
+            .sub-card .title-line { padding: 8px 16px; font-size: 0.95rem; }
+            .partner-logo { width: 100px; height: 70px; }
+            .details-card { padding: 20px; }
+            .details-card h2 { font-size: 1.8rem; }
+            .details-card p, .details-card ul { font-size: 1rem; }
+            footer { padding: 1rem 0; }
+            footer p { font-size: 1rem; }
+        }
+        @media (min-width: 576px) and (max-width: 767.98px) {
+            .heroSwiper { height: 350px; }
+            .main-card { grid-template-columns: repeat(2, 1fr); }
+            .sub-card { min-height: 350px; }
+            .sub-card img { height: 180px; }
+            .details-card h2 { font-size: 1.9rem; }
+        }
+        @media (min-width: 768px) and (max-width: 991.98px) {
+            .main-card { grid-template-columns: repeat(2, 1fr); }
+            .sub-card { min-height: 400px; }
+            .sub-card img { height: 180px; }
+        }
+        @media (min-width: 1200px) {
+            .sub-card { min-height: 420px; }
+            .sub-card img { height: 200px;
+            
+            
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg text-white shadow sticky-top" style="border-radius: 0 0 26px 26px; background-color: #05165E;">
+        <div class="container">
+            <a class="navbar-brand text-white fw-bold fs-4" href="#home">
+                <img src="https://i.ibb.co/wFjYfKQ2/logo-SKSK-01.png" alt="SKSK Company Logo" width="120px" style="display:block; margin:0 auto;">
+                <span style="display:block; text-align:center; margin-top:0.25rem; font-size:1.3rem; letter-spacing:1px;">SKSK</span>
+            </a>
+            <button class="btn d-lg-none ms-auto" type="button" data-bs-toggle="offcanvas" style="border: none; outline: none; color: #fff; font-size: 30px;"
+                data-bs-target="#sidebarNav" aria-controls="sidebarNav" aria-label="បើករបារនាំទិស">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="sidebarNav" style="background-color: #05165E;" aria-labelledby="sidebarNavLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title fw-bold" id="sidebarNavLabel"><img src="https://i.ibb.co/wFjYfKQ2/logo-SKSK-01.png" alt="SKSK Company Logo" width="100px" style="margin-left: -2rem;"><span style="margin-left: -1rem;">SKSK</span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="បិទ"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="navbar-nav ms-lg-auto">
+                        <li class="nav-item mb-2"><a class="nav-link text-white nav-hr-anim" href="#home" data-bs-dismiss="offcanvas">ទំព័រដើម</a></li>
+                        <li class="nav-item mb-2"><a class="nav-link text-white nav-hr-anim" href="#about" data-bs-dismiss="offcanvas">អំពីយើង</a></li>
+                        <li class="nav-item mb-2"><a class="nav-link text-white nav-hr-anim" href="#products" data-bs-dismiss="offcanvas">ផលិតផល</a></li>
+                        <li class="nav-item mb-2"><a class="nav-link text-white nav-hr-anim" href="#partners" data-bs-dismiss="offcanvas">ដៃគូសហការ</a></li>
+                        <li class="nav-item"><a class="nav-link text-white nav-hr-anim" href="#contact" data-bs-dismiss="offcanvas">ទំនាក់ទំនង</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="text-white py-5 hero-section" style="margin-top: -1.5rem; background-color: #05165E;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 col-md-12 text-center text-lg-start mb-4 mb-lg-0">
+                    <h2 class="display-4 fw-bold mb-4" style="font-size: 2.5rem; color: #fff; text-shadow: 2px 4px 10px #1e3a8a, 0 1px 0 #22c55e; letter-spacing: 1px;">
+                        សូមស្វាគមន៍មកកាន់ក្រុមហ៊ុន <span style="color: goldenrod;">SKSK</span>
+                    </h2>
+                    <p class="lead">យើងផ្តល់ជូននូវផលិតផល និងសេវាកម្មដ៏ល្អបំផុតសម្រាប់អតិថិជនរបស់យើង។</p>
+                    <a href="#contact" class="btn bg-green-500 text-white hover:bg-green-600 mt-3">ស្វែងយល់បន្ថែម</a>
+                </div>
+                <div class="col-lg-6 col-md-12">
+                    <div class="swiper heroSwiper">
+                        <div class="swiper-wrapper">
+                            <div class="swiper-slide">
+                                <img src="https://api.backlinko.com/app/uploads/2024/06/product-page-examples-blog-post-image.webp" alt="Modern technology solutions for businesses" class="img-fluid hero-image" loading="lazy">
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTV2j_3kwmSdxHoR0DbsCvtodZM5t78ugPFZKG3kFURzJDulV0-2yhlcXlxFYiUFxx45MQ&usqp=CAU" alt="Innovative software development" class="img-fluid hero-image" loading="lazy">
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="https://img.freepik.com/free-vector/merch-clothing-abstract-concept-vector-illustration-event-apparel-custom-merchandise-products-merch-design-service-branded-print-clothing-merch-maker-online-website-abstract-metaphor_335657-4159.jpg" alt="Custom technology services" class="img-fluid hero-image" loading="lazy">
+                            </div>
+                        </div>
+                        <div class="swiper-pagination"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-5">
+        <div class="container text-center">
+            <div class="about-card">
+                <h2 class="display-5 fw-bold mb-4">SKSK</h2>
+                <p class="lead">
+                    ក្រុមហ៊ុន SKSK ត្រូវបានបង្កើតឡើងក្នុងឆ្នាំ ២០១០ ជាមួយនឹងបេសកកម្មផ្តល់នូវដំណោះស្រាយបច្ចេកវិទ្យាទំនើប។ យើងមានក្រុមការងារដែលមានជំនាញ និងបទពិសោធន៍ក្នុងការអភិវឌ្ឍផលិតផល និងសេវាកម្មគុណភាពខ្ពស់។
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="py-5">
+        <div class="container">
+            <h2 class="display-5 fw-bold text-center mb-4">
+            ផលិតផល និងសេវាកម្ម
+            <span style="display:block; height:4px; width:60px; background:#22c55e; border-radius:2px; margin:10px auto 0 auto;"></span>
+            </h2>
+            <div class="main-card">
+            <div class="sub-card">
+                    <img src="https://inwfile.com/s-fw/jx0t4b.jpg" alt="Business Management Systems" class="img-fluid" loading="lazy">
+                    <span class="content">ប្រព័ន្ធ ERP និង CRM ដែលបង្កើនប្រសិទ្ធភាពនៃការគ្រប់គ្រងអាជីវកម្ម។</span>
+                    <a class="title-line" data-product="product-1">ស្វែងយល់បន្ថែម</a>
+                </div>
+                <div class="sub-card">
+                    <img src="https://scontent.fpnh25-1.fna.fbcdn.net/v/t39.30808-6/472185942_1115054516999312_4786156084832700301_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=127cfc&_nc_ohc=gK_HrZxGpDAQ7kNvwE7WGXq&_nc_oc=AdnJG1g7T05jPSWu9Co9YgZgYkQnOi3GzDD7A31ZpblD3Xed5HAe02x1qmGzCmtuhFs&_nc_zt=23&_nc_ht=scontent.fpnh25-1.fna&_nc_gid=RwS2Di1X81UU_m0THw57mw&oh=00_AfJo6Xka29QadzZBxz39fFwnHMrxlxPtVwA1M2OVZxIN2g&oe=6835BCA3" alt="Custom Software Development" class="img-fluid" loading="lazy">
+                    <span class="content">កម្មវិធីអភិវឌ្ឍន៍តាមតម្រូវការសមស្របនឹងអាជីវកម្មរបស់អ្នក។</span>
+                    <a class="title-line" data-product="product-2">ស្វែងយល់បន្ថែម</a>
+                </div>
+            </div>
+            <div class="main-card" style="margin-top: 2.5rem;">
+                <div class="sub-card">
+                    <img src="https://cdn.store-assets.com/s/730649/i/48339138.png?width=1024" alt="Cloud-Based Solutions" class="img-fluid" loading="lazy">
+                    <span class="content">ដំណោះស្រាយពពកសម្រាប់ការផ្ទុកទិន្នន័យប្រកបដោយសុវត្ថិភាព។</span>
+                    <a class="title-line" data-product="product-3">ស្វែងយល់បន្ថែម</a>
+                </div>
+                <div class="sub-card">
+                    <img src="https://image.makewebcdn.com/makeweb/m_1920x0/hANhGe0iF/AfirstPage/%E0%B8%95%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%9F%E0%B8%87_%E0%B8%9A%E0%B8%B8%E0%B8%81_5.png" alt="Data Analytics Tools" class="img-fluid" loading="lazy">
+                    <span class="content">ឧបករណ៍វិភាគទិន្នន័យដ៏មានឥទ្ធិពលសម្រាប់ការសម្រេចចិត្ត។</span>
+                    <a class="title-line" data-product="product-4">ស្វែងយល់បន្ថែម</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    
+    <style>
+    @media (max-width: 575.98px) {
+        #product-1-details .btn-group-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start !important;
+            justify-content: flex-start !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            max-height: 300px;
+            position: relative;
+            z-index: 2;
+            background: #f3f4f6;
+            border-radius: 12px;
+            scroll-behavior: auto;
+            padding: 10px 0;
+        }
+        #product-1-details .btn-group-vertical .btn {
+            width: 100px;
+            white-space: nowrap;
+            margin-bottom: 0 !important;
+            margin-right: 0.1rem;
+            border-radius: 18px !important;
+            font-size: 0.95rem;
+            padding: 7px 10px;
+            text-align: left !important;
+            justify-content: flex-start;
+        }
+        #product-1-details .btn-group-vertical .btn.active {
+            color: #f00505 !important;
+        }
+        #product-1-details .btn-group-vertical::-webkit-scrollbar {
+            height: 5px;
+            border-radius: 4px;
+        }
+        #product-1-details .btn-group-vertical::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 4px;
+        }
+        .btn-group-vertical:hover {
+            color: #05165E;
+        }
+        .btn-group-vertical {
+            border-radius: 12px;
+            overflow: visible !important;
+        }
+    }
+    </style>
+    <!-- Product Details Section -->
+    <section id="product-details" class="py-5">
+        <div class="container">
+            <div id="product-1-details" class="details-card" style="display: none;">
+                <div class="row" style="gap: 24px 0;">
+                    <!-- Category (left) -->
+                    <div class="col-md-4 mb-4 d-flex flex-column align-items-start justify-content-start" style="margin-right: 0;">
+                        <div class="text-white rounded-4 p-4 w-100" style="min-height:140px;">
+                            <h5 class="fw-bold mb-3" style="font-size:1.15rem; letter-spacing:1px; color: #05165E;">ប្រភេទ</h5>
+                            <div class="btn-group-vertical w-100" role="group" aria-label="Categories">
+                                <button type="button" class="btn category-btn active py-2 px-3 rounded-pill" data-category="erp" style="font-size:1.05rem; color:#000000; border:none;">LongBeach Syrup</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="crm" style="font-size:1.05rem; border:none;">DingFong Syrup</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="hrm" style="font-size:1.05rem; border:none;">Puree</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="pos" style="font-size:1.05rem; border:none;">Plastic Cup</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="accounting" style="font-size:1.05rem; border:none;">Paper Cup</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="inventory" style="font-size:1.05rem; border:none;">LID</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="payroll" style="font-size:1.05rem; border:none;">Pearl</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="project" style="font-size:1.05rem; border:none;">Powder</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="ecommerce" style="font-size:1.05rem; border:none;">Jam</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="education" style="font-size:1.05rem; border:none;">Jelly</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="healthcare" style="font-size:1.05rem; border:none;">Tea</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="manufacturing" style="font-size:1.05rem; border:none;">Plastic Bag</button>
+                                <button type="button" class="btn category-btn py-2 px-3 rounded-pill" data-category="logistics" style="font-size:1.05rem; border:none;">Plastic Bag</button>
+                                <script>
+                                    // Add this script after your buttons to handle active color
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        const buttons = document.querySelectorAll('#product-1-details .category-btn');
+                                        buttons.forEach(btn => {
+                                            btn.addEventListener('click', function() {
+                                                buttons.forEach(b => {
+                                                    b.classList.remove('active');
+                                                    b.style.backgroundColor = '';
+                                                    b.style.color = '';
+                                                    b.style.boxShadow = '';
+                                                    b.style.border = 'none';
+                                                });
+                                                this.classList.add('active');
+                                                this.style.color = '#f00505';
+                                                this.style.border = 'none';
+                                            });
+                                        });
+                                    });
+                                </script>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Image & Content (right) -->
+                    <div class="col-md-8" style="padding-left: 32px;">
+                        <div id="category-content-erp" class="category-content animate__animated animate__fadeIn">
+                            <img src="https://inwfile.com/s-fw/jx0t4b.jpg" alt="ERP System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធគ្រប់គ្រងអាជីវកម្ម (ERP)</h2>
+                            <p class="mt-3" style="color:#374151;">ប្រព័ន្ធ ERP របស់យើងជួយសម្រួលដល់ការគ្រប់គ្រងអាជីវកម្មរបស់អ្នក។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការគ្រប់គ្រងហិរញ្ញវត្ថុ និងស្តុកទំនិញប្រកបដោយប្រសិទ្ធភាព។</li>
+                                <li>របាយការណ៍លម្អិតសម្រាប់ការសម្រេចចិត្ត។</li>
+                                <li>សមាហរណកម្មជាមួយប្រព័ន្ធផ្សេងៗ។</li>
+                            </ul>
+                            <p style="color:#22c55e;">ស័ក្តិសមសម្រាប់អាជីវកម្មគ្រប់ទំហំ។</p>
+                        </div>
+                        <div id="category-content-crm" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/crm-customer-relationship-management-concept-illustration_114360-1495.jpg" alt="CRM System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធគ្រប់គ្រងទំនាក់ទំនងអតិថិជន (CRM)</h2>
+                            <p class="mt-3" style="color:#374151;">ប្រព័ន្ធ CRM របស់យើងជួយអ្នកគ្រប់គ្រងទំនាក់ទំនងជាមួយអតិថិជនយ៉ាងមានប្រសិទ្ធភាព។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការតាមដាន leads និង opportunities។</li>
+                                <li>ការគ្រប់គ្រងសេវាកម្មអតិថិជន។</li>
+                                <li>របាយការណ៍លម្អិតលើអតិថិជន។</li>
+                            </ul>
+                            <p style="color:#22c55e;">ជួយបង្កើនការលក់ និងភាពជឿជាក់របស់អតិថិជន។</p>
+                        </div>
+                        <div id="category-content-hrm" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/human-resources-concept-illustration_114360-2034.jpg" alt="HRM System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធគ្រប់គ្រងធនធានមនុស្ស (HRM)</h2>
+                            <p class="mt-3" style="color:#374151;">ប្រព័ន្ធ HRM របស់យើងជួយគ្រប់គ្រងបុគ្គលិក និងធនធានមនុស្សយ៉ាងមានប្រសិទ្ធភាព។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការគ្រប់គ្រងវត្តមាន និងប្រាក់ខែ។</li>
+                                <li>ការតាមដានការអភិវឌ្ឍន៍បុគ្គលិក។</li>
+                                <li>របាយការណ៍លម្អិតលើធនធានមនុស្ស។</li>
+                            </ul>
+                            <p style="color:#22c55e;">ជួយអភិវឌ្ឍកម្លាំងពលកម្មរបស់អាជីវកម្ម។</p>
+                        </div>
+                        <div id="category-content-pos" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/pos-terminal-concept-illustration_114360-12206.jpg" alt="POS System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធលក់មុខរបរ (POS)</h2>
+                            <p class="mt-3" style="color:#374151;">ប្រព័ន្ធ POS សម្រាប់ការលក់ និងគ្រប់គ្រងហាងយ៉ាងមានប្រសិទ្ធភាព។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការចុះបញ្ជីលក់ និងបង្កាន់ដៃ។</li>
+                                <li>គ្រប់គ្រងស្តុកទំនិញជាមួយការលក់។</li>
+                                <li>របាយការណ៍លក់ប្រចាំថ្ងៃ។</li>
+                            </ul>
+                            <p style="color:#22c55e;">សមស្របសម្រាប់ហាងគ្រប់ប្រភេទ។</p>
+                        </div>
+                        <div id="category-content-accounting" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/accounting-concept-illustration_114360-2397.jpg" alt="Accounting System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធគណនេយ្យ</h2>
+                            <p class="mt-3" style="color:#374151;">គ្រប់គ្រងហិរញ្ញវត្ថុ និងរបាយការណ៍គណនេយ្យយ៉ាងត្រឹមត្រូវ។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការចុះបញ្ជីចំណូលចំណាយ។</li>
+                                <li>របាយការណ៍ហិរញ្ញវត្ថុសម្រាប់អាជីវកម្ម។</li>
+                                <li>គាំទ្រប្រព័ន្ធពន្ធដារ។</li>
+                            </ul>
+                            <p style="color:#22c55e;">ជួយអោយការគ្រប់គ្រងហិរញ្ញវត្ថុមានប្រសិទ្ធភាព។</p>
+                        </div>
+                        <div id="category-content-inventory" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/inventory-management-concept-illustration_114360-1206.jpg" alt="Inventory System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធគ្រប់គ្រងស្តុកទំនិញ</h2>
+                            <p class="mt-3" style="color:#374151;">គ្រប់គ្រងស្តុកទំនិញ និងការចេញចូលទំនិញយ៉ាងមានប្រសិទ្ធភាព។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>តាមដានស្តុកជាក់ស្តែង។</li>
+                                <li>ការជូនដំណឹងពេលស្តុកអស់។</li>
+                                <li>របាយការណ៍ស្តុកប្រចាំថ្ងៃ។</li>
+                            </ul>
+                            <p style="color:#22c55e;">សមស្របសម្រាប់ឃ្លាំង និងហាង។</p>
+                        </div>
+                        <div id="category-content-payroll" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/payroll-concept-illustration_114360-2398.jpg" alt="Payroll System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធបៀវត្ស</h2>
+                            <p class="mt-3" style="color:#374151;">គ្រប់គ្រងបៀវត្ស និងប្រាក់រង្វាន់បុគ្គលិកយ៉ាងត្រឹមត្រូវ។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>គណនាបៀវត្សស្វ័យប្រវត្តិ។</li>
+                                <li>គាំទ្រការកាត់ពន្ធ និងបញ្ចូលធានារ៉ាប់រង។</li>
+                                <li>របាយការណ៍បៀវត្សប្រចាំខែ។</li>
+                            </ul>
+                            <p style="color:#22c55e;">សមស្របសម្រាប់អង្គភាពគ្រប់ទំហំ។</p>
+                        </div>
+                        <div id="category-content-project" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/project-management-concept-illustration_114360-5927.jpg" alt="Project Management System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធគ្រប់គ្រងគម្រោង</h2>
+                            <p class="mt-3" style="color:#374151;">គ្រប់គ្រងគម្រោង និងកិច្ចការយ៉ាងមានប្រសិទ្ធភាព។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការតាមដានកិច្ចការនិងកាលវិភាគ។</li>
+                                <li>ការចែកចាយភារកិច្ចទៅកាន់សមាជិកក្រុម។</li>
+                                <li>របាយការណ៍វឌ្ឍនភាពគម្រោង។</li>
+                            </ul>
+                            <p style="color:#22c55e;">ជួយអោយការងាររបស់ក្រុមមានប្រសិទ្ធភាព។</p>
+                        </div>
+                        <div id="category-content-ecommerce" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/ecommerce-concept-illustration_114360-825.jpg" alt="E-Commerce System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធពាណិជ្ជកម្មអេឡិចត្រូនិក (E-Commerce)</h2>
+                            <p class="mt-3" style="color:#374151;">បង្កើតហាងលក់តាមអនឡាញ និងគ្រប់គ្រងការលក់យ៉ាងងាយស្រួល។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>គាំទ្រការទូទាត់តាមអនឡាញ។</li>
+                                <li>គ្រប់គ្រងផលិតផល និងស្តុក។</li>
+                                <li>របាយការណ៍លក់តាមអនឡាញ។</li>
+                            </ul>
+                            <p style="color:#22c55e;">ជួយពង្រីកអាជីវកម្មរបស់អ្នកទៅអនឡាញ។</p>
+                        </div>
+                        <div id="category-content-education" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/online-education-concept-illustration_114360-5529.jpg" alt="Education System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធគ្រប់គ្រងសិក្សា (Education)</h2>
+                            <p class="mt-3" style="color:#374151;">គ្រប់គ្រងសិស្ស អ្នកបង្រៀន និងកិច្ចការសិក្សា។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការចុះបញ្ជីសិស្ស និងវគ្គសិក្សា។</li>
+                                <li>ការគ្រប់គ្រងពិន្ទុ និងវត្តមាន។</li>
+                                <li>របាយការណ៍សិក្សា។</li>
+                            </ul>
+                            <p style="color:#22c55e;">សមស្របសម្រាប់សាលា និងមហាវិទ្យាល័យ។</p>
+                        </div>
+                        <div id="category-content-healthcare" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/medical-app-concept-illustration_114360-8255.jpg" alt="Healthcare System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធសុខាភិបាល (Healthcare)</h2>
+                            <p class="mt-3" style="color:#374151;">គ្រប់គ្រងអ្នកជំងឺ ការណាត់ពេទ្យ និងប្រវត្តិវេជ្ជសាស្ត្រ។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការចុះបញ្ជីអ្នកជំងឺ។</li>
+                                <li>ការគ្រប់គ្រងការណាត់ពេទ្យ។</li>
+                                <li>របាយការណ៍សុខភាព។</li>
+                            </ul>
+                            <p style="color:#22c55e;">សមស្របសម្រាប់គ្លីនិក និងមន្ទីរពេទ្យ។</p>
+                        </div>
+                        <div id="category-content-manufacturing" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/industrial-factory-concept-illustration_114360-1207.jpg" alt="Manufacturing System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធផលិតកម្ម (Manufacturing)</h2>
+                            <p class="mt-3" style="color:#374151;">គ្រប់គ្រងដំណើរការផលិត និងស្តុកវត្ថុធាតុដើម។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការតាមដានដំណើរការផលិតកម្ម។</li>
+                                <li>គ្រប់គ្រងស្តុកវត្ថុធាតុដើម។</li>
+                                <li>របាយការណ៍ផលិតកម្ម។</li>
+                            </ul>
+                            <p style="color:#22c55e;">សមស្របសម្រាប់រោងចក្រ។</p>
+                        </div>
+                        <div id="category-content-logistics" class="category-content animate__animated animate__fadeIn" style="display:none;">
+                            <img src="https://img.freepik.com/free-vector/logistics-delivery-concept-illustration_114360-12207.jpg" alt="Logistics System" class="img-fluid mb-4 shadow rounded-4 border border-2 border-success" style="max-width: 220px; background:#f3f4f6; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+                            <h2 class="fw-bold" style="color:#1e3a8a; font-size:1.5rem;">ប្រព័ន្ធដឹកជញ្ជូន (Logistics)</h2>
+                            <p class="mt-3" style="color:#374151;">គ្រប់គ្រងការដឹកជញ្ជូន និងតាមដានការដឹកទំនិញ។</p>
+                            <ul class="mb-3" style="color:#2563eb;">
+                                <li>ការតាមដានការដឹកជញ្ជូនជាក់ស្តែង។</li>
+                                <li>គ្រប់គ្រងបញ្ជាទិញ និងផ្ញើទំនិញ។</li>
+                                <li>របាយការណ៍ដឹកជញ្ជូន។</li>
+                            </ul>
+                            <p style="color:#22c55e;">សមស្របសម្រាប់ក្រុមហ៊ុនដឹកជញ្ជូន។</p>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <a href="#" class="btn bg-green-500 text-white hover:bg-green-600 px-4 py-2 rounded-pill shadow contact-popup-btn">ទាក់ទងយើង</a>
+                            <button class="btn bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-pill shadow back-button">ត្រឡប់</button>
+                        </div>
+                        <!-- Partners for product 1 -->
+                        <div class="mt-5">
+                            <h5 class="fw-bold mb-3 text-center" style="color:#1e3a8a;">ដៃគូសហការ</h5>
+                            <div class="swiper mySwiper">
+                                <div class="swiper-wrapper">
+                                    <div class="swiper-slide">
+                                        <img src="https://i.ibb.co/LPqSZSG/image.png" alt="Microsoft Partner Logo" class="partner-logo shadow-sm rounded-3" loading="lazy">
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo shadow-sm rounded-3" loading="lazy">
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo shadow-sm rounded-3" loading="lazy">
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo shadow-sm rounded-3" loading="lazy">
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo shadow-sm rounded-3" loading="lazy">
+                                    </div>
+                                </div>
+                                <div class="swiper-pagination"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Category switching logic for product-1-details
+                const categoryBtns = document.querySelectorAll('#product-1-details .category-btn');
+                const categoryContents = document.querySelectorAll('#product-1-details .category-content');
+                categoryBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        categoryBtns.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        const cat = this.getAttribute('data-category');
+                        categoryContents.forEach(content => {
+                            content.style.display = content.id === 'category-content-' + cat ? 'block' : 'none';
+                        });
+                    });
+                });
+            });
+            </script>
+            <div id="product-2-details" class="details-card" style="display: none;">
+            <img src="https://scontent.fpnh25-1.fna.fbcdn.net/v/t39.30808-6/472185942_1115054516999312_4786156084832700301_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=127cfc&_nc_ohc=gK_HrZxGpDAQ7kNvwE7WGXq&_nc_oc=AdnJG1g7T05jPSWu9Co9YgZgYkQnOi3GzDD7A31ZpblD3Xed5HAe02x1qmGzCmtuhFs&_nc_zt=23&_nc_ht=scontent.fpnh25-1.fna&_nc_gid=RwS2Di1X81UU_m0THw57mw&oh=00_AfJo6Xka29QadzZBxz39fFwnHMrxlxPtVwA1M2OVZxIN2g&oe=6835BCA3" alt="Custom Software Development" class="img-fluid mb-4" style="max-width: 200px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+            <h2>កម្មវិធីអភិវឌ្ឍន៍តាមតម្រូវការ</h2>
+            <p>យើងរចនា និងអភិវឌ្ឍកម្មវិធីដែលសមស្របនឹងតម្រូវការជាក់លាក់របស់អ្នក។</p>
+            <ul>
+            <li>កម្មវិធីសម្រាប់ទូរស័ព្ទ និងគេហទំព័រ។</li>
+            <li>ការអភិវឌ្ឍរហ័ស និងគុណភាពខ្ពស់។</li>
+            <li>ការគាំទ្របច្ចេកទេសបន្ត។</li>
+            </ul>
+            <p>សេវាកម្មនេះផ្តល់ភាពបត់បែនសម្រាប់អាជីវកម្មរបស់អ្នក។</p>
+            <a href="#" class="btn bg-green-500 text-white hover:bg-green-600 mt-3 contact-popup-btn">ទាក់ទងយើង</a>
+            <button class="btn bg-blue-600 text-white hover:bg-blue-700 mt-3 ms-2 back-button">ត្រឡប់</button>
+            <!-- Partners for product 2 -->
+            <div class="mt-4">
+            <h5 class="fw-bold mb-3 text-center" style="color:#1e3a8a;">ដៃគូសហការ</h5>
+            <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/LPqSZSG/image.png" alt="Microsoft Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+            </div>
+            <div class="swiper-pagination"></div>
+            </div>
+            </div>
+            </div>
+            <div id="product-3-details" class="details-card" style="display: none;">
+            <img src="https://cdn.store-assets.com/s/730649/i/48339138.png?width=1024" alt="Cloud-Based Solutions" class="img-fluid mb-4" style="max-width: 200px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+            <h2>សេវាកម្មបច្ចេកវិទ្យាពពក</h2>
+            <p>ដំណោះស្រាយផ្អែកលើពពកសម្រាប់ការផ្ទុកទិន្នន័យ និងការគ្រប់គ្រងប្រកបដោយសុវត្ថិភាព។</p>
+            <ul>
+            <li>ការផ្ទុកទិន្នន័យដែលអាចពង្រីកបាន។</li>
+            <li>សុវត្ថិភាពទិន្នន័យកម្រិតខ្ពស់។</li>
+            <li>ការចូលប្រើបានគ្រប់ទីកន្លែង។</li>
+            </ul>
+            <p>សេវាកម្មពពករបស់យើងធានានូវភាពជឿជាក់ និងប្រសិទ្ធភាព។</p>
+            <a href="#" class="btn bg-green-500 text-white hover:bg-green-600 mt-3 contact-popup-btn">ទាក់ទងយើង</a>
+            <button class="btn bg-blue-600 text-white hover:bg-blue-700 mt-3 ms-2 back-button">ត្រឡប់</button>
+            <!-- Partners for product 3 -->
+            <div class="mt-4">
+            <h5 class="fw-bold mb-3 text-center" style="color:#1e3a8a;">ដៃគូសហការ</h5>
+            <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/LPqSZSG/image.png" alt="Microsoft Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+            </div>
+            <div class="swiper-pagination"></div>
+            </div>
+            </div>
+            </div>
+            <div id="product-4-details" class="details-card" style="display: none;">
+            <img src="https://image.makewebcdn.com/makeweb/m_1920x0/hANhGe0iF/AfirstPage/%E0%B8%95%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%9F%E0%B8%87_%E0%B8%9A%E0%B8%B8%E0%B8%81_5.png" alt="Data Analytics Tools" class="img-fluid mb-4" style="max-width: 200px; border-radius: 12px; display: block; margin-left: auto; margin-right: auto;" loading="lazy">
+            <h2>ការវិភាគទិន្នន័យ</h2>
+            <p>ឧបករណ៍វិភាគទិន្នន័យដ៏មានឥទ្ធិពលដើម្បីជួយសម្រេចចិត្តអាជីវកម្ម។</p>
+            <ul>
+            <li>ការវិភាគទិន្នន័យតាមពេលវេលាជាក់ស្តែង។</li>
+            <li>របាយការណ៍ដែលងាយស្រួលយល់។</li>
+            <li>ការព្យាករណ៍អាជីវកម្មដោយផ្អែកលើទិន្នន័យ។</li>
+            </ul>
+            <p>ឧបករណ៍របស់យើងជួយអ្នកធ្វើការសម្រេចចិត្តប្រកបដោយភាពវៃឆ្លាត។</p>
+            <a href="#" class="btn bg-green-500 text-white hover:bg-green-600 mt-3 contact-popup-btn">ទាក់ទងយើង</a>
+            <button class="btn bg-blue-600 text-white hover:bg-blue-700 mt-3 ms-2 back-button">ត្រឡប់</button>
+            <!-- Partners for product 4 -->
+            <div class="mt-4">
+            <h5 class="fw-bold mb-3 text-center" style="color:#1e3a8a;">ដៃគូសហការ</h5>
+            <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/LPqSZSG/image.png" alt="Microsoft Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+                <div class="swiper-slide">
+                <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="partner-logo" loading="lazy">
+                </div>
+            </div>
+            <div class="swiper-pagination"></div>
+            </div>
+            </div>
+            </div>
+        </div>
+
+
+        <!-- Contact Popup Modal -->
+        <div id="contactPopupModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.45);">
+            <div style="background:#fff; max-width:420px; margin:60px auto; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.18); padding:32px 24px 24px 24px; position:relative;">
+            <button id="closeContactPopup" aria-label="បិទ" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:1.5rem; color:#888; cursor:pointer;"><i class="fa fa-times"></i></button>
+            <h4 class="fw-bold mb-3 text-center" style="color:#1e3a8a;">ទំនាក់ទំនង</h4>
+            <form id="popup-contact-form" autocomplete="off">
+                <div class="mb-3 text-start">
+                <label for="popup-name" class="form-label">ឈ្មោះ</label>
+                <input type="text" class="form-control" id="popup-name" placeholder="បញ្ចូលឈ្មោះរបស់អ្នក" required>
+                </div>
+                <div class="mb-3 text-start">
+                <label for="popup-email" class="form-label">អ៊ីមែល</label>
+                <input type="email" class="form-control" id="popup-email" placeholder="បញ្ចូលអ៊ីមែល" required>
+                </div>
+                <div class="mb-3 text-start">
+                <label for="popup-phone" class="form-label">លេខទូរសព្ទ</label>
+                <input type="tel" class="form-control" id="popup-phone" placeholder="បញ្ចូលលេខទូរសព្ទ" required>
+                </div>
+                <div class="mb-3 text-start">
+                <label for="popup-message" class="form-label">សារ</label>
+                <textarea class="form-control" id="popup-message" rows="3" placeholder="សរសេរសាររបស់អ្នក" required></textarea>
+                </div>
+                <button type="submit" class="btn bg-blue-600 text-white hover:bg-blue-700 w-100">ផ្ញើរសារ</button>
+                <div id="popup-contact-success" class="mt-3 text-success fw-bold" style="display:none;">សាររបស់អ្នកត្រូវបានផ្ញើដោយជោគជ័យ!</div>
+                <div id="popup-contact-error" class="mt-3 text-danger fw-bold" style="display:none;">បរាជ័យក្នុងការផ្ញើសារ។ សូមព្យាយាមម្តងទៀត។</div>
+            </form>
+            </div>
+        </div>
+        <script>
+        // Popup Contact Modal Logic
+        document.addEventListener('DOMContentLoaded', function () {
+            // Show popup when clicking "ទាក់ទងយើង" in product details
+            document.querySelectorAll('.contact-popup-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('contactPopupModal').style.display = 'block';
+            });
+            });
+            // Close popup
+            document.getElementById('closeContactPopup').addEventListener('click', function() {
+            document.getElementById('contactPopupModal').style.display = 'none';
+            document.getElementById('popup-contact-form').reset();
+            document.getElementById('popup-contact-success').style.display = 'none';
+            document.getElementById('popup-contact-error').style.display = 'none';
+            });
+            // Close popup when clicking outside modal
+            document.getElementById('contactPopupModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+                document.getElementById('popup-contact-form').reset();
+                document.getElementById('popup-contact-success').style.display = 'none';
+                document.getElementById('popup-contact-error').style.display = 'none';
+            }
+            });
+            // Submit popup contact form
+            document.getElementById('popup-contact-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('popup-name').value.trim();
+            const email = document.getElementById('popup-email').value.trim();
+            const phone = document.getElementById('popup-phone').value.trim();
+            const message = document.getElementById('popup-message').value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const phoneRegex = /^\+?\d{8,15}$/;
+            if (!name || !email || !phone || !message) {
+                document.getElementById('popup-contact-error').textContent = 'សូមបំពេញគ្រប់វាលទាំងអស់។';
+                document.getElementById('popup-contact-error').style.display = 'block';
+                document.getElementById('popup-contact-success').style.display = 'none';
+                return;
+            }
+            if (!emailRegex.test(email)) {
+                document.getElementById('popup-contact-error').textContent = 'សូមបញ្ចូលអ៊ីមែលត្រឹមត្រូវ។';
+                document.getElementById('popup-contact-error').style.display = 'block';
+                document.getElementById('popup-contact-success').style.display = 'none';
+                return;
+            }
+            if (!phoneRegex.test(phone)) {
+                document.getElementById('popup-contact-error').textContent = 'សូមបញ្ចូលលេខទូរសព្ទត្រឹមត្រូវ។';
+                document.getElementById('popup-contact-error').style.display = 'block';
+                document.getElementById('popup-contact-success').style.display = 'none';
+                return;
+            }
+            try {
+                // Send to Telegram (same as main form)
+                const TELEGRAM_BOT_TOKEN = '8132165664:AAE5sE2HBg6P0IyIoM8xYhSFuBzHumUWK5o';
+                const TELEGRAM_CHAT_ID = '-4757352988';
+                const telegramMessage = `សារថ្មីពីគេហទំព័រ:\nឈ្មោះ: ${name}\nអ៊ីមែល: ${email}\nលេខទូរសព្ទ: ${phone}\nសារ: ${message}`;
+                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+                const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: TELEGRAM_CHAT_ID,
+                    text: telegramMessage
+                })
+                });
+                if (res.ok) {
+                document.getElementById('popup-contact-success').style.display = 'block';
+                document.getElementById('popup-contact-error').style.display = 'none';
+                this.reset();
+                } else {
+                throw new Error('Telegram API error');
+                }
+            } catch (err) {
+                document.getElementById('popup-contact-error').textContent = 'បរាជ័យក្នុងការផ្ញើសារ។ សូមព្យាយាមម្តងទៀត។';
+                document.getElementById('popup-contact-error').style.display = 'block';
+                document.getElementById('popup-contact-success').style.display = 'none';
+            }
+            });
+        });
+        </script>
+    </section>
+
+    <!-- Partners Section -->
+    <section id="partners" class="py-5">
+        <div class="container">
+            <h2 class="display-5 fw-bold text-center mb-4">
+                ដៃគូសហការ
+                <span style="display:block; height:4px; width:60px; background:#22c55e; border-radius:2px; margin:10px auto 0 auto;"></span>
+            </h2>
+            <div class="swiper mySwiper">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide">
+                        <div class="card shadow text-center">
+                            <img src="https://i.ibb.co/LPqSZSG/image.png" alt="Microsoft Partner Logo" class="card-img-top partner-logo" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="card shadow text-center">
+                            <img src="https://i.ibb.co/dW50F2H/image.png" alt="AWS Partner Logo" class="card-img-top partner-logo" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="card shadow text-center">
+                            <img src="https://i.ibb.co/h8Zx6sm/image.png" alt="Google Cloud Partner Logo" class="card-img-top partner-logo" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="card shadow text-center">
+                            <img src="https://i.ibb.co/kgkjTQf/image.png" alt="Oracle Partner Logo" class="card-img-top partner-logo" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="card shadow text-center">
+                            <img src="https://i.ibb.co/sWXWQKQ/image.png" alt="IBM Partner Logo" class="card-img-top partner-logo" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="swiper-slide">
+                        <div class="card shadow text-center">
+                            <img src="https://i.ibb.co/4TcM3tN/image.png" alt="Salesforce Partner Logo" class="card-img-top partner-logo" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper-pagination"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="bg-gray-200 py-5">
+        <div class="container">
+            <h2 class="display-5 fw-bold text-center mb-4">
+                ទំនាក់ទំនង
+                <span style="display:block; height:4px; width:60px; background:#22c55e; border-radius:2px; margin:10px auto 0 auto;"></span>
+            </h2>
+            <p class="lead text-center mb-4">សូមទាក់ទងមកកាន់យើងសម្រាប់ព័ត៌មានបន្ថែម។</p>
+            <div class="row justify-content-center align-items-stretch">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div style="border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); height: 100%;">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3909.01460550859!2d104.90947957505335!3d11.550809788648964!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTHCsDMzJzAyLjkiTiAxMDTCsDU0JzQzLjQiRQ!5e0!3m2!1sen!2skh!4v1747973169508!5m2!1sen!2skh" width="100%" height="350" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        <div class="text-center mt-2">
+                            <a href="https://maps.google.com/?q=11.55081,104.90948" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">មើលក្នុងផែនទី</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 d-flex align-items-center">
+                    <form id="contact-form" class="w-100 bg-white p-4 rounded shadow" style="max-width: 500px; margin: 0 auto;">
+                        <div class="mb-3 text-start">
+                            <label for="name" class="form-label">ឈ្មោះ</label>
+                            <input type="text" class="form-control" id="name" placeholder="បញ្ចូលឈ្មោះរបស់អ្នក" required>
+                        </div>
+                        <div class="mb-3 text-start">
+                            <label for="email" class="form-label">អ៊ីមែល</label>
+                            <input type="email" class="form-control" id="email" placeholder="បញ្ចូលអ៊ីមែល" required>
+                        </div>
+                        <div class="mb-3 text-start">
+                            <label for="phone" class="form-label">លេខទូរសព្ទ</label>
+                            <input type="tel" class="form-control" id="phone" placeholder="បញ្ចូលលេខទូរសព្ទ" required>
+                        </div>
+                        <div class="mb-3 text-start">
+                            <label for="message" class="form-label">សារ</label>
+                            <textarea class="form-control" id="message" rows="4" placeholder="សរសេរសាររបស់អ្នក" required></textarea>
+                        </div>
+                        <button type="submit" class="btn bg-blue-600 text-white hover:bg-blue-700 w-100">ផ្ញើរសារ</button>
+                        <div id="contact-success" class="mt-3 text-success fw-bold" style="display:none;">សាររបស់អ្នកត្រូវបានផ្ញើដោយជោគជ័យ!</div>
+                        <div id="contact-error" class="mt-3 text-danger fw-bold" style="display:none;">បរាជ័យក្នុងការផ្ញើសារ។ សូមព្យាយាមម្តងទៀត។</div>
+                    </form>
+                </div>
+<script>
+    // Replace with your bot token and chat ID
+    const TELEGRAM_BOT_TOKEN = '8132165664:AAE5sE2HBg6P0IyIoM8xYhSFuBzHumUWK5o';
+    const TELEGRAM_CHAT_ID = '-4757352988';
+
+    document.getElementById('contact-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const message = document.getElementById('message').value.trim();
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^\+?\d{8,15}$/;
+
+        if (!name || !email || !phone || !message) {
+            document.getElementById('contact-error').textContent = 'សូមបំពេញគ្រប់វាលទាំងអស់។';
+            document.getElementById('contact-error').style.display = 'block';
+            document.getElementById('contact-success').style.display = 'none';
+            return;
+        }
+        if (!emailRegex.test(email)) {
+            document.getElementById('contact-error').textContent = 'សូមបញ្ចូលអ៊ីមែលត្រឹមត្រូវ។';
+            document.getElementById('contact-error').style.display = 'block';
+            document.getElementById('contact-success').style.display = 'none';
+            return;
+        }
+        if (!phoneRegex.test(phone)) {
+            document.getElementById('contact-error').textContent = 'សូមបញ្ចូលលេខទូរសព្ទត្រឹមត្រូវ។';
+            document.getElementById('contact-error').style.display = 'block';
+            document.getElementById('contact-success').style.display = 'none';
+            return;
+        }
+
+        try {
+            const telegramMessage = `សារថ្មីពីគេហទំព័រ៖\nឈ្មោះ: ${name}\nអ៊ីមែល: ${email}\nលេខទូរសព្ទ: ${phone}\nសារ: ${message}`;
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: TELEGRAM_CHAT_ID,
+                    text: telegramMessage
+                })
+            });
+            if (res.ok) {
+                document.getElementById('contact-success').style.display = 'block';
+                document.getElementById('contact-error').style.display = 'none';
+                this.reset();
+            } else {
+                throw new Error('Telegram API error');
+            }
+        } catch (err) {
+            document.getElementById('contact-error').textContent = 'បរាជ័យក្នុងការផ្ញើសារ។ សូមព្យាយាមម្តងទៀត។';
+            document.getElementById('contact-error').style.display = 'block';
+            document.getElementById('contact-success').style.display = 'none';
+        }
+    });
+</script>
+            </div>
+            <div class="row mt-4 justify-content-center">
+                <div class="col-md-8 text-center">
+                    <p class="mb-2"><strong>អ៊ីមែល:</strong> info@skskcompany.com</p>
+                    <p class="mb-2"><strong>ទូរស័ព្ទ:</strong> +855 123 456 789</p>
+                    <p class="mb-2"><strong>អាសយដ្ឋាន:</strong> ផ្លូវ ១៨៣, រាជធានីភ្នំពេញ, កម្ពុជា</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© <span id="copyright-year"></span> SKSK</p>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button id="backToTopBtn" title="ត្រលប់ទៅខាងលើ" aria-label="ត្រឡប់ទៅខាងលើ"><i class="fa-solid fa-arrow-up"></i></button>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
+    <script>
+        // Navbar Shrink
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (navbar) {
+                if (window.scrollY > 60) navbar.classList.add('navbar-shrink');
+                else navbar.classList.remove('navbar-shrink');
+            }
+        });
+
+        // Back to Top Button
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        if (backToTopBtn) {
+            window.addEventListener('scroll', () => {
+                backToTopBtn.style.display = window.scrollY > 200 ? 'block' : 'none';
+            });
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+
+        // Copyright Year
+        document.getElementById('copyright-year').textContent = new Date().getFullYear();
+
+        // Swiper Initialization and Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            new Swiper('.heroSwiper', {
+            slidesPerView: 1,
+            spaceBetween: 0,
+            loop: true,
+            autoplay: { delay: 3000, disableOnInteraction: false },
+            pagination: { el: '.swiper-pagination', clickable: true }
+            });
+            new Swiper('.mySwiper', {
+            slidesPerView: 3,
+            spaceBetween: 20,
+            loop: true,
+            pagination: { el: '.swiper-pagination', clickable: true },
+            breakpoints: {
+                0:   { slidesPerView: 3, spaceBetween: 10 },
+                576: { slidesPerView: 2, spaceBetween: 20 },
+                768: { slidesPerView: 3, spaceBetween: 30 },
+                992: { slidesPerView: 4, spaceBetween: 40 }
+            },
+            autoplay: { delay: 3000, disableOnInteraction: false }
+            });
+
+            // Smooth Scroll for Navigation Links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const href = anchor.getAttribute('href');
+                    if (!href || !href.startsWith('#') || href === '#') return;
+                    const targetId = href;
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        if (targetId === '#products') {
+                            showMainContent();
+                        }
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+
+            // Auto-close Offcanvas
+            const sidebarNav = document.getElementById('sidebarNav');
+            if (sidebarNav) {
+                sidebarNav.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        const offcanvas = bootstrap.Offcanvas.getInstance(sidebarNav);
+                        if (offcanvas) offcanvas.hide();
+                    });
+                });
+            }
+
+            // Product Details Toggle
+            const mainSections = ['home', 'about', 'products', 'partners', 'contact'];
+            const productDetailsSection = document.getElementById('product-details');
+            const productLinks = document.querySelectorAll('.title-line[data-product]');
+
+            function showMainContent() {
+                mainSections.forEach(id => {
+                    const section = document.getElementById(id);
+                    if (section) section.style.display = 'block';
+                });
+                if (productDetailsSection) productDetailsSection.style.display = 'none';
+                document.querySelectorAll('.details-card').forEach(card => {
+                    card.style.display = 'none';
+                });
+                const productsSection = document.getElementById('products');
+                if (productsSection) {
+                    window.scrollTo({ top: productsSection.offsetTop, behavior: 'smooth' });
+                }
+            }
+
+            function showProductDetails(productId) {
+                mainSections.forEach(id => {
+                    const section = document.getElementById(id);
+                    if (section) section.style.display = 'none';
+                });
+                if (productDetailsSection) productDetailsSection.style.display = 'block';
+                document.querySelectorAll('.details-card').forEach(card => {
+                    card.style.display = card.id === `${productId}-details` ? 'block' : 'none';
+                });
+                if (productDetailsSection) {
+                    window.scrollTo({ top: productDetailsSection.offsetTop, behavior: 'smooth' });
+                }
+            }
+
+            productLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const productId = link.getAttribute('data-product');
+                    if (productId) showProductDetails(productId);
+                });
+            });
+
+            // Attach event listeners to back buttons
+            document.querySelectorAll('.back-button').forEach(button => {
+                button.addEventListener('click', showMainContent);
+            });
+
+            // Ensure main content is shown on page load
+            showMainContent();
+        });
+
+        // Contact Form Submission
+        document.getElementById('contact-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const message = document.getElementById('message').value.trim();
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const phoneRegex = /^\+?\d{8,15}$/;
+
+            if (!name || !email || !phone || !message) {
+                document.getElementById('contact-error').textContent = 'សូមបំពេញគ្រប់វាលទាំងអស់។';
+                document.getElementById('contact-error').style.display = 'block';
+                document.getElementById('contact-success').style.display = 'none';
+                return;
+            }
+            if (!emailRegex.test(email)) {
+                document.getElementById('contact-error').textContent = 'សូមបញ្ចូលអ៊ីមែលត្រឹមត្រូវ។';
+                document.getElementById('contact-error').style.display = 'block';
+                document.getElementById('contact-success').style.display = 'none';
+                return;
+            }
+            if (!phoneRegex.test(phone)) {
+                document.getElementById('contact-error').textContent = 'សូមបញ្ចូលលេខទូរសព្ទត្រឹមត្រូវ។';
+                document.getElementById('contact-error').style.display = 'block';
+                document.getElementById('contact-success').style.display = 'none';
+                return;
+            }
+
+            try {
+                // Placeholder for server-side Telegram integration
+                const telegramMessage = `សារថ្មីពីគេហទំព័រ៖\nឈ្មោះ: ${name}\nអ៊ីមែល: ${email}\nលេខទូរសព្ទ: ${phone}\nសារ: ${message}`;
+                document.getElementById('contact-success').style.display = 'block';
+                document.getElementById('contact-error').style.display = 'none';
+                this.reset();
+            } catch (err) {
+                document.getElementById('contact-error').textContent = 'បរាជ័យក្នុងការផ្ញើសារ។ សូមព្យាយាមម្តងទៀត។';
+                document.getElementById('contact-error').style.display = 'block';
+                document.getElementById('contact-success').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi QR Code Generator with Logo and Download</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        input, select, button {
+            margin: 10px 0;
+            padding: 8px;
+            width: 200px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #download-btn {
+            background-color: #007BFF;
+            display: none;
+        }
+        #download-btn:hover {
+            background-color: #0056b3;
+        }
+        #qrcode {
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+        }
+        #logo-preview {
+            margin: 10px 0;
+            max-width: 100px;
+            max-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div id="form-container">
+        <h2>WiFi QR Code Generator</h2>
+        <input type="text" id="ssid" placeholder="WiFi SSID" required>
+        <input type="text" id="password" placeholder="WiFi Password">
+        <select id="encryption">
+            <option value="WPA">WPA/WPA2</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">No Password</option>
+        </select>
+        <label><input type="checkbox" id="hidden"> Hidden SSID</label>
+        <input type="file" id="logo" accept="image/*" onchange="previewLogo(event)">
+        <img id="logo-preview" src="" alt="" style="display: none;">
+        <button onclick="generateQRCode()">Generate QR Code</button>
+        <button id="download-btn" onclick="downloadQRCode()">Download QR Code</button>
+        <div id="error" class="error"></div>
+    </div>
+    <div id="qrcode"></div>
+
+    <script>
+        let finalCanvas = null; // Store the canvas for download
+
+        function escapeWifiString(str) {
+            return str.replace(/([\\;,:])/g, '\\$1');
+        }
+
+        function previewLogo(event) {
+            const logoInput = event.target;
+            const logoPreview = document.getElementById('logo-preview');
+            if (logoInput.files && logoInput.files[0]) {
+                logoPreview.src = URL.createObjectURL(logoInput.files[0]);
+                logoPreview.style.display = 'block';
+            } else {
+                logoPreview.src = '';
+                logoPreview.style.display = 'none';
+            }
+        }
+
+        function downloadQRCode() {
+            if (finalCanvas) {
+                const link = document.createElement('a');
+                link.href = finalCanvas.toDataURL('image/png');
+                link.download = 'wifi_qr_code.png';
+                link.click();
+            } else {
+                document.getElementById('error').textContent = 'No QR code to download';
+            }
+        }
+
+        function generateQRCode() {
+            const ssid = document.getElementById('ssid').value.trim();
+            const password = document.getElementById('password').value;
+            const encryption = document.getElementById('encryption').value;
+            const isHidden = document.getElementById('hidden').checked;
+            const logoInput = document.getElementById('logo');
+            const errorDiv = document.getElementById('error');
+            const qrCodeDiv = document.getElementById('qrcode');
+            const downloadBtn = document.getElementById('download-btn');
+
+            // Clear previous error and QR code
+            errorDiv.textContent = '';
+            qrCodeDiv.innerHTML = '';
+            downloadBtn.style.display = 'none';
+            finalCanvas = null;
+
+            // Input validation
+            if (!ssid) {
+                errorDiv.textContent = 'Please enter the WiFi SSID';
+                return;
+            }
+            if (encryption !== 'nopass' && !password) {
+                errorDiv.textContent = 'Please enter the WiFi password';
+                return;
+            }
+
+            // Construct WiFi URI with escaped characters
+            let wifiString = `WIFI:T:${encryption};S:${escapeWifiString(ssid)};`;
+            if (encryption !== 'nopass') {
+                wifiString += `P:${escapeWifiString(password)};`;
+            }
+            if (isHidden) {
+                wifiString += `H:true;`;
+            }
+            wifiString += ';';
+
+            // Create a temporary div for QR code generation
+            const tempDiv = document.createElement('div');
+            tempDiv.style.display = 'none';
+            document.body.appendChild(tempDiv);
+
+            // Generate QR code in temp div
+            try {
+                new QRCode(tempDiv, {
+                    text: wifiString,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                // Wait for QR code to render
+                setTimeout(() => {
+                    const qrCanvas = tempDiv.querySelector('canvas');
+                    if (!qrCanvas) {
+                        errorDiv.textContent = 'Error generating QR code';
+                        document.body.removeChild(tempDiv);
+                        return;
+                    }
+
+                    // Create final canvas
+                    finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = 256;
+                    finalCanvas.height = 256;
+                    const ctx = finalCanvas.getContext('2d');
+
+                    // Draw QR code
+                    ctx.drawImage(qrCanvas, 0, 0, 256, 256);
+
+                    // Draw logo if provided
+                    if (logoInput.files && logoInput.files[0]) {
+                        const logoImg = new Image();
+                        logoImg.src = URL.createObjectURL(logoInput.files[0]);
+                        logoImg.onload = () => {
+                            const logoSize = 64; // 25% of 256px
+                            const logoX = (256 - logoSize) / 2;
+                            const logoY = (256 - logoSize) / 2;
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(logoX - 5, logoY - 5, logoSize + 10, logoSize + 10); // White background for logo
+                            ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+                            qrCodeDiv.appendChild(finalCanvas);
+                            downloadBtn.style.display = 'block';
+                            document.body.removeChild(tempDiv);
+                            URL.revokeObjectURL(logoImg.src);
+                        };
+                        logoImg.onerror = () => {
+                            errorDiv.textContent = 'Error loading logo image';
+                            qrCodeDiv.appendChild(finalCanvas); // Show QR code without logo
+                            downloadBtn.style.display = 'block';
+                            document.body.removeChild(tempDiv);
+                        };
+                    } else {
+                        qrCodeDiv.appendChild(finalCanvas);
+                        downloadBtn.style.display = 'block';
+                        document.body.removeChild(tempDiv);
+                    }
+                }, 100); // Delay to ensure QR code renders
+            } catch (e) {
+                errorDiv.textContent = 'Error generating QR code. Please check your inputs.';
+                console.error('QR code generation error:', e);
+                document.body.removeChild(tempDiv);
+            }
+        }
+    </script>
+</body>
+</html>

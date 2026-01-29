@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Survey</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Telegram bot configurations
+        const TELEGRAM_BOT_TOKEN = "7886992632:AAFAlFae5FReigReJqPH8-QsKXowReyUNV0";
+        const CHAT_ID = "-1002296068912";
+
+        // Define the survey questions
+        const questions = [
+            "1. តើអ្នកមានឈ្មោះអ្វី? :",
+            "2. តើអ្នកចង់ឱ្យខ្ញុំជួយអ្វីខ្លះ? :",
+            "3. តើអ្នកចង់រៀនអ្វីពីខាងពួកខ្ញុំ​? Excel, PowerPoint, Odoo, ឬកម្មវិធីផ្សេងទៀត? :",
+            "4. តើមានការផ្តល់យោបល់បន្ថែមអ្វីទៀតដែរ? :"
+        ];
+
+        let currentQuestionIndex = 0;
+        let responses = [];
+
+        // Function to send a message via Telegram bot
+        async function sendMessage(chatId, text) {
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            const payload = {
+                chat_id: chatId,
+                text: text,
+                parse_mode: "HTML"
+            };
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            return response.json();
+        }
+
+        // Function to display the next question
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                document.getElementById("question").innerText = questions[currentQuestionIndex];
+            } else {
+                // Combine responses into a single message
+                const finalMessage = responses.map((response, index) => `${questions[index]} ${response}`).join("\n");
+
+                // Send the responses to the Telegram chat
+                sendMessage(CHAT_ID, finalMessage).then(result => {
+                    if (result.ok) {
+                        alert("សេចក្តីប្រាប់បានផ្ញើដោយជោគជ័យ!");
+                    } else {
+                        alert("មានបញ្ហាក្នុងការផ្ញើសារ!");
+                    }
+                });
+
+                // Reset the survey
+                document.getElementById("survey-container").innerHTML = "<div class='alert alert-success'>សូមអរគុណសម្រាប់ការចូលរួមស្ទង់មតិ!</div>";
+            }
+        }
+
+        // Handle the submission of an answer
+        function submitAnswer() {
+            const answer = document.getElementById("answer").value;
+            if (answer.trim() !== "") {
+                responses.push(answer);
+                document.getElementById("answer").value = "";
+                currentQuestionIndex++;
+                nextQuestion();
+            } else {
+                alert("សូមបំពេញចម្លើយរបស់អ្នក!");
+            }
+        }
+
+        // Initialize the survey
+        window.onload = function() {
+            nextQuestion();
+        }
+    </script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div id="survey-container" class="card shadow p-4">
+            <h1 class="text-center text-primary">ស្វាគមន៍មកកាន់ប្រព័ន្ធស្ទង់មតិ!</h1>
+            <p id="question" class="mt-4"></p>
+            <div class="input-group mb-3">
+                <input type="text" id="answer" class="form-control" placeholder="ការឆ្លើយរបស់អ្នក" />
+                <button class="btn btn-primary" onclick="submitAnswer()">បញ្ជូន</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

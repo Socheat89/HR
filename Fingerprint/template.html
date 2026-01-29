@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fingerprint Check-In/Out System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <style>
+    .card-body { box-shadow: 0 4px 8px rgba(82, 82, 82, 0.2), 0 6px 20px rgba(99, 99, 99, 0.19); border-radius: 20px; background-size: cover; border: none; background-color: antiquewhite; background-image: url(https://i.ibb.co/whY0z3sy/Artwork.png); background-repeat: no-repeat; }
+    .card { border-radius: 20px; }
+    .form-label { font-size: 18px; color: #007bff; text-decoration: underline; font-weight: bold; }
+    .action-info p { font-size: 1.2rem; }
+    .action-info .label { font-weight: bold; }
+    .action-info .value { color: blue; }
+    .map-link { word-wrap: break-word; }
+    .status-message { font-size: 1.3rem; font-weight: bold; color: #dc3545; }
+    .btn { width: 100%; background-color: #007bff; color: white; }
+    .btn:disabled { opacity: 0.6; }
+    #export-section { width: 100%; position: fixed; top: 0; bottom: 0; background-repeat: no-repeat; background-size: cover; }
+    .main-header { font-family: "Arial", sans-serif; color: #343a40; bottom: 0; }
+    .select-user { font-size: 18px; font-weight: bold; }
+    .scan { font-size: 18px; font-weight: bold; animation: scanAnimation 1s ease-in-out infinite; }
+    @keyframes scanAnimation {
+      0% { transform: scale(1); background-color: #007bff; }
+      50% { transform: scale(1.01); background-color: #0056b3; }
+      100% { transform: scale(1); background-color: #007bff; }
+    }
+  </style>
+</head>
+<body>
+  <h1 id="access-denied" class="text-center" style="display: flex; padding: 100px 0">អ្នកមិនអាចបើកស្កេនបានទេ!</h1>
+  <div id="popup" style="display: block; text-align: center; top: -5rem; position: relative">
+    <a href="#"><img src="https://cdn-icons-png.flaticon.com/512/5728/5728403.png" alt="" width="100px" /></a>
+  </div>
+
+  <section id="export-section" style="display: none; position: relative; top: -1.5rem;">
+    <div class="container mt-5 main-header">
+      <h1 class="text-center main-content" style="text-decoration: underline; color: rgb(0, 0, 0);">Fingerprint Check-In/Out</h1>
+      <div class="card mt-4">
+        <div class="card-body">
+          <div class="mb-3 mt-4">
+            <label for="userNameInput" class="form-label">ជ្រើសរើសអ្នកប្រើប្រាស់</label>
+            <select id="userNameInput" class="form-select" required></select>
+          </div>
+          <div class="mb-3">
+            <label for="actionSelect" class="form-label">ជ្រើសរើសប្រភេទស្កេន</label>
+            <select id="actionSelect" class="form-select" required>
+              <option value="Check-In">ស្កេនចូល</option>
+              <option value="Check-Out">ស្កេនចេញ</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="idSelect" class="form-label">ID</label>
+            <select id="idSelect" class="form-select" required></select>
+          </div>
+          <div class="mb-3">
+            <label for="departmentSelect" class="form-label">នាយកដ្ឋាន</label>
+            <select id="departmentSelect" class="form-select" required></select>
+          </div>
+          <div class="mb-3">
+            <label for="PositionSelect" class="form-label">តួនាទី</label>
+            <select id="PositionSelect" class="form-select" required></select>
+          </div>
+          <div class="mb-3">
+            <label for="BranchSelect" class="form-label">សាខា</label>
+            <select id="BranchSelect" class="form-select" required></select>
+          </div>
+          <div class="mb-3">
+            <label for="folderSelect" class="form-label">Folder</label>
+            <select id="folderSelect" class="form-select" required></select>
+          </div>
+          <button id="scanFingerprint" class="btn btn-primary mb-3 scan">ចាប់ផ្តើមស្កេន</button>
+          <button id="logs" class="btn btn-warning mb-3">មើលប្រវត្តិស្កេន</button>
+
+          <div class="action-info">
+            <p><span class="label">ប្រភេទស្កេន៖</span> <span id="action" class="value">N/A</span></p>
+            <p><span class="label">ថ្ងៃខែឆ្នាំ/ម៉ោង៖</span> <span id="timestamp" class="value">N/A</span></p>
+            <p><span class="label">ការចាប់ទីតាំងរបស់អ្នក៖</span> <span id="location" class="value">កំពុងស្កេនទីតាំង</span></p>
+            <p><span class="label">ទីតាំងរបស់អ្នក៖</span> <a id="mapLink" class="map-link" href="#" target="_blank">View on Map</a></p>
+          </div>
+          <p id="status" class="status-message text-muted">រងចាំការស្កេនរបស់អ្នក...</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    let currentLatitude, currentLongitude;
+
+    // Generate UUID-like token
+    function generateToken() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    }
+
+    // Check access
+    async function checkAccess() {
+      let browserToken = localStorage.getItem('browserToken') || generateToken();
+      localStorage.setItem('browserToken', browserToken);
+      const userName = document.getElementById('userNameInput').value.trim();
+
+      if (!userName) {
+        showAccessDenied("សូមជ្រើសរើសឈ្មោះរបស់អ្នកមុននឹងប្រើប្រព័ន្ធ!");
+        return;
+      }
+
+      try {
+        const response = await fetch('register_token.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: browserToken, username: userName })
+        });
+        const data = await response.json();
+        if (data.status === 'success') showAccessGranted();
+        else handleAccessDenied(data.message);
+      } catch (error) {
+        showAccessDenied('មានបញ្ហាក្នុងការតភ្ជាប់ទៅប្រព័ន្ធ!');
+      }
+    }
+
+    function showAccessGranted() {
+      document.getElementById('access-denied').style.display = 'none';
+      document.getElementById('popup').style.display = 'none';
+      document.getElementById('export-section').style.display = 'block';
+    }
+
+    function showAccessDenied(message) {
+      document.getElementById('access-denied').textContent = message;
+      document.getElementById('access-denied').style.display = 'block';
+      document.getElementById('popup').style.display = 'block';
+      document.getElementById('export-section').style.display = 'none';
+    }
+
+    function handleAccessDenied(message) {
+      const errorMessages = {
+        'Token limit reached for this Username': 'អ្នកមិនអាចចូលប្រើបានទេ ព្រោះឈ្មោះនេះបានឈានដល់កម្រិតកំណត់នៃការចូលប្រើ!',
+        default: 'អ្នកមិនអាចចូលប្រើបានទេ ព្រោះមាន Browser ផ្សេងកំពុងប្រើជាមួយឈ្មោះនេះ!'
+      };
+      showAccessDenied(errorMessages[message] || errorMessages.default);
+    }
+
+    // Populate dropdowns
+    async function populateDropdowns() {
+      const response = await fetch('get_dropdown_options.php');
+      const options = await response.json();
+
+      const userNameSelect = document.getElementById('userNameInput');
+      const idSelect = document.getElementById('idSelect');
+      const deptSelect = document.getElementById('departmentSelect');
+      const posSelect = document.getElementById('PositionSelect');
+      const branchSelect = document.getElementById('BranchSelect');
+      const folderSelect = document.getElementById('folderSelect');
+
+      options.forEach(opt => {
+        const option = `<option value="${opt.value}">${opt.value}</option>`;
+        if (opt.category === 'userName') userNameSelect.innerHTML += option;
+        else if (opt.category === 'id') idSelect.innerHTML += option;
+        else if (opt.category === 'department') deptSelect.innerHTML += option;
+        else if (opt.category === 'position') posSelect.innerHTML += option;
+        else if (opt.category === 'branch') branchSelect.innerHTML += option;
+        else if (opt.category === 'folder') folderSelect.innerHTML += option;
+      });
+    }
+
+    // Set scan type automatically
+    async function setScanTypeAutomatically() {
+      const response = await fetch('get_time_ranges.php');
+      const ranges = await response.json();
+      const checkInRanges = ranges.filter(r => r.type === 'Check-In').map(r => ({
+        startHour: r.start_hour, startMinute: r.start_minute, endHour: r.end_hour, endMinute: r.end_minute
+      }));
+      const checkOutRanges = ranges.filter(r => r.type === 'Check-Out').map(r => ({
+        startHour: r.start_hour, startMinute: r.start_minute, endHour: r.end_hour, endMinute: r.end_minute
+      }));
+
+      const currentTime = new Date();
+      const currentHour = currentTime.getHours();
+      const currentMinutes = currentTime.getMinutes();
+      const actionSelect = document.getElementById('actionSelect');
+      const scanButton = document.getElementById('scanFingerprint');
+      const message = document.getElementById('status');
+
+      function isWithinTimeRanges(ranges) {
+        return ranges.some(range => 
+          (currentHour > range.startHour || (currentHour === range.startHour && currentMinutes >= range.startMinute)) &&
+          (currentHour < range.endHour || (currentHour === range.endHour && currentMinutes < range.endMinute))
+        );
+      }
+
+      if (isWithinTimeRanges(checkInRanges)) {
+        actionSelect.value = 'Check-In';
+        scanButton.disabled = false;
+        message.textContent = "✅ You can Check-In now!";
+        message.style.color = "green";
+      } else if (isWithinTimeRanges(checkOutRanges)) {
+        actionSelect.value = 'Check-Out';
+        scanButton.disabled = false;
+        message.textContent = "✅ You can Check-Out now!";
+        message.style.color = "green";
+      } else {
+        actionSelect.value = '';
+        scanButton.disabled = true;
+        message.textContent = "⛔ Scanning is not allowed at this time.";
+        message.style.color = "red";
+      }
+    }
+
+    // Get scan status
+    async function getScanStatus() {
+      const response = await fetch('/admin/get_scan_status.php');
+      const ranges = await response.json();
+      const now = new Date();
+      const scanTime = now.getHours() * 60 + now.getMinutes();
+      let scanStatus = "🔵Good";
+      for (const range of ranges) {
+        const start = range.start_hour * 60 + range.start_minute;
+        const end = range.end_hour * 60 + range.end_minute;
+        if (scanTime >= start && scanTime <= end) {
+          scanStatus = range.status;
+          break;
+        }
+      }
+      return scanStatus;
+    }
+
+    // Check location
+    async function checkLocation() {
+      const response = await fetch('/admin/get_allowed_locations.php');
+      const allowedLocations = await response.json();
+      const tolerance = 0.001;
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const { latitude, longitude } = position.coords;
+          currentLatitude = latitude;
+          currentLongitude = longitude;
+
+          const locationElement = document.getElementById('location');
+          const mapLinkElement = document.getElementById('mapLink');
+          const scanButton = document.getElementById('scanFingerprint');
+
+          locationElement.textContent = `Lat: ${latitude.toFixed(5)}, Long: ${longitude.toFixed(5)}`;
+          mapLinkElement.href = `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+          const isWithinBounds = allowedLocations.some(loc => 
+            Math.abs(latitude - loc.latitude) <= tolerance && 
+            Math.abs(longitude - loc.longitude) <= tolerance
+          );
+
+          if (!isWithinBounds) {
+            locationElement.textContent += " (ទីតាំងនេះមិនត្រឹមត្រូវទេ!)";
+            mapLinkElement.textContent = "មិនអាចស្កេនទីតាំងបានទេ!";
+            scanButton.style.display = 'none';
+            alert("អ្នកមិនអាចស្កេនបានទេ! សូមមកកន្លែងធ្វើការរបស់អ្នកសិន!");
+          } else {
+            scanButton.style.display = 'block';
+          }
+        }, () => {
+          document.getElementById('location').textContent = "មិនអាចយកទីតាំងបានទេ!";
+          document.getElementById('mapLink').textContent = "សូមបើកទីតាំង!";
+          document.getElementById('scanFingerprint').style.display = 'none';
+        });
+      }
+    }
+
+    // Scan Fingerprint
+    document.getElementById('scanFingerprint').addEventListener('click', async function(e) {
+      e.preventDefault();
+      const statusElement = document.getElementById('status');
+      statusElement.textContent = "កំពុងបញ្ជូន";
+      statusElement.style.display = "block";
+      this.disabled = true;
+
+      const userName = document.getElementById('userNameInput').value.trim();
+      const action = document.getElementById('actionSelect').value;
+      const userId = document.getElementById('idSelect').value;
+      const branch = document.getElementById('BranchSelect').value;
+      const folder = document.getElementById('folderSelect').value;
+
+      if (!userName || !userId || !branch || !folder || !currentLatitude || !currentLongitude) {
+        statusElement.textContent = "សូមបំពេញព័ត៌មានឱ្យគ្រប់គ្រាន់!";
+        statusElement.style.backgroundColor = "red";
+        statusElement.style.color = "white";
+        this.disabled = false;
+        return;
+      }
+
+      const now = new Date();
+      const date = now.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+      const time = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const location = `Lat: ${currentLatitude.toFixed(5)}, Long: ${currentLongitude.toFixed(5)}`;
+      const scanStatus = await getScanStatus();
+
+      const formData = {
+        username: userName,
+        user_id: userId,
+        action: action,
+        scan_date: date,
+        scan_time: time,
+        location: location,
+        status: scanStatus,
+        branch: branch,
+        folder: folder
+      };
+
+      try {
+        const response = await fetch('/worker/save_log.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+          statusElement.textContent = "បានបញ្ជូនរួចរាល់";
+          statusElement.style.backgroundColor = "gold";
+          statusElement.style.color = "beige";
+          this.disabled = false;
+          setTimeout(() => {
+            window.location.href = `/worker/logs.php?username=${encodeURIComponent(userName)}&id=${encodeURIComponent(userId)}&branch=${encodeURIComponent(branch)}&folder=${encodeURIComponent(folder)}`;
+          }, 3000);
+        }
+      } catch (error) {
+        statusElement.textContent = `មានបញ្ហា: ${error.message}`;
+        statusElement.style.backgroundColor = "red";
+        statusElement.style.color = "white";
+        this.disabled = false;
+      }
+    });
+
+    // Logs Button
+    document.getElementById('logs').addEventListener('click', function() {
+      const userName = document.getElementById('userNameInput').value.trim();
+      const userId = document.getElementById('idSelect').value;
+      const branch = document.getElementById('BranchSelect').value;
+      const folder = document.getElementById('folderSelect').value;
+      if (!userName) return alert("សូមបញ្ចូលឈ្មោះ!");
+      window.location.href = `/worker/logs.php?username=${encodeURIComponent(userName)}&id=${encodeURIComponent(userId)}&branch=${encodeURIComponent(branch)}&folder=${encodeURIComponent(folder)}`;
+    });
+
+    // Initialization
+    window.onload = async function() {
+      await populateDropdowns();
+      await setScanTypeAutomatically();
+      await checkLocation();
+      checkAccess();
+      setInterval(setScanTypeAutomatically, 60000); // Update every minute
+    };
+  </script>
+</body>
+</html>

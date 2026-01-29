@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>កន្ត្រកទំនិញ - Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans Khmer', Arial, sans-serif;
+            background-color: #f3f4f6;
+            padding-bottom: 80px;
+        }
+        .product-img {
+            border: none;
+            object-fit: cover;
+        }
+        .telegram-button {
+            transition: background-color 0.3s ease;
+        }
+        /* Fixed Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            z-index: 1000;
+        }
+        .footer button {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 80%;
+            max-width: 300px;
+            height: 100%;
+            background-color: #ffffff;
+            box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease;
+            z-index: 2000;
+        }
+        .sidebar.open {
+            right: 0;
+        }
+        .sidebar .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 24px;
+            color: #2d3748;
+        }
+        .sidebar ul {
+            margin-top: 60px;
+        }
+        .sidebar li {
+            padding: 16px;
+            font-size: 18px;
+            color: #2d3748;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .sidebar li:hover {
+            background-color: #f0f2f5;
+        }
+        .sidebar i {
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <!-- Sidebar Toggle Button -->
+    <button id="toggleSidebar" class="fixed top-4 right-4 text-2xl text-teal-600 z-2000">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <button class="close-btn" onclick="toggleSidebar()">
+            <i class="fas fa-times"></i>
+        </button>
+        <ul>
+            <li onclick="navigateTo('index.html')">
+                <i class="fas fa-home"></i> ទំព័រដើម
+            </li>
+            <li onclick="navigateTo('cart.html')">
+                <i class="fas fa-shopping-cart"></i> កន្ត្រកទំនិញ
+            </li>
+            <li onclick="navigateTo('order-history.html')">
+                <i class="fas fa-history"></i> ប្រវត្តិការបញ្ជាទិញ
+            </li>
+        </ul>
+    </div>
+
+    <div class="container mx-auto max-w-md p-4">
+        <!-- Header -->
+        <h1 class="text-2xl font-bold text-center text-teal-600 mb-6">កន្ត្រកទំនិញ</h1>
+
+        <!-- Cart -->
+        <div class="cart bg-white rounded-lg shadow-md p-6 mb-6">
+            <div id="cartItems" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- Fixed Footer -->
+    <div class="footer">
+        <button id="backButton" class="telegram-button bg-gray-400 text-white font-semibold hover:bg-gray-500" aria-label="ត្រឡប់">ត្រឡប់</button>
+        <button id="checkoutButton" class="telegram-button bg-green-500 text-white font-semibold hover:bg-green-600" aria-label="បញ្ជាទិញ">បញ្ជាទិញ</button>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Initialize Telegram Web App
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+
+        // Get user data
+        const user = window.Telegram.WebApp.initDataUnsafe.user;
+        let fullName = 'Unknown';
+        if (user) {
+            fullName = `${user.first_name} ${user.last_name || ''}`.trim();
+        }
+
+        // Toggle sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Navigate to page
+        function navigateTo(page) {
+            window.location.href = page;
+        }
+
+        // Display cart
+        async function displayCart() {
+            if (!user) {
+                return;
+            }
+            const cartItems = document.getElementById('cartItems');
+            cartItems.innerHTML = '<div class="text-center">កំពុងផ្ទុក...</div>';
+            try {
+                const response = await fetch(`${API_URL}?action=get_cart&telegram_id=${user.id}&first_name=${encodeURIComponent(fullName)}`);
+                cartItems.innerHTML = '';
+                const cart = await response.json();
+                if (cart.error) {
+                    showToast(cart.error);
+                    return;
+                }
+                if (cart.length === 0) {
+                    cartItems.innerHTML = '<div class="text-center text-gray-500">កន្ត្រកទទេ</div>';
+                    return;
+                }
+                cart.forEach(item => {
+                    const cartItem = document.createElement('div');
+                    cartItem.className = 'flex justify-between items-center p-2 bg-gray-50 rounded-md';
+                    cartItem.innerHTML = `
+                        <div class="flex items-center space-x-2">
+                            <img src="${item.image}" alt="${htmlspecialchars(item.name)}" class="product-img w-12 h-12 rounded-md">
+                            <span>${htmlspecialchars(item.name)} - $${item.price}</span>
+                        </div>
+                        <button onclick="removeFromCart(${item.id})" class="telegram-button bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600">លុប</button>
+                    `;
+                    cartItems.appendChild(cartItem);
+                });
+            } catch (error) {
+                cartItems.innerHTML = '';
+                showToast('កំហុសបណ្តាញ!');
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+        document.getElementById('backButton').addEventListener('click', () => navigateTo('index.html'));
+        document.getElementById('checkoutButton').addEventListener('click', () => navigateTo('index.html')); // Redirect to main page for checkout modal
+
+        // Initialize
+        displayCart();
+    </script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Log History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            max-width: 900px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #007bff;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .table {
+            background: white;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f1f1f1;
+            transition: 0.3s;
+        }
+        .btn-primary, .btn-secondary, .btn-success {
+            border-radius: 20px;
+            padding: 8px 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2 class="text-center">📜 Scan Log History</h2>
+        <div class="row mb-3">
+             <div class="col-md-6">
+        <label for="exportUserFilter" class="form-label">ជ្រើសរើសអ្នកប្រើប្រាស់</label>
+        <select id="exportUserFilter" class="form-select">
+            <option value="">ទាំងអស់</option>
+            <option value="សៅ សម្បត្តិ">សៅ សម្បត្តិ</option>
+            <option value="ឌឹម សុជាតិ">ឌឹម សុជាតិ</option>
+            <option value="វណ្ណ ដាណែត">វណ្ណ ដាណែត</option>
+            <option value="វ៉ាន់ សារ៉េត">វ៉ាន់ សារ៉េត</option>
+            <option value="យី រ៉ាឆេត">យី រ៉ាឆេត</option>
+            <option value="សែត រស្មី">សែត រស្មី</option>
+            <option value="យ៉ាត វណ្ណៈ">យ៉ាត វណ្ណៈ</option>
+            <option value="អៀត តៃលី">អៀត តៃលី</option>
+            <option value="រាម ចន្ធី">រាម ចន្ធី</option>
+            <option value="រឹម រស្មី">រឹម រស្មី</option>
+            <option value="ថា វុទ្ធី">ថា វុទ្ធី</option>
+            <option value="ផល​ សុភីន">ផល​ សុភីន</option>
+            <option value="បឿន កញ្ញា">បឿន កញ្ញា</option>
+            <option value="ម៉ុង ដាលីន">ម៉ុង ដាលីន</option>
+            <option value="ភឿន ដាលីន">ភឿន ដាលីន</option>
+            <option value="អ៊ាម សុភ័ក">អ៊ាម សុភ័ក</option>
+            <option value="គឺ តឹកឡា">គឺ តឹកឡា</option>
+            <option value="លី ស៊ាងអុី">លី ស៊ាងអុី</option>
+            <option value="ឆន រត្តនៈ">ឆន រត្តនៈ</option>
+            <option value="សៀង សារុន">សៀង សារុន</option>
+            <option value="សឹម សុខ">សឹម សុខ</option>
+            <option value="ផូ សុខនី">ផូ សុខនី</option>
+            <option value="ម៉ុល នីតា">ម៉ុល នីតា</option>
+            <option value="ឡេង ឌឿន">ឡេង ឌឿន</option>
+        </select>
+    </div>
+            <div class="col-md-3">
+                <label for="startDate" class="form-label">ថ្ងៃចាប់ផ្តើម</label>
+                <input type="date" id="startDate" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label for="endDate" class="form-label">ថ្ងៃបញ្ចប់</label>
+                <input type="date" id="endDate" class="form-control">
+            </div>
+        </div>
+        <button id="refreshLogs" class="btn btn-secondary mb-3">🔍ស្វែងរកទិន្នន័យ</button>
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <!-- <th>#</th> -->
+                    <th>ឈ្មោះ</th>
+                    <th>ប្រភេទស្កេន</th>
+                    <th>ថ្ងៃ/ម៉ោង</th>
+                    <th>ទីតាំង</th>
+                </tr>
+            </thead>
+            <tbody id="logTableBody">
+                <tr><td colspan="5" class="text-center">Loading logs...</td></tr>
+            </tbody>
+        </table>
+    <div class="col-md-6 d-flex align-items-end">
+        <button id="exportCSV" class="btn btn-success">📥 Export to CSV</button>
+    </div>
+    </div>
+
+
+    <script>
+document.getElementById("exportCSV").addEventListener("click", function () {
+    let userName = document.getElementById("exportUserFilter").value;
+    let exportUrl = "export_logs.php";
+    if (userName) {
+        exportUrl += "?user=" + encodeURIComponent(userName);
+    }
+    window.location.href = exportUrl;
+});
+</script>
+
+
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("logTableBody").addEventListener("click", function (event) {
+        let target = event.target;
+        if (target.tagName === "TD" && target.dataset.username) {
+            document.getElementById("exportUserFilter").value = target.dataset.username;
+            fetchLogs(); // Reload data based on selected user
+        }
+    });
+});
+
+
+
+
+
+    
+        function fetchLogs() {
+    let userName = document.getElementById("exportUserFilter").value; // Fix selector
+    let startDate = document.getElementById("startDate").value;
+    let endDate = document.getElementById("endDate").value;
+
+    let url = "get_logs.php";
+    let params = [];
+
+    if (userName) params.push(`user_name=${encodeURIComponent(userName)}`);
+    if (startDate) params.push(`start_date=${startDate}`);
+    if (endDate) params.push(`end_date=${endDate}`);
+
+    if (params.length > 0) url += `?${params.join("&")}`;
+
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        let logTable = document.getElementById("logTableBody");
+        logTable.innerHTML = "";
+
+        if (!data || data.length === 0) {
+            logTable.innerHTML = "<tr><td colspan='5' class='text-center'>គ្មានទិន្នន័យ!</td></tr>";
+            return;
+        }
+
+        // តម្រៀមតាមឈ្មោះ A-Z
+        data.sort((a, b) => (a.user_name || "").localeCompare(b.user_name || "", "km"));
+
+        data.forEach((log, index) => {
+            let logTime = log.scan_time.replace(" ", "T");
+            let logDate = new Date(logTime);
+            let formattedTime = isNaN(logDate.getTime()) ? "Invalid Date" : logDate.toLocaleString("km-KH", {
+                timeZone: "Asia/Phnom_Penh",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            });
+
+            let row = `<tr>
+    <td data-username="${log.user_name || ''}" class="clickable-name text-primary" style="cursor: pointer;">${log.user_name || 'Unknown'}</td>
+    <td>${log.scan_type}</td>
+    <td>${formattedTime}</td>
+    <td><a href="https://www.google.com/maps?q=${log.latitude},${log.longitude}" target="_blank">📍 View</a></td>
+</tr>`;
+            logTable.innerHTML += row;
+        });
+    })
+    .catch(error => {
+        console.error("Error fetching logs:", error);
+        document.getElementById("logTableBody").innerHTML = 
+            "<tr><td colspan='5' class='text-center text-danger'>Failed to load logs</td></tr>";
+    });
+}
+
+
+        window.onload = function () {
+            fetchLogs();
+            setInterval(fetchLogs, 30000);
+        };
+        document.getElementById("refreshLogs").addEventListener("click", fetchLogs);
+
+
+
+
+        document.getElementById("scanFingerprint").addEventListener("click", function (e) {
+            e.preventDefault();
+            let userName = document.getElementById("userNameInput").value;
+            let action = document.getElementById("actionSelect").value;
+            let scanTime = new Date().toISOString();
+            navigator.geolocation.getCurrentPosition((position) => {
+                let latitude = position.coords.latitude;
+                let longitude = position.coords.longitude;
+                fetch("save_scan.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_name: userName, scan_type: action, scan_time: scanTime, latitude, longitude })
+                })
+                .then(response => response.text())
+                .then(data => alert(data))
+                .catch(error => console.error("Error:", error));
+            });
+        });
+        
+        
+    </script>
+</body>
+</html>

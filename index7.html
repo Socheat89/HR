@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home-meeting2</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="style1.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://unpkg.com/scrollreveal"></script>
+  <link rel="stylesheet" href="/node_modules/bootstrap-icons/icons/">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    @media (max-width: 768px) {
+      .menu-card{
+        position: relative;
+        top: -5rem;
+      }
+      .main-menu{
+        position: relative;
+        top: -4rem;
+      }
+      .navbar-brand img{
+        text-align: center;
+        position: relative;
+        left: 40%;
+        align-items: center;
+      }
+
+      .mes{
+        width: 5%;
+        position: relative;
+        left: 0;
+        top: 5rem;
+      }
+    }
+    /* computer */
+    .main-menu{
+      top: 3rem;
+      position: relative;
+    }
+    .navbar-custom {
+      background-color: #050049;
+      position: fixed;
+    }
+
+    .menu-icon {
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      height: 80px;
+      bottom: 0;
+      width: 100%;
+    }
+    .navbar-brand img{
+      text-decoration: none;
+      width: 200px;
+      text-align: center;
+      align-items: center;
+      position: relative;
+    }
+    .navbar-toggler{
+      background: none;
+    }
+
+    .bottom-menu a {
+      color: #007bff;
+      text-decoration: none;
+      font-size: 1.5rem;
+    }
+    .btn{
+      color: white;
+    }
+    .main-cart{
+      position: relative;
+      align-items: center;
+      text-align: center;
+      top: 5rem;
+    }
+    .card-footer{
+      position: relative;
+      justify-content: center;
+      text-align: center;
+      align-items: center;
+    }
+    .sort-list{
+      position: relative;
+      top: -1rem;
+    }
+    .form-label{
+      position: relative;
+      justify-content: start;
+    }
+    .cart-box {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      background: #f9f9f9;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease-in-out;
+    }
+    .cart-box:hover {
+      transform: translateY(-5px);
+    }
+    .cart-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .cart-title{
+      font-size: 1.1rem;
+      margin: 12px 0;
+      color: blue;
+      font-family: Kh Muol;
+    }
+    .text-title{
+      font-family: Kh Muol;
+      color: blue;
+      font-size: 20px;
+      position: relative;
+    }
+    .text-h5 a{
+      text-decoration: none;
+    }
+    .main-content{
+      position: relative;
+      top: 3rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="main-header">
+  <nav class="navbar navbar-expand-lg navbar-custom shadow-lg mb-5">
+    <div class="container-fluid text-decoration-none">
+      <a href="index1.html"><span class="navbar-brand text-white text-decoration-none"><img src="https://i.ibb.co/HTksMQd/Logo-Van-Van-2.png" alt=""></span></a>
+    </button>
+    <a href="index1.html"><button id="logout"><i class="fa-solid fa-right-from-bracket"></i></button></a>
+    </div>
+  </nav>
+  <div class="container py-4 main-cart">
+    <!-- <div class="mb-3 mt-6 sort-list">
+      <label for="sortBy" class="form-label">Sort By</label>
+      <select class="form-select" id="sortBy" onchange="sortMeetings()">
+        <option value="date-asc">A-Z</option>
+        <option value="date-desc">Z-A</option>
+      </select>
+    </div> -->
+  </div>
+    <div class="container py-5 mt-6 main-content">
+      <h2 class="text-center mb-4 text-title">ការប្រជុំតាមផ្នែកនីមួយៗ</h2>
+  
+      <!-- Box List -->
+      <div class="row g-4 mt-3 ">
+  
+        <!-- Cart 1 -->
+        <div class="col-12 col-md-6 col-lg-4 text-h5 ani-1">
+          <a href="index10.html"><div class="cart-box">
+            <img src="https://i.ibb.co/9YnQQ1m/image.png" alt="Cart Item 1" class="cart-image">
+            <h5 class="cart-title">ការប្រជុំប្រចាំខែ</h5>
+            <p class="text-muted"><sub><mark>ការប្រជុំប្រចាំខែនៅការិយាល័យកណ្តាលរៀងរាល់មួយខែម្តង</mark></sub></p>
+            <button class="btn btn-primary mt-3">ចូលស្តាប់ការប្រជុំ</button>
+          </div></a>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4 text-h5 ani-2">
+          <a href="index8.html"><div class="cart-box">
+            <img src="https://i.ibb.co/ByD1dTn/image.png" alt="Cart Item 1" class="cart-image">
+            <h5 class="cart-title">ការផ្នែកស្តុកទំនិញ ៣១៨</h5>
+            <p class="text-muted"><sub><mark>ការប្រជុំទូទៅជាមួយបុគ្គលិក ៣១៨ រៀងរាល់មួយសប្តាហ៍ម្តង</mark></sub></p>
+            <button class="btn btn-primary mt-3">ចូលស្តាប់ការប្រជុំ</button>
+          </div></a>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4 text-h5 ani-3">
+          <a href="index9.html"><div class="cart-box">
+            <img src="https://i.ibb.co/WzdmLhT/image.png" alt="Cart Item 1" class="cart-image">
+            <h5 class="cart-title">ការប្រជុំផ្នែកស្តុកទំនិញ CH1</h5>
+            <p class="text-muted"><sub><mark>ការប្រជុំទូទៅជាមួយបុគ្គលិក CH1 រៀងរាល់មួយសប្តាហ៍ម្តង</mark></sub></p>
+            <button class="btn btn-primary mt-3">ចូលស្តាប់ការប្រជុំ</button>
+          </div></a>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4 text-h5 ani-4">
+          <a href="index11.html"><div class="cart-box">
+            <img src="https://i.ibb.co/WFYVFcM/image.png" alt="Cart Item 1" class="cart-image">
+            <h5 class="cart-title">ការប្រជុំបុគ្គលិកកម្មករ CH1</h5>
+            <p class="text-muted"><sub><mark>ការប្រជុំទូទៅជាមួយបុគ្គលិកបុគ្គលិកកម្មករ CH1 រៀងរាល់មួយខែម្តង</mark></sub></p>
+            <button class="btn btn-primary mt-3">ចូលស្តាប់ការប្រជុំ</button>
+          </div></a>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4 text-h5 ani-5">
+          <a href="index12.html"><div class="cart-box">
+            <img src="https://i.ibb.co/tChc8Lc/image.png" alt="Cart Item 1" class="cart-image">
+            <h5 class="cart-title">ការប្រជុំបុគ្កលិកកម្មករ​ CKD</h5>
+            <p class="text-muted"><sub><mark>ការប្រជុំទូទៅជាមួយបុគ្គលិកបុគ្គលិកកម្មករ CKD រៀងរាល់មួយខែម្តង</mark></sub></p>
+            <button class="btn btn-primary mt-3">ចូលស្តាប់ការប្រជុំ</button>
+          </div></a>
+        </div>
+<!--         <div class="col-12 col-md-6 col-lg-4 text-h5 ani-6">
+          <a href="index13.html"><div class="cart-box">
+            <img src="https://i.ibb.co/yqT76h8/image.png" alt="Cart Item 1" class="cart-image">
+            <h5 class="cart-title">ការប្រជុំបុគ្កលិកកម្មកររួមឃ្លាំង​ CKD&CH1</h5>
+            <p class="text-muted"><sub><mark>ការប្រជុំទូទៅជាមួយបុគ្គលិកបុគ្គលិកកម្មករ CKD រៀងរាល់មួយខែម្តង</mark></sub></p>
+            <button class="btn btn-primary mt-3">ចូលស្តាប់ការប្រជុំ</button>
+          </div></a>
+        </div> -->
+       
+  
+      </div>
+    </div>
+
+
+  <script>
+    const scrollRevealOption = {
+  origin: "bottom",
+  distance: "10px",
+  duration: 1000,
+};
+
+ScrollReveal().reveal(".ani-1", {
+  ...scrollRevealOption,
+  origin: "bottom",
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-2", {
+  ...scrollRevealOption,
+  delay: 100,
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-3", {
+  ...scrollRevealOption,
+  delay: 200,
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-4", {
+  ...scrollRevealOption,
+  delay: 300,
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-5", {
+  ...scrollRevealOption,
+  delay: 400,
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-6", {
+  ...scrollRevealOption,
+  delay: 500,
+  distance:"200px",
+});
+const textareas = document.querySelectorAll('textarea');
+
+textareas.forEach((textarea) => {
+  textarea.addEventListener('input', () => {
+    textarea.style.height = 'auto'; // Reset height
+    textarea.style.height = textarea.scrollHeight + 'px'; // Adjust height
+  });
+});
+  </script>
+</body>
+</html>

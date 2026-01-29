@@ -1,0 +1,21 @@
+{
+  "name": "Distance Tracker",
+  "short_name": "Tracker",
+  "description": "A simple distance tracking application.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f3f8ff",
+  "theme_color": "#0ea5ff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/12601/12601802.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/12601/12601802.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

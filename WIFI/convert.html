@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All-in-One File Conversion Tools (PHP Backend)</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- External JS Libraries for Client-Side Conversions -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <script>
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js`;
+      }
+    </script>
+
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Roboto', 'Noto Sans Khmer', sans-serif; margin: 0; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; }
+        .tools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; width: 100%; max-width: 1600px; }
+        .tool-card { background-color: #ffffff; border: 1px solid #e9ecef; border-radius: 12px; padding: 24px; text-align: left; text-decoration: none; color: #343a40; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; cursor: pointer; }
+        .tool-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); }
+        .card-content h3 { margin-top: 20px; margin-bottom: 8px; font-size: 1.25rem; font-weight: 700; }
+        .card-content p { margin: 0; font-size: 0.95rem; color: #6c757d; line-height: 1.5; }
+        .card-icon { position: relative; height: 60px; width: 80px; }
+        .icon-main, .icon-secondary { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: bold; font-size: 1.5rem; color: white; user-select: none; }
+        .icon-main { width: 52px; height: 52px; z-index: 2; top: 0; left: 0; }
+        .icon-secondary { width: 48px; height: 48px; z-index: 1; top: 8px; left: 20px; font-size: 1.2rem; }
+        .pdf-from::after, .pdf-to::after { content: '↘'; font-size: 2rem; color: #495057; }
+        .pdf-from, .pdf-to { background-color: #f1f3f5; border: 1px solid #dee2e6; }
+        .pdf-from-img, .pdf-to-img { background-color: #fff9db; border: 1px solid #ffec99; }
+        .pdf-to-img::after, .pdf-from-img::after { content: '🖼️'; font-size: 1.5rem; }
+        .word { background-color: #2b579a; } .powerpoint { background-color: #d24726; } .excel { background-color: #217346; } .jpg { background-color: #ffb300; font-size: 1.1rem; } .html { background-color: #e44d26; font-size: 1rem;} .pdfa { background-color: #4a90e2; }
+        #status-message { margin-top: 20px; padding: 15px; background-color: #e2e3e5; border-left: 5px solid #0d6efd; border-radius: 5px; width: 100%; max-width: 1550px; box-sizing: border-box; display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="jpg-input" accept="image/jpeg,image/png" style="display: none;">
+    <input type="file" id="pdf-input" accept="application/pdf" style="display: none;">
+    <input type="file" id="office-input" accept=".doc,.docx,.ppt,.pptx,.xls,.xlsx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display: none;">
+    
+    <div id="status-message"></div>
+
+    <div class="tools-container">
+        <!-- Office Converters (Server-Side) -->
+        <div class="tool-card server-required"><div class="card-icon"><div class="icon-main word">W</div><div class="icon-secondary pdf-from"></div></div><div class="card-content"><h3>PDF to Word (Server Required)</h3><p>Requires advanced server setup.</p></div></div>
+        <div class="tool-card server-required"><div class="card-icon"><div class="icon-main pdf-to"></div><div class="icon-secondary word">W</div></div><div class="card-content"><h3>Word to PDF (ដំណើរការជាមួយ PHP)</h3><p>Convert DOC and DOCX files to PDF using the server.</p></div></div>
+        <div class="tool-card server-required"><div class="card-icon"><div class="icon-main pdf-to"></div><div class="icon-secondary powerpoint">P</div></div><div class="card-content"><h3>PowerPoint to PDF (ដំណើរការជាមួយ PHP)</h3><p>Convert PPT and PPTX files to PDF using the server.</p></div></div>
+        <div class="tool-card server-required"><div class="card-icon"><div class="icon-main pdf-to"></div><div class="icon-secondary excel">X</div></div><div class="card-content"><h3>Excel to PDF (ដំណើរការជាមួយ PHP)</h3><p>Convert XLS and XLSX files to PDF using the server.</p></div></div>
+        
+        <!-- Image & HTML Converters (Client-Side) -->
+        <div class="tool-card" id="pdf-to-jpg"><div class="card-icon"><div class="icon-main jpg">JPG</div><div class="icon-secondary pdf-from-img"></div></div><div class="card-content"><h3>PDF to JPG (ដំណើរការក្នុង Browser)</h3><p>Convert the first page of a PDF into a JPG image.</p></div></div>
+        <div class="tool-card" id="jpg-to-pdf"><div class="card-icon"><div class="icon-main pdf-to-img"></div><div class="icon-secondary jpg">JPG</div></div><div class="card-content"><h3>JPG to PDF (ដំណើរការក្នុង Browser)</h3><p>Convert a JPG image to a PDF file.</p></div></div>
+        <div class="tool-card" id="html-to-pdf"><div class="card-icon"><div class="icon-main pdf-to-img"></div><div class="icon-secondary html">HTML</div></div><div class="card-content"><h3>HTML to PDF (ដំណើរការក្នុង Browser)</h3><p>Convert this entire webpage into a PDF file.</p></div></div>
+    </div>
+    
+    <canvas id="pdf-canvas" style="display: none;"></canvas>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const { jsPDF } = window.jspdf;
+            const statusMessage = document.getElementById('status-message');
+
+            function showStatus(message, isError = false) {
+                statusMessage.textContent = message;
+                statusMessage.style.display = 'block';
+                statusMessage.style.borderColor = isError ? '#dc3545' : '#0d6efd';
+                window.scrollTo(0, 0);
+            }
+
+            // ===============================================
+            // SECTION 1: SERVER-SIDE CONVERSION (PHP)
+            // ===============================================
+            const serverCards = document.querySelectorAll('.server-required');
+            const officeInput = document.getElementById('office-input');
+
+            serverCards.forEach(card => card.addEventListener('click', () => officeInput.click()));
+
+            officeInput.addEventListener('change', async function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                showStatus(`កំពុង Upload និងបំប្លែងឯកសារ "${file.name}"... សូមរង់ចាំ។`);
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch('convert.php', { method: 'POST', body: formData });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        let errorMessage = `Server error: ${response.status}.`;
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMessage += ` ${errorJson.error}`;
+                        } catch (e) {
+                            errorMessage += ` ${errorText}`;
+                        }
+                        throw new Error(errorMessage);
+                    }
+
+                    const blob = await response.blob();
+                    if (blob.type !== 'application/pdf') throw new Error('Server did not return a PDF file. Conversion might have failed.');
+                    
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    const originalNameWithoutExt = file.name.split('.').slice(0, -1).join('.') || file.name;
+                    a.download = `${originalNameWithoutExt}.pdf`;
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showStatus(`បំប្លែងបានសម្រេច! ឯកសារ "${a.download}" ត្រូវបានទាញយក។`);
+
+                } catch (error) {
+                    console.error('Conversion failed:', error);
+                    showStatus(`ការបំប្លែងបានបរាជ័យ។ Error: ${error.message}`, true);
+                } finally {
+                    officeInput.value = '';
+                }
+            });
+
+            // ===============================================
+            // SECTION 2: CLIENT-SIDE CONVERSIONS
+            // ===============================================
+
+            // --- JPG to PDF ---
+            const jpgToPdfCard = document.getElementById('jpg-to-pdf');
+            const jpgInput = document.getElementById('jpg-input');
+            jpgToPdfCard.addEventListener('click', () => jpgInput.click());
+            jpgInput.addEventListener('change', function(e) {
+                if (!e.target.files.length) return;
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const doc = new jsPDF({ orientation: img.width > img.height ? 'l' : 'p', unit: 'px', format: [img.width, img.height] });
+                        doc.addImage(img, 'JPEG', 0, 0, img.width, img.height);
+                        doc.save('converted-from-jpg.pdf');
+                        showStatus('JPG to PDF conversion successful!');
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+                jpgInput.value = '';
+            });
+
+            // --- HTML to PDF ---
+            const htmlToPdfCard = document.getElementById('html-to-pdf');
+            htmlToPdfCard.addEventListener('click', function() {
+                showStatus('Creating PDF from this page...');
+                html2canvas(document.body).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                    const pdfWidth = doc.internal.pageSize.getWidth();
+                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                    doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                    doc.save('webpage.pdf');
+                    showStatus('HTML to PDF conversion successful!');
+                });
+            });
+
+            // --- PDF to JPG ---
+            const pdfToJpgCard = document.getElementById('pdf-to-jpg');
+            const pdfInputForJpg = document.getElementById('pdf-input');
+            pdfToJpgCard.addEventListener('click', () => pdfInputForJpg.click());
+            pdfInputForJpg.addEventListener('change', function(e) {
+                if (!e.target.files.length) return;
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const typedarray = new Uint8Array(event.target.result);
+                    pdfjsLib.getDocument(typedarray).promise.then(pdf => pdf.getPage(1)).then(page => {
+                        const viewport = page.getViewport({ scale: 1.5 });
+                        const canvas = document.getElementById('pdf-canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        return page.render({ canvasContext: context, viewport: viewport }).promise;
+                    }).then(() => {
+                        const canvas = document.getElementById('pdf-canvas');
+                        const link = document.createElement('a');
+                        link.download = 'converted-from-pdf-page-1.jpg';
+                        link.href = canvas.toDataURL('image/jpeg');
+                        link.click();
+                        showStatus('PDF to JPG conversion successful!');
+                    }).catch(err => {
+                        showStatus(`PDF to JPG conversion failed: ${err.message}`, true);
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+                pdfInputForJpg.value = '';
+            });
+
+        });
+    </script>
+</body>
+</html>

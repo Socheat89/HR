@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>បង្ហាញជូនដំណឹង</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: url('https://png.pngtree.com/background/20230401/original/pngtree-khmer-new-year-frame-vector-picture-image_2253486.jpg') no-repeat center center/cover;
+            min-height: 100vh;
+            font-family: 'Noto Sans Khmer', sans-serif;
+            color: #333;
+            overflow-x: hidden;
+        }
+        .notification-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            padding: 2.5rem;
+            margin: 2rem auto;
+            max-width: 900px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(5px);
+        }
+        .notification-header {
+            color: #c69736;
+            border-bottom: 3px solid #ffd700;
+            padding-bottom: 1.2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .notification-item {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            border-left: 5px solid #ffd700;
+        }
+        .notification-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        .priority-badge {
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 25px;
+            font-size:1.7rem;
+        }
+        .high { background: #ff4d4d; color: white; }
+        .medium { background: #ffbb33; color: #fff; }
+        .low { background: #40c4ff; color: white; }
+        .flower-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        .flower {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: url('https://i.ibb.co/mrtxdVKp/Khmer-flowe.png') no-repeat center/cover;
+            animation: fall 12s linear infinite;
+            opacity: 0.8;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-120vh) rotate(0deg); opacity: 0.8; }
+            100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+        }
+        .notification-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            margin: 0.5rem 0;
+        }
+        .text-muted {
+            font-size: 0.9rem;
+            color: #777;
+        }
+        @media (max-width: 768px) {
+            .notification-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            .p{
+            font-size: 16pt;
+            color: #fff;
+            z-index:1000;
+        }
+            .flower { width: 40px; height: 40px; }
+            .notification-item { padding: 1rem; }
+        }
+        .p{
+            font-size: 16pt;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Flower Background -->
+    <div class="flower-bg">
+        <div class="flower" style="left: 15%; animation-duration: 9s;"></div>
+        <div class="flower" style="left: 35%; animation-duration: 11s;"></div>
+        <div class="flower" style="left: 55%; animation-duration: 10s;"></div>
+        <div class="flower" style="left: 75%; animation-duration: 12s;"></div>
+        <div class="flower" style="left: 90%; animation-duration: 8s;"></div>
+    </div>
+
+    <div class="container">
+        <div class="notification-container">
+            <div class="notification-header">
+                <h2>បញ្ជីជូនដំណឹង</h2>
+            </div>
+            
+            <!-- Sample Notification Item -->
+            <div class="notification-item">
+                <div class="d-flex flex-column flex-md-row justify-content-center align-items-center">
+                    <div class="p">
+                        <h5 style="color: #0011ff;">យើងមានការអាប់ដេតថ្មីសម្រាប់អ្នកប្រើប្រាស់ទាំងអស់!</h5>
+                        <p style="color: #0011ff;">ដោយសារតែខាងយើងត្រូវការដាក់មុខងារថ្មី សូមបុគ្គលិកទាំងអស់ផ្លាស់ប្តូរកម្មវិធី។</p>
+                        <h6 style="color: #0011ff;">របៀបតម្លើង:</h6>
+                        <p style="background-color: #ffbb33;">ទី១</p>
+                        <img src="https://i.ibb.co/qLDtQW05/image.png" alt="Step 1">
+                        <p style="background-color: #ffbb33;">ទី២</p>
+                        <img src="https://i.ibb.co/20nPWJr2/image.png" alt="Step 2">
+                        <p style="background-color: #ffbb33;">ទី៣ ចំណាំមុននឹងចុច​ Add ត្រូវរងចាំឱ្យ logo ចេញរូបមកដូចខាងក្រោមសិនចាំចុច add</p>
+                        <img src="https://i.ibb.co/KzD9bXTS/image.png" alt="Step 3">
+                    </div>
+                        <p>សូមសរសេរពាក្យខាងកោមនេះដើម្បីចូលប្រើប្រាស់។</p>
+                        <p>app.vvc.asia/homes.php</p>
+                    <span class="priority-badge medium">បន្ទាន់</span>
+                </div>
+                <p class="text-muted mt-2">ថ្ងៃទី ១៥ ខែនេះមានប្រជុំសំខាន់</p>
+                <small class="text-muted">បានផ្ញើ: ២០២៤-០៤-២០ ១០:០០</small>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="km">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fingerprint Check-In/Out System</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+      integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link href="https://fonts.googleapis.com/css2?family=Khmer&display=swap" rel="stylesheet">
+    <style>
+    .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal-message {
+    display: block;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+    font-family: 'Khmer', Arial, sans-serif;
+}
+
+.modal-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.modal-button:hover {
+    background-color: #45a049;
+}
+    
+    .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h3 {
+    margin-bottom: 15px;
+    color: #3b5998;
+    text-align: center;
+}
+
+.modal-content label {
+    font-weight: 600;
+    color: #1a2a44;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.modal-content textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: space-between;
+}
+
+.modal-buttons button {
+    width: 48%;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+    
+      /* Modern reset for consistency */
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Khmer', 'Khmer OS Battambang', sans-serif;
+  
+}
+#logs{
+    color:rgb(214, 163, 33);
+}
+
+/* Base styles for small screens (mobile, up to 576px) */
+@media (max-width: 576px) {
+  body {
+    padding: 15px; /* Slightly larger padding for comfort */
+    background: linear-gradient(135deg, #e0eafc, #cfdef3); /* Soft pastel gradient */
+    min-height: 100vh;
+    font-family: 'Khmer', 'Arial', sans-serif;
+  }
+
+  .card {
+    max-width: 100%; /* Full width */
+    margin: 0 auto;
+    border-radius: 16px; /* Modern rounded corners */
+    background: rgba(255, 255, 255, 0.9); /* Subtle transparency */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); /* Soft, elevated shadow */
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.5); /* Light border */
+  }
+
+  .card-body {
+    padding: 20px; /* Comfortable padding */
+    position: relative;
+    backdrop-filter: blur(5px); /* Subtle blur effect */
+  }
+
+  .main-header h1 {
+    font-size: 1.6rem; /* Modern, readable size */
+    margin-bottom: 15px;
+    color: #1a2a44; /* Deep navy for contrast */
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .form-label {
+    font-size: 1rem; /* Clear and modern */
+    color: #3b5998; /* Soft blue */
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Subtle depth */
+  }
+
+  .form-select, .btn {
+    font-size: 0.95rem; /* Slightly larger for readability */
+    padding: 10px 12px; /* Comfortable padding */
+    margin-bottom: 10px; /* Consistent spacing */
+    border-radius: 12px; /* Modern rounded edges */
+    border: none; /* Clean look */
+    background: #ffffff; 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Soft shadow */
+    transition: all 0.3s ease; /* Smooth interactions */
+  }
+
+  .form-select:focus, .btn:focus {
+    outline: none;
+    box-shadow: 0 6px 16px rgba(59, 89, 152, 0.3); /* Blue glow on focus */
+  }
+
+  .btn {
+    width: 100%; /* Full-width */
+    background: linear-gradient(135deg, #3b5998, #2a406e); /* Modern blue gradient */
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .btn:hover {
+    background: linear-gradient(135deg, #2a406e, #1a2a44); /* Darker on hover */
+    transform: translateY(-2px); /* Subtle lift */
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  }
+
+  .action-info p {
+    font-size: 0.9rem; /* Compact yet readable */
+    margin: 8px 0;
+    color: #34495e; /* Soft gray-blue */
+    line-height: 1.4; /* Better readability */
+  }
+
+  .action-info .label {
+    font-weight: 700;
+    color: #1a2a44;
+  }
+
+  .action-info .value {
+    color: #3b5998; /* Matching blue */
+  }
+
+  .status-message {
+    font-size: 1rem; /* Clear status */
+    padding: 10px;
+    background: rgba(255, 245, 245, 0.9); /* Light pinkish bg */
+    color: #e74c3c; /* Vibrant red */
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Modern alert styles */
+  .alert {
+    position: fixed;
+    top: 12%; /* Slightly lower for balance */
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #00c4cc, #007a8e); /* Cyan-teal gradient */
+    color: white;
+    padding: 14px 24px; /* Comfortable padding */
+    font-size: 1rem; /* Readable */
+    font-weight: 600;
+    border-radius: 14px; /* Smooth corners */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Elevated shadow */
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    max-width: 90%; /* Prevent overflow */
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle border */
+    transition: all 0.4s ease-in-out; /* Smooth transition */
+  }
+
+  .alert.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) scale(1);
+    animation: popIn 0.4s ease-out forwards; /* Modern pop-in effect */
+  }
+
+  .alert.hidden {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.9);
+  }
+
+  .alert::before {
+    content: "✨"; /* Modern sparkle icon */
+    margin-right: 8px;
+    font-size: 1.2rem;
+    vertical-align: middle;
+  }
+
+  .alert:hover {
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2); /* Enhanced hover */
+    transform: translateX(-50%) scale(1.02);
+  }
+
+  /* Pop-in animation */
+  @keyframes popIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.7);
+    }
+    70% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+}
+
+/* Medium screens (577px - 768px) */
+@media (min-width: 577px) and (max-width: 768px) {
+  .card {
+    max-width: 90%;
+    margin: 0 auto;
+  }
+
+  .main-header h1 {
+    font-size: 1rem;
+  }
+
+  .form-select, .btn {
+    font-size: 1rem;
+    padding: 12px;
+  }
+
+  .alert {
+    top: 14%;
+    padding: 16px 28px;
+    font-size: 1.1rem;
+    max-width: 80%;
+  }
+}
+    </style>
+    <script>
+// Generate a UUID-like token
+function generateToken() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+}
+
+// Main access control function
+function checkAccess() {
+    try {
+        // Get or generate browser token
+        let browserToken = localStorage.getItem('browserToken');
+        if (!browserToken) {
+            browserToken = generateToken();
+            localStorage.setItem('browserToken', browserToken);
+        }
+
+        // Get username
+        const userNameInput = document.getElementById('userNameInput');
+        const khmerUserName = userNameInput?.value.trim() || '';
+        
+        // Validate username
+        if (!khmerUserName) {
+            showAccessDenied("សូមជ្រើសរើសឈ្មោះរបស់អ្នកមុននឹងប្រើប្រព័ន្ធ!");
+            return;
+        }
+
+        // Make API call
+        fetch('register_token.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                token: browserToken, 
+                username: khmerUserName 
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                showAccessGranted();
+            } else {
+                handleAccessDenied(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Access Check Error:', error);
+            showAccessDenied('មានបញ្ហាក្នុងការតភ្ជាប់ទៅប្រព័ន្ធ!');
+        });
+
+    } catch (error) {
+        console.error('Unexpected Error:', error);
+        showAccessDenied('កំហុសប្រព័ន្ធ!');
+    }
+}
+
+// UI Helper Functions
+function showAccessGranted() {
+    document.getElementById('access-granted').style.display = 'block';
+    document.getElementById('access-denied').style.display = 'none';
+    document.getElementById('popup').style.display = 'none';
+    document.getElementById('export-section').style.display = 'block';
+}
+
+function showAccessDenied(message) {
+    document.getElementById('access-granted').style.display = 'none';
+    document.getElementById('access-denied').style.display = 'block';
+    document.getElementById('access-denied').textContent = message;
+    document.getElementById('popup').style.display = 'block';
+    document.getElementById('export-section').style.display = 'none';
+}
+
+function handleAccessDenied(message) {
+    const errorMessages = {
+        'Token limit reached for this Username': 'អ្នកមិនអាចចូលប្រើបានទេ ព្រោះឈ្មោះនេះបានឈានដល់កម្រិតកំណត់នៃការចូលប្រើ!',
+        default: 'អ្នកមិនអាចចូលប្រើបានទេ ព្រោះមាន Browser ផ្សេងកំពុងប្រើជាមួយឈ្មោះនេះ!'
+    };
+    showAccessDenied(errorMessages[message] || errorMessages.default);
+}
+
+// Placeholder functions (to be implemented)
+function saveData() { console.log('saveData not implemented'); }
+function setScanTypeAutomatically() { console.log('setScanTypeAutomatically not implemented'); }
+function checkDeviceTime() { console.log('checkDeviceTime not implemented'); }
+function exportUserDataToCSV() { console.log('exportUserDataToCSV not implemented'); }
+function showAutoPopup() { console.log('showAutoPopup not implemented'); }
+function fetchLogs() { console.log('fetchLogs not implemented'); }
+
+// Initialize when page loads
+window.onload = function() {
+    const exportSection = document.getElementById('export-section');
+    const userNameInput = document.getElementById('userNameInput');
+
+    if (exportSection) exportSection.style.display = 'none'; // Initially hidden
+    
+    if (userNameInput) {
+        userNameInput.addEventListener('change', function() {
+            checkAccess();
+            setScanTypeAutomatically();
+            showAutoPopup();
+            fetchLogs();
+            checkDeviceTime();
+            setInterval(fetchLogs, 300);
+        });
+    }
+
+    // Initial check
+    checkAccess();
+};
+    
+    // Function to automatically set the scan type based on the current time
+function setScanTypeAutomatically() {
+  const currentTime = new Date();
+  const currentHour = currentTime.getHours();
+  const currentMinutes = currentTime.getMinutes();
+  const actionSelect = document.getElementById('actionSelect');
+  const scanButton = document.getElementById('scanFingerprint');
+  const message = document.getElementById('scanMessage'); // Message display
+
+  // Define time ranges for Check-In and Check-Out
+  const checkInRanges = [
+    { startHour: 6, startMinute: 0, endHour: 10, endMinute: 30 },   // 6:00 AM - 8:00 AM
+    { startHour: 12, startMinute: 30, endHour: 13, endMinute: 10 } // 12:20 PM - 1:00 PM
+  ];
+
+  const checkOutRanges = [
+    { startHour: 12, startMinute: 0, endHour: 12, endMinute: 30 }, // 12:00 PM - 12:20 PM
+    { startHour: 13, startMinute: 10, endHour: 22, endMinute: 0 }   // 3:00 PM - 10:00 PM
+  ];
+
+  function isWithinTimeRanges(ranges) {
+    return ranges.some(range => 
+      (currentHour > range.startHour || (currentHour === range.startHour && currentMinutes >= range.startMinute)) &&
+      (currentHour < range.endHour || (currentHour === range.endHour && currentMinutes < range.endMinute))
+    );
+  }
+
+  if (isWithinTimeRanges(checkInRanges)) {
+    actionSelect.value = 'Check-In';
+    scanButton.disabled = false;
+    message.textContent = "✅ You can Check-In now!";
+    message.style.color = "green";
+  } 
+  else if (isWithinTimeRanges(checkOutRanges)) {
+    actionSelect.value = 'Check-Out';
+    scanButton.disabled = false;
+    message.textContent = "✅ You can Check-Out now!";
+    message.style.color = "green";
+  } 
+  else {
+    actionSelect.value = '';
+    scanButton.disabled = true;
+    message.textContent = "⛔ Scanning is not allowed at this time.";
+    message.style.color = "red";
+  }
+}
+
+// Run the function when the page loads
+window.onload = function () {
+  setScanTypeAutomatically();
+};
+
+// Update the scan type every minute (optional)
+setInterval(setScanTypeAutomatically, 60); // 60000 milliseconds = 1 minute
+
+    
+    
+     
+      
+    </script>
+  </head>
+  <script>
+ // Utility function to validate form data
+function validateFormData({ userName, action, userId, branch, folder, latitude, longitude }) {
+    const errors = [];
+    if (!userName) errors.push("សូមបញ្ចូលឈ្មោះ!");
+    if (!action) errors.push("សូមជ្រើសរើសប្រភេទស្កេន!");
+    if (!userId) errors.push("សូមជ្រើសរើស ID!");
+    if (!branch) errors.push("សូមជ្រើសរើសសាខា!");
+    if (!folder) errors.push("សូមជ្រើសរើស Folder!");
+    if (typeof latitude === "undefined" || typeof longitude === "undefined" || latitude === 0 || longitude === 0) {
+        errors.push("មិនអាចទទួលទីតាំងបាន!");
+    }
+    return errors.length > 0 ? errors.join(" ") : null;
+}
+
+// Utility function to save to backend with retries and timeout
+async function saveToBackend(formData, retries = 3, timeout = 10000) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+            const response = await fetch("/worker/save_log.php", {
+                method: "POST",
+                body: formData,
+                signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.statusText} (Status: ${response.status})`);
+            }
+
+            const data = await response.json();
+            if (data.status === "success") {
+                return { success: true, data };
+            } else {
+                throw new Error(data.message || "Unknown error from server");
+            }
+        } catch (error) {
+            console.error(`Attempt ${attempt} failed:`, error);
+            if (attempt === retries) {
+                return { success: false, error };
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        }
+    }
+}
+
+// Utility function to save data locally if backend fails
+function saveToLocalStorage(formData) {
+    const localData = JSON.parse(localStorage.getItem('scanQueue') || '[]');
+    localData.push(Object.fromEntries(formData));
+    localStorage.setItem('scanQueue', JSON.stringify(localData));
+}
+
+// Utility function to retry sending queued data
+async function retryQueuedScans() {
+    const localData = JSON.parse(localStorage.getItem('scanQueue') || '[]');
+    if (localData.length === 0) return;
+
+    for (let i = 0; i < localData.length; i++) {
+        const formData = new FormData();
+        Object.entries(localData[i]).forEach(([key, value]) => formData.append(key, value));
+        const result = await saveToBackend(formData);
+        if (result.success) {
+            localData.splice(i, 1);
+            i--;
+        }
+    }
+    localStorage.setItem('scanQueue', JSON.stringify(localData));
+}
+
+// Utility function to get address from Nominatim API
+async function getAddress(lat, lon) {
+    const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+    if (addressCache.has(key)) {
+        return addressCache.get(key);
+    }
+
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+            { headers: { "Accept-Language": "km" } }
+        );
+        const data = await response.json();
+        const address = data.address.road || data.address.village || data.address.suburb || "មិនមានឈ្មោះផ្លូវ";
+        if (data.address.house_number) {
+            address = `${data.address.house_number} ${address}`;
+        }
+        addressCache.set(key, address);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Respect rate limit
+        return address;
+    } catch (error) {
+        console.error("Error fetching address:", error);
+        return "មិនអាចរកអាសយដ្ឋានបាន";
+    }
+}
+
+// Utility function to send message to Telegram
+function sendToTelegram(message) {
+    fetch('telegram.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('សារត្រូវបានផ្ញើទៅ Telegram ដោយជោគជ័យ:', data.response);
+        } else {
+            console.error('កំហុស:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('មានបញ្ហាក្នុងការផ្ញើសារ:', error);
+    });
+}
+
+// Main event listener
+document.addEventListener("DOMContentLoaded", function () {
+    const scanButton = document.getElementById("scanFingerprint");
+    const earlyButton = document.getElementById("scanEarlyButton");
+    const statusElement = document.getElementById("status");
+    const logsButton = document.getElementById("logs");
+
+    if (!scanButton || !earlyButton || !statusElement || !logsButton) {
+        const missing = [];
+        if (!scanButton) missing.push("'scanFingerprint'");
+        if (!earlyButton) missing.push("'scanEarlyButton'");
+        if (!statusElement) missing.push("'status'");
+        if (!logsButton) missing.push("'logs'");
+        console.error(`Required elements not found: ${missing.join(', ')}`);
+        return;
+    }
+
+    logsButton.addEventListener('click', function() {
+        const userName = document.getElementById('userNameInput')?.value.trim() || '';
+        const userId = document.getElementById('idSelect')?.value || '';
+        const branch = document.getElementById('BranchSelect')?.value || '';
+        const folder = document.getElementById('folderSelect')?.value || '';
+
+        if (!userName) {
+            alert('សូមជ្រើសរើសឈ្មោះជាមុនសិន!');
+            return;
+        }
+
+        window.location.href = `/worker/logs.php?username=${encodeURIComponent(userName)}&id=${encodeURIComponent(userId)}&branch=${encodeURIComponent(branch)}&folder=${encodeURIComponent(folder)}`;
+    });
+
+    retryQueuedScans();
+
+    getLocation()
+        .then(() => console.log("Location acquired successfully"))
+        .catch((error) => {
+            statusElement.textContent = "សូមបើកទីតាំងដើម្បីបន្ត!";
+            console.error(error);
+        });
+
+    scanButton.addEventListener("click", async function (e) {
+        e.preventDefault();
+        await handleScan(false);
+    });
+
+    earlyButton.addEventListener("click", function () {
+        if (!locationReady) {
+            statusElement.textContent = "សូមរង់ចាំទីតាំងមុននឹងស្កេន!";
+            getLocation()
+                .then(() => showEarlyScanPopup())
+                .catch(() => statusElement.textContent = "មិនអាចទទួលទីតាំងបាន!");
+            return;
+        }
+        showEarlyScanPopup();
+    });
+
+    function showEarlyScanPopup() {
+        const popup = document.getElementById("earlyScanPopup");
+        const reasonInput = document.getElementById("earlyReason");
+        if (!popup || !reasonInput) return;
+
+        reasonInput.value = "";
+        popup.style.display = "flex";
+
+        document.getElementById("submitEarlyScan").onclick = async () => {
+            const reason = reasonInput.value.trim();
+            if (!reason) {
+                alert("សូមបញ្ចូលមូលហេតុ!");
+                return;
+            }
+            popup.style.display = "none";
+            await handleScan(true, reason);
+        };
+
+        document.getElementById("cancelEarlyScan").onclick = () => {
+            popup.style.display = "none";
+            earlyButton.disabled = false;
+            earlyButton.style.display = "block";
+        };
+    }
+
+    async function handleScan(isEarly, earlyReason = "") {
+        if (!locationReady) {
+            statusElement.textContent = "សូមរង់ចាំទីតាំងមុននឹងស្កេន!";
+            try {
+                await getLocation();
+            } catch (error) {
+                statusElement.textContent = "មិនអាចទទួលទីតាំងបាន!";
+                return;
+            }
+        }
+
+        statusElement.textContent = "កំពុងបញ្ជូន";
+        statusElement.style.display = "block";
+        statusElement.style.backgroundColor = "";
+        statusElement.style.color = "";
+        scanButton.disabled = true;
+        earlyButton.disabled = true;
+
+        const userName = document.getElementById("userNameInput")?.value.trim();
+        const action = document.getElementById("actionSelect")?.value;
+        const userId = document.getElementById("idSelect")?.value;
+        const branch = document.getElementById("BranchSelect")?.value;
+        const folder = document.getElementById("folderSelect")?.value;
+
+        const validationError = validateFormData({
+            userName,
+            action,
+            userId,
+            branch,
+            folder,
+            latitude: currentLatitude,
+            longitude: currentLongitude,
+        });
+        if (validationError) {
+            statusElement.textContent = validationError;
+            statusElement.style.backgroundColor = "red";
+            statusElement.style.color = "white";
+            scanButton.disabled = false;
+            earlyButton.disabled = false;
+            return;
+        }
+
+        const now = new Date();
+        const date = now.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+        const time = now.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        const location = `Lat: ${currentLatitude.toFixed(5)}, Long: ${currentLongitude.toFixed(5)}`;
+
+        const address = await getAddress(currentLatitude, currentLongitude);
+
+        let scanStatus = "🔵Good";
+        if (!isEarly) {
+            const scanTime = now.getHours() * 60 + now.getMinutes();
+const ranges = [
+  { start: 6 * 60, end: 8 * 60 , status: "🔵Good" }, // 6:00 AM - 7:30 AM
+  { start: 8 * 60 + 1, end: 11 * 60 + 59, status: "🔴Late" }, // 7:31 AM - 10:59 AM
+  { start: 12 * 60, end: 13 * 60, status: "🔵Good" }, // 11:00 AM - 12:00 PM
+  { start: 13 * 60 + 1, end: 16 * 60 + 59, status: "🔴Late" }, // 12:01 PM - 4:59 PM
+  { start: 17 * 60, end: 24 * 60, status: "🔵Good" }, // 5:00 PM onward
+];
+
+      scanStatus = "🔴Late";
+            for (const range of ranges) {
+                if (scanTime >= range.start && scanTime <= range.end) {
+                    scanStatus = range.status;
+                    break;
+                }
+            }
+        }
+
+        const formData = new FormData();
+formData.append("ឈ្មោះ", userName);
+formData.append("ID", userId);
+formData.append("ប្រភេទស្កេន", action);
+formData.append("ថ្ងៃ", date);
+formData.append("ម៉ោង", time);
+formData.append("location", location);
+formData.append("status", scanStatus);
+formData.append("address", address); // Updated to use fetched address
+formData.append("សាខា", branch);
+formData.append("folder", folder);
+formData.append("Department", document.getElementById("departmentSelect").value); // បន្ថែម Department
+formData.append("Position", document.getElementById("PositionSelect").value); // បន្ថែម Position
+const mapLink = `https://www.google.com/maps?q=${currentLatitude},${currentLongitude}`;
+if (isEarly) formData.append("earlyReason", earlyReason);
+
+const result = await saveToBackend(formData);
+if (result.success) {
+    scanStatus = result.data.scanStatus || scanStatus;
+    statusElement.textContent = "បានបញ្ជូនរួចរាល់";
+    statusElement.style.backgroundColor = "gold";
+    statusElement.style.color = "beige";
+    scanButton.disabled = false;
+    earlyButton.disabled = false;
+
+    // កែប្រែ telegramMessage ដើម្បីបន្ថែម Department និង Position
+    let telegramMessage = `ឈ្មោះ ៖ ${userName}\n**${action}**`;
+    if (isEarly) {
+        telegramMessage += `\nស្កេនមុន (មូលហេតុ): ${earlyReason || "មិនបានបញ្ជាក់"}`;
+    }
+    telegramMessage += `\n\nStatus: ${scanStatus}\nID: ${userId}\nDepartment: ${document.getElementById("departmentSelect").value}\nPosition: ${document.getElementById("PositionSelect").value}\nBranch: ${branch}\nថ្ងៃខែឆ្នាំ/ម៉ោង ៖ ${date} ${time}\nទីតាំង ៖ ${address}\n[មើលទីតាំង] https://www.google.com/maps?q=${currentLatitude},${currentLongitude}`;
+
+    // បញ្ជូនសារទៅ Telegram ប្រសិនបើមិនមានការស្ទួន
+    if (isEarly && (!result.data.telegramSent || result.data.telegramSent !== true)) {
+        sendToTelegram(telegramMessage);
+    }
+
+    setTimeout(() => {
+        window.location.href = `/worker/logs.php?username=${encodeURIComponent(userName)}&id=${encodeURIComponent(userId)}&branch=${encodeURIComponent(branch)}&folder=${encodeURIComponent(folder)}`;
+    }, 5500);
+
+            retryQueuedScans();
+        } else {
+            saveToLocalStorage(formData);
+            console.error("Failed to save data, stored locally:", {
+                formData: Object.fromEntries(formData),
+                error: result.error,
+            });
+            statusElement.textContent = `មានបញ្ហាក្នុងការបញ្ជូនទិន្នន័យ ប៉ុន្តែបានរក្សាទុកជាបណ្តោះអាសន្ន: ${result.error.message}`;
+            statusElement.style.backgroundColor = "orange";
+            statusElement.style.color = "black";
+            scanButton.disabled = false;
+            earlyButton.disabled = false;
+
+            retryQueuedScans();
+        }
+    }
+});
+   </script>
+
+  <body>
+<!--    <div id="autoPopup" class="alert hidden" style="background-color: #007bff; width: 100%; text-align: center; font-size: 14px; font-weight: bold; top: 3.2rem; position: relative; border-radius: 0px 0px 60px 60px;">-->
+<!--      🔄 អាប់ដេតមុខងារថ្មី!  -->
+<!--ឥឡូវនេះ, ប្រព័ន្ធស្កេននឹងជ្រើសរើសប្រភេទស្កេន (Check-In/Out) ដោយស្វ័យប្រវត្តិ 🕒 ដោយមិនចាំបាច់ជ្រើសរើសដោយដៃទៀតទេ។ យើងអាចស្កេនបានយ៉ាងងាយស្រួល និងរហ័សជាងមុន! 🚀-->
+
+<!--    </div>-->
+
+    <script>
+    //   // Function to show the auto popup message
+    //   function showAutoPopup() {
+    //     const popup = document.getElementById('autoPopup');
+    //     popup.classList.remove('hidden');
+    //     popup.classList.add('show');
+
+    //     // Hide the popup after 5 seconds
+    //     setTimeout(() => {
+    //       popup.classList.remove('show');
+    //       popup.classList.add('hidden');
+    //     }, 60000);
+    //   }
+
+      // Show the popup when the page loads
+      window.onload = function() {
+        showAutoPopup();
+        checkAccess();
+        checkDeviceTime();
+      };
+    </script>
+    <h1
+      id="access-denied"
+      class="text-center"
+      style="display: flex; padding: 100px 0"
+    >
+      អ្នកមិនអាចបើកស្កេនបានទេ!
+    </h1>
+    <div
+      id="popup"
+      style="display: block; text-align: center; top: -5rem; position: relative"
+    >
+      <a href="#"
+        ><img
+          src="https://cdn-icons-png.flaticon.com/512/5728/5728403.png"
+          alt=""
+          width="100px"
+      /></a>
+    </div>
+    <div class="Bulbsignal" style="display: none">
+      <span
+        style="
+          display: flex;
+          align-items: center;
+          margin: auto;
+          justify-content: center;
+          background-color: whitesmoke;
+          width: 80%;
+          border-radius: 8px;
+          padding: 20px;
+          position: relative;
+          top: -5rem;
+          box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2),
+            0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        "
+      >
+        1. តើការបើកនេះត្រឹមត្រូវដែរឬទេ?<br />2. តើអ្នកបានជ្រើសរើស Web Browser
+        ត្រឹមត្រូវដែរឬទេ?<br />"Chrome,Safari,"<br />3.
+        តើអ្នកអភិវឌ្ឍបានប្រាប់អ្នកអាចប្រើបាននៅក្នុងកម្មវិធីមួយណា?<br />"Chrome
+        or Safari"
+        <style>
+          .Bulbsignal button:hover {
+            transform: scale(0.98);
+            transition: all 0.3s ease-in-out;
+          }
+        </style>
+        <a href="https://t.me/Sao_Som_Bath" target="_blank"
+          ><button
+            style="
+              border: none;
+              outline: none;
+              background-color: #007bff;
+              border-radius: 8px;
+              padding: 10px;
+              position: absolute;
+              top: 14rem;
+              left: 0;
+              color: white;
+            "
+          >
+            ទំនាក់ទងមកកាន់ IT <i class="fa-brands fa-telegram"></i></button
+        ></a>
+        <img
+          src="https://cdn0.iconfinder.com/data/icons/colourful-education/250/bulb-512.png"
+          alt=""
+          width="50px"
+          style="
+            display: flex;
+            position: relative;
+            top: -5rem;
+            align-items: end;
+            z-index: 1;
+            right: -10px;
+          "
+        />
+      </span>
+    </div>
+
+    <p
+      id="access-granted"
+      style="
+        color: green;
+        font-weight: bold;
+        display: none;
+        text-align: center;
+        position: absolute;
+      "
+    ></p>
+    <p id="access-denied" style="color: red; font-weight: bold; display: none">
+      សូមអភ័យទោស! អ្នកមិនមានសិទ្ធិចូលប្រើទេ!
+    </p>
+
+    <section id="export-section" style="display: none; position: relative; top: -1.5rem;">
+      <div class="container mt-5 main-header">
+        <h1 class="text-center main-content" style="text-decoration: underline;color: rgb(0, 0, 0);">Fingerprint Check-In/Out</h1>
+        <div class="card mt-4">
+            <div class="card-body">
+
+        <!-- User Name Input -->
+         <style>
+          .hidename option{
+            display: none;
+          }
+         </style>
+        <div class="mb-3 mt-4">
+          <label for="userNameInput" class="form-label d-none">ជ្រើសរើសអ្នកប្រើប្រាស់</label>
+          <select id="userNameInput" class="form-select hidename" required>
+            <!-- <option value="សៅ សម្បត្តិ">សៅ សម្បត្តិ(0163)</option>
+            <option value="ឌឹម សុជាតិ">ឌឹម សុជាតិ(0158)</option>
+            <option value="សៀង សារុន">សៀង សារុន(0151)</option> -->
+            <option value="ឆន រត្តនៈ">ឆន រត្តនៈ(0243)</option>
+            <!-- <option value="ម៉ុល នីតា">ម៉ុល នីតា(0242)</option>
+            <option value="សឹម សុខ">សឹម សុខ(0250)</option>
+            <option value="ផូ សុខនី">ផូ សុខនី(0254)</option>
+            <option value="ឡេង ឌឿន">ឡេង ឌឿន(0169)</option>
+            <option value="វណ្ណ ដាណែត">វណ្ណ ដាណែត(0172)</option>
+            <option value="វ៉ាន់ សារ៉េត">វ៉ាន់ សារ៉េត(0062)</option>
+            <option value="គឺ ទឺកឡា">គឺ ទឺកឡា(0183)</option>
+            <option value="លី ស៊ាងអុី">លី ស៊ាងអុី(0224)</option>
+            <option value="វណ្ណ ដាណែត">វណ្ណ ដាណែត(0172)</option>
+            <option value="ម៉ុង ដាលីន">ម៉ុង ដាលីន(0066)</option>
+            <option value="ភឿន ដាលីន">ភឿន ដាលីន(0016)</option>
+            <option value="បឿន កញ្ញា">បឿន កញ្ញា(0238)</option> -->
+          </select>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <!-- Include Select2 JS -->
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script>
+
+$(document).ready(function () {
+                  $("#popup").on("click", function () {
+                    $(".Bulbsignal").fadeToggle(500);
+                  });
+                });
+// // Get the visit count and last visit timestamp from localStorage
+// let visitCount = localStorage.getItem('visitCount');
+//         let lastVisitTime = localStorage.getItem('lastVisitTime');
+//         const currentTime = new Date().getTime(); // Current time in milliseconds
+
+//         // If there's no last visit timestamp, initialize the visit count
+//         if (!lastVisitTime) {
+//             lastVisitTime = currentTime;
+//             visitCount = 0; // Start fresh with 0 visits
+//         }
+
+//         // Check if 1 minute has passed since the last visit
+//         const timeDifference = currentTime - lastVisitTime;
+//         const oneMinute = 60 * 100; // 1 minute in milliseconds
+
+//         if (timeDifference > oneMinute) {
+//             // Reset visit count after 1 minute
+//             visitCount = 1;
+//             lastVisitTime = currentTime; // Update last visit time
+//         } else {
+//             // Increment visit count if within the same minute window
+//             visitCount = parseInt(visitCount) + 1;
+//         }
+
+//         // Update localStorage with new visit count and timestamp
+//         localStorage.setItem('visitCount', visitCount);
+//         localStorage.setItem('lastVisitTime', lastVisitTime);
+
+//         // Check if the visit count exceeds 4
+//         if (visitCount > 1) {
+//             document.body.innerHTML = "<div style='color: blue; text-align: center; margin-top: 20%; padding: 20px; font-family: Arial, sans-serif; animation: fadeIn 1s ease-in-out; font-weight: bold;'><h1>Something is wrong</h1><img src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRWHkYf_5eipWHQENpVlXxxWujD295xKSKvqy74zeN0e1mwWo4WCmUC7bZZoPmitQ1eWQ8&usqp=CAU' alt='Error Robot' style='width: 200px; margin-top: 20px;'></div>";
+//             // Optionally, you can redirect or block further page interaction
+//         }
+
+//         // Add keyframes for fadeIn animation
+//         const styleSheet = document.createElement("style");
+//         styleSheet.type = "text/css";
+//         styleSheet.innerText = `
+//             @keyframes fadeIn {
+//             from { opacity: 0; }
+//             to { opacity: 1; }
+//             }
+//         `;
+//         document.head.appendChild(styleSheet);
+
+            $(document).ready(function() {
+                // $('#userNameInput').select2({
+                //     placeholder: "ជ្រើសរើសឈ្មោះរបស់អ្នក!",
+                //     allowClear: true
+                // }).on('change', function() {
+                //     const userName = $(this).val();
+                //     if (userName) {
+                //         $('#scanFingerprint').prop('disabled', true);
+                //     } else {
+                //         $('#scanFingerprint').prop('disabled', true);
+                //     }
+                // });
+            });
+            $(document).ready(function() {
+              // $('#userNameInput').select2({
+              //   placeholder: "ជ្រើសរើសឈ្មោះរបស់អ្នក!",
+              //   allowClear: true
+              // }).on('change', function() {
+              //   const userName = $(this).val();
+              //   if (userName) {
+              //     $('#requestEarlyScan').prop('disabled', true);
+              //   } else {
+              //     $('#requestEarlyScan').prop('disabled', true);
+              //   }
+              // });
+
+              // Hide the requestEarlyScan button for 1 minute on page load
+              $('#requestEarlyScan').hide();
+              setTimeout(function() {
+                $('#requestEarlyScan').show();
+              }, 2592000000); // 30 days = 2592000000 milliseconds
+              $('#idSelect').hide();
+              $('#departmentSelect').hide();
+              $('#PositionSelect').hide();
+              $('#BranchSelect').hide();
+              $('.hidename').hide();
+              $("#folderSelect").hide();
+      
+            });
+        </script>
+        </div>
+        <!-- Action Selection Dropdown -->
+        <div class="mb-3 d-none">
+          <label for="actionSelect" class="form-label">ជ្រើសរើសប្រភេទស្កេន </label>
+          <select id="actionSelect" class="form-select" required>
+            <option value="Check-In">ស្កេនចូល</option>
+            <option value="Check-Out">ស្កេនចេញ</option>
+          </select>
+        </div>
+        <!-- ID Selection Dropdown -->
+         <style>
+          .ID{
+            position: absolute;
+          }
+          .DT{
+            position: absolute;
+          }
+          .PT{
+            position: absolute;
+          }
+          .BH{
+            position: absolute;
+          }
+         </style>
+        <div class="mb-3">
+          <label for="idSelect" class="form-label ID"></label>
+          <select id="idSelect" class="form-select" required>
+            <option value="0243">0243</option>
+            <!-- Add more options as needed -->
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="idSelect" class="form-label DT"></label>
+          <select id="departmentSelect" class="form-select" required>
+            <option value="Admin">Admin</option>
+            <!-- Add more options as needed -->
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="idSelect" class="form-label PT"></label>
+          <select id="PositionSelect" class="form-select" required>
+            <option value="General Administration">General Administration</option>
+            <!-- Add more options as needed -->
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="idSelect" class="form-label BH"></label>
+          <select id="BranchSelect" class="form-select" required>
+            <option value="Head Office">Head Office</option>
+            <!-- Add more options as needed -->
+          </select>
+        </div>
+                      <div class="row g-3 mb-3">
+   
+            <div class="mb-3">
+                <label for="folderSelect" class="form-label FL d-none">ជ្រើសរើស Folder</label>
+                <select id="folderSelect" class="form-select" required>
+                <!--<option value="កម្មករ">កម្មករ</option>-->
+                <option value="ជំនាញ">ជំនាញ</option>
+                </select>
+            </div>
+            </div>
+<button id="scanFingerprint" class="btn btn-primary mb-3 scan">
+    <i class="fa-solid fa-fingerprint fs-4"> ចាប់ផ្តើមស្កេន</i>
+</button>
+<button id="scanEarlyButton" class="btn btn-info mb-3">
+    <i class="fa-solid fa-clock fs-4"> ស្កេនមុនម៉ោង</i>
+</button>
+<!-- Popup សម្រាប់ស្កេនមុន -->
+<div id="earlyScanPopup" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>ស្កេនមុន</h3>
+        <label for="earlyReason">មូលហេតុ:</label>
+        <textarea id="earlyReason" class="form-control" rows="3" placeholder="សរសេរមូលហេតុនៅទីនេះ"></textarea>
+        <div class="modal-buttons">
+            <button id="submitEarlyScan" class="btn btn-success">បញ្ជូន</button>
+            <button id="cancelEarlyScan" class="btn btn-secondary">បោះបង់</button>
+        </div>
+    </div>
+</div>
+<div id="locationModal" class="modal">
+    <div class="modal-content">
+        <span class="modal-message">ទីតាំងមិនត្រឹមត្រូវ! សូមមកកន្លែងការងាររបស់អ្នក!</span>
+        <button id="closeModal" class="modal-button">យល់ព្រម</button>
+    </div>
+</div>
+        
+
+        <!-- Action Information -->
+        <div class="action-info">
+          <p><span class="label">ប្រភេទស្កេន៖</span> <span id="action" class="value">N/A</span></p>
+          <p><span class="label">ថ្ងៃខែឆ្នាំ/ម៉ោង៖</span> <span id="timestamp" class="value">N/A</span></p>
+          <p><span class="label">ការចាប់ទីតាំងរបស់អ្នក៖</span> <span id="location" class="value">កំពុងស្កេនទីតាំង</span></p>
+          <p><span class="label">ទីតាំងរបស់អ្នក៖</span> <a id="mapLink" class="map-link" href="#" target="_blank">View
+              on Map</a></p>
+        </div>
+        <!-- Status Message -->
+        <p id="status" class="status-message text-muted">រងចាំការស្កេនរបស់អ្នក...</p>
+      </div>
+         <button id="logs" class="btn btn-warning mb-3">មើលប្រវត្តិស្កេន</button>
+    </div>
+    
+    
+    
+    <script>
+        document.getElementById("refreshLogs").addEventListener("click", fetchLogs);
+    </script>
+    <!--    <div class="slide-text" style="text-align: center; top: 1rem; position: relative; background-color: #007bff; color: white; padding: 10px 10px; font-weight: bold; font-size: 1.2rem; border-radius: 30px 30px 0 0; ">-->
+    <!--  <p>🌸🎊 សួស្ដីឆ្នាំថ្មីប្រពៃណីជាតិខ្មែរ! 🎊🌸-->
+    <!--    <br>🎉 សូមស្វាគមន៍ឆ្នាំថ្មី! អ្នកទាំងអស់គ្នា 🎉<br>-->
+    <!--    សូមឱ្យឆ្នាំថ្មីនេះនាំមកនូវសេចក្ដីសុខ សេចក្ដីចំរើន និងជោគជ័យគ្រប់ភារកិច្ច! 🙏🎆</p>-->
+    <!--</div>-->
+
+    <script>
+        document.getElementById('requestEarlyScan').addEventListener('click', function() {
+            const userName = document.getElementById('userNameInput').value.trim();
+            if (!userName) {
+            alert("សូមជ្រើសរើសឈ្មោះរបស់អ្នកជាមុនសិន!");
+            return;
+            }
+            const currentTimeFormatted = new Date().toLocaleString();
+            const message = `ឈ្មោះ ៖ ${userName}\n**ស្នើរសុំស្កេនមុន**\n\nប្រភេទស្កេន ៖ ${document.getElementById('actionSelect').value}\n ថ្ងៃខែឆ្នាំ/ម៉ោង ៖ ${currentTimeFormatted}`;
+            
+            // Send message to Telegram
+            sendToTelegram(message);
+
+            // Collect the form data
+            var action = document.getElementById('actionSelect').value;
+            var location = `Lat: ${currentLatitude.toFixed(5)}, Long: ${currentLongitude.toFixed(5)}`;
+            var formData = new FormData();
+            var customDate = new Date(); // Use current date and time or set a custom one
+            var date = customDate.toLocaleDateString(); // Get the date part
+            var time = customDate.toLocaleTimeString(); // Get the time part
+
+            formData.append("ឈ្មោះ", userName);
+            formData.append("ប្រភេទស្កេន", action);
+            formData.append("ថ្ងៃ", date); // Add the date
+            formData.append("ម៉ោង", time); // Add the time
+            formData.append("location", location);
+
+            var keyValuePairs = [];
+            for (var pair of formData.entries()) {
+            keyValuePairs.push(pair[0] + "=" + pair[1]);
+            }
+
+            var formDataString = keyValuePairs.join("&");
+
+            // Send a POST request to your Google Apps Script
+            fetch(
+            "https://script.google.com/macros/s/AKfycbyS-hk5UE2BJsDcZ9eshieZOcncGDTJWrnYN3cMmFj5hlFFnoBKnm1e5nX3p0A_V1xFKQ/exec",
+            {
+                redirect: "follow",
+                method: "POST",
+                body: formDataString,
+                headers: {
+                "Content-Type": "text/plain;charset=utf-8",
+                },
+            }
+            )
+            .then(function (response) {
+            // Check if the request was successful
+            if (response) {
+                return response; // Assuming your script returns JSON response
+            } else {
+                throw new Error("Failed to submit the form.");
+            }
+            })
+            .then(function (data) {
+            // Display a success message with animation
+            const statusElement = document.getElementById("status");
+            statusElement.textContent = "សំណើរបស់អ្នកត្រូវបានបញ្ជូន!";
+            statusElement.classList.add('pop-up');
+            statusElement.style.display = "block";
+            statusElement.style.backgroundColor = "gold";
+            statusElement.style.color = "white";
+            statusElement.style.transition = "opacity 0.5s ease-in-out";
+            statusElement.style.opacity = "1";
+
+            // Hide the message after 3 seconds with fade-out effect
+            setTimeout(() => {
+                statusElement.style.opacity = "0";
+                setTimeout(() => {
+                    statusElement.style.display = "none";
+                }, 500); // Match the transition duration
+            }, 3000);
+            document.getElementById("status").style.display = "block";
+            document.getElementById("status").style.backgroundColor = "gold";
+            document.getElementById("status").style.color = "white";
+            })
+            .catch(function (error) {
+            // Handle errors, you can display an error message here
+            console.error(error);
+            alert("ទិន្នន័យដែលបញ្ជូនទៅ Sheet មិនជោគជ័យសូមស្កេនម្តងទៀត!");
+            });
+        });
+    </script>
+  </div>
+  
+  <script>
+
+    
+    const userState = {};
+
+
+// Global variables for geolocation
+let currentLatitude = 0;
+let currentLongitude = 0;
+let locationReady = false;
+let watchId = null;
+
+// Address cache for Nominatim API
+const addressCache = new Map();
+
+// Reverse geocoding function - Get only street number and road
+async function getAddress(lat, lon) {
+    const cacheKey = `${lat},${lon}`;
+    if (addressCache.has(cacheKey)) return addressCache.get(cacheKey);
+
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+        const data = await response.json();
+        const houseNumber = data.address.house_number || "";
+        const road = data.address.road || "ផ្លូវមិនស្គាល់";
+        const address = houseNumber ? `${houseNumber} ${road}` : road; // Combine if house_number exists
+        addressCache.set(cacheKey, address);
+        return address;
+    } catch (error) {
+        console.error("Error fetching address:", error);
+        return "មិនអាចរកផ្លូវបាន";
+    }
+}
+
+// Geolocation function
+function getLocation() {
+    return new Promise((resolve, reject) => {
+        const elements = {
+            location: document.getElementById("location") || { textContent: "" },
+            mapLink: document.getElementById("mapLink") || { textContent: "", href: "#" },
+            scanButton: document.getElementById("scanFingerprint") || { style: { display: "none" } },
+            earlyButton: document.getElementById("scanEarlyButton") || { style: { display: "none" } },
+            modal: document.getElementById("locationModal") || { style: { display: "none" } },
+            closeModal: document.getElementById("closeModal") || { onclick: () => {} }
+        };
+
+        if (!Object.values(elements).every(el => el)) {
+            console.warn("Some DOM elements are missing, using fallback values");
+        }
+
+        // Initially hide buttons while scanning or location is not ready
+        elements.scanButton.style.display = "none";
+        elements.earlyButton.style.display = "none";
+        elements.modal.style.display = "none";
+        elements.location.textContent = "កំពុងស្កេនទីតាំង... (សូមរង់ចាំ)";
+
+        if (!navigator.geolocation) {
+            elements.location.textContent = "Browser នេះមិនគាំទ្រ Geolocation!";
+            elements.mapLink.textContent = "ផែនទីមិនមានទេ";
+            elements.scanButton.style.display = "none";
+            elements.earlyButton.style.display = "none";
+            reject(new Error("Geolocation not supported"));
+            return;
+        }
+
+        const showModal = () => elements.modal.style.display = "block";
+        const hideModal = () => elements.modal.style.display = "none";
+
+        elements.closeModal.onclick = hideModal;
+        elements.modal.addEventListener('click', (event) => {
+            if (event.target === elements.modal) hideModal();
+        });
+
+        let attempts = 0;
+        const maxAttempts = 10;
+        let isFallbackMode = false;
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000, // 10 seconds
+            maximumAge: 0
+        };
+
+        const successCallback = async (position) => {
+            attempts++;
+            currentLatitude = position.coords.latitude;
+            currentLongitude = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            const address = await getAddress(currentLatitude, currentLongitude);
+            let locationText = `Lat: ${currentLatitude.toFixed(5)}, Long: ${currentLongitude.toFixed(5)} (Accuracy: ${accuracy.toFixed(1)}m)\n ${address}`;
+            if (accuracy > 1000) {
+                locationText += " (GPS អាចមានបញ្ហា សូមពិនិត្យការតភ្ជាប់!)";
+            }
+            elements.location.textContent = locationText;
+
+            if (accuracy <= 100 || (isFallbackMode && accuracy <= 200)) {
+                locationReady = true;
+                elements.mapLink.href = `https://www.google.com/maps?q=${currentLatitude},${currentLongitude}`;
+                elements.mapLink.textContent = "View on Map";
+
+                const allowedLocations = [
+                    { latitude: 11.55089, longitude: 104.91219 },
+                    { latitude: 11.5627950, longitude: 104.9180385 },
+                ];
+                const tolerance = 1;
+
+                const isWithinBounds = allowedLocations.some(loc =>
+                    Math.abs(currentLatitude - loc.latitude) <= tolerance &&
+                    Math.abs(currentLongitude - loc.longitude) <= tolerance
+                );
+
+                if (isWithinBounds) {
+                    hideModal();
+                    // Show buttons only when location is correct
+                    elements.scanButton.style.display = "block";
+                    elements.earlyButton.style.display = "block";
+                    resolve(true);
+                } else {
+                    elements.location.textContent += " (ទីតាំងនេះមិនត្រឹមត្រូវទេ!)";
+                    elements.mapLink.textContent = "មិនអាចស្កេនទីតាំងបានទេ!";
+                    // Keep buttons hidden if location is incorrect
+                    elements.scanButton.style.display = "none";
+                    elements.earlyButton.style.display = "none";
+                    showModal();
+                    reject(new Error("ទីតាំងមិនត្រឹមត្រូវ"));
+                }
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            } else if (attempts >= maxAttempts && !isFallbackMode) {
+                elements.location.textContent += ` (ការព្យាយាម: ${attempts}/${maxAttempts} - GPS មិនច្បាស់!)`;
+                navigator.geolocation.clearWatch(watchId);
+                isFallbackMode = true;
+                attempts = 0;
+                watchId = navigator.geolocation.watchPosition(
+                    successCallback,
+                    errorCallback,
+                    { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+                );
+                // Keep buttons hidden during fallback mode scanning
+                elements.scanButton.style.display = "none";
+                elements.earlyButton.style.display = "none";
+            } else if (attempts >= maxAttempts && isFallbackMode) {
+                elements.location.textContent = `មិនអាចទទួលបានទីតាំងច្បាស់! (ការព្យាយាម: ${attempts}/${maxAttempts})`;
+                elements.mapLink.textContent = "សូមចុចដើម្បីព្យាយាមម្តងទៀត";
+                elements.mapLink.onclick = () => getLocation();
+                // Keep buttons hidden if max attempts are reached
+                elements.scanButton.style.display = "none";
+                elements.earlyButton.style.display = "none";
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                reject(new Error("អស់ចំនួនការព្យាយាម"));
+            } else {
+                elements.location.textContent += ` (កំពុងរង់ចាំទីតាំងច្បាស់... ការព្យាយាម: ${attempts}/${maxAttempts})`;
+                // Keep buttons hidden while still scanning
+                elements.scanButton.style.display = "none";
+                elements.earlyButton.style.display = "none";
+            }
+        };
+
+        const errorCallback = (error) => {
+            let errorMessage;
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = "សូមអនុញ្ញាតឱ្យប្រើទីតាំង!";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = "ទីតាំងមិនអាចប្រើបាន!";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = "អស់ពេលកំណត់ក្នុងការស្វែងរកទីតាំង!";
+                    break;
+                default:
+                    errorMessage = "កំហុសមិនស្គាល់!";
+            }
+            elements.location.textContent = errorMessage;
+            elements.mapLink.textContent = "សូមចុចដើម្បីព្យាយាមម្តងទៀត";
+            elements.mapLink.href = "#";
+            elements.mapLink.onclick = () => getLocation();
+            // Keep buttons hidden on error
+            elements.scanButton.style.display = "none";
+            elements.earlyButton.style.display = "none";
+            hideModal();
+            reject(new Error(`Geolocation error: ${error.message}`));
+        };
+
+        watchId = navigator.geolocation.watchPosition(successCallback, errorCallback, options);
+
+        // Cleanup on window unload
+        window.onunload = () => {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+        };
+    }).finally(() => {
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+    });
+}
+
+    document.getElementById("scanFingerprint").addEventListener("click", function (e) {
+      e.preventDefault(); // Prevent the default form submission
+      document.getElementById("status").textContent = "កំពុងបញ្ជូន";
+      document.getElementById("status").style.display = "block";
+      document.getElementById("scanFingerprint").disabled = true;
+
+      // Collect the form data
+      var userName = document.getElementById('userNameInput').value.trim();
+      var action = document.getElementById('actionSelect').value;
+      var timestamp = new Date().toLocaleString();
+      var customDate = new Date(); // Use current date and time or set a custom one
+      var date = customDate.toLocaleDateString(); // Get the date part
+      var time = customDate.toLocaleTimeString(); // Get the time part
+      var location = `Lat: ${currentLatitude.toFixed(5)}, Long: ${currentLongitude.toFixed(5)}`;
+
+      var formData = new FormData();
+
+          formData.append("ឈ្មោះ", userName);
+          formData.append("ប្រភេទស្កេន", action);
+          formData.append("ថ្ងៃ", date); // Add the date
+          formData.append("ម៉ោង", time); // Add the time
+          formData.append("location", location);
+
+      var keyValuePairs = [];
+      for (var pair of formData.entries()) {
+        keyValuePairs.push(pair[0] + "=" + pair[1]);
+      }
+
+      var formDataString = keyValuePairs.join("&");
+
+      // Send a POST request to your Google Apps Script
+      fetch(
+        "https://script.google.com/macros/s/AKfycbyS-hk5UE2BJsDcZ9eshieZOcncGDTJWrnYN3cMmFj5hlFFnoBKnm1e5nX3p0A_V1xFKQ/exec",
+        {
+          redirect: "follow",
+          method: "POST",
+          body: formDataString,
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8",
+          },
+        }
+      )
+        .then(function (response) {
+          // Check if the request was successful
+          if (response) {
+            return response; // Assuming your script returns JSON response
+          } else {
+            throw new Error("Failed to submit the form.");
+          }
+        })
+        .then(function (data) {
+          // Display a success message
+          document.getElementById("status").textContent = "បានបញ្ជូនរួចរាល់";
+          document.getElementById("status").style.display = "block";
+          document.getElementById("status").style.backgroundColor = "gold";
+          document.getElementById("status").style.color = "beige";
+          document.getElementById("scanFingerprint").disabled = false;
+
+          setTimeout(function () {
+            document.getElementById("status").textContent = "";
+            document.getElementById("status").style.display = "none";
+          }, 2600);
+        })
+        .catch(function (error) {
+          // Handle errors, you can display an error message here
+          console.error(error);
+          document.getElementById("status").textContent = "An error occurred while submitting the form.";
+          document.getElementById("status").style.display = "block";
+        });
+    });
+
+     // កំណត់អ្នកស្តាប់សម្រាប់ប៊ូតុង "ស្កេនមុន"
+document.getElementById("scanEarlyButton").addEventListener("click", () => {
+    if (!locationReady) {
+        document.getElementById("status").textContent = "សូមរង់ចាំទីតាំងមុននឹងស្កេន!";
+        getLocation((success) => {
+            if (success) showEarlyScanPopup();
+        });
+        return;
+    }
+    showEarlyScanPopup();
+});
+
+// កំណត់អ្នកស្តាប់សម្រាប់ប៊ូតុង "ចាប់ផ្តើមស្កេន"
+document.getElementById("scanFingerprint").addEventListener("click", () => {
+    handleScan(false);
+});
+
+// បង្ហាញ Popup សម្រាប់ស្កេនមុន
+function showEarlyScanPopup() {
+    const popup = document.getElementById("earlyScanPopup");
+    const reasonInput = document.getElementById("earlyReason");
+    reasonInput.value = ""; // សម្អាតប្រអប់អត្ថបទ
+    popup.style.display = "flex";
+
+    document.getElementById("submitEarlyScan").onclick = () => {
+        const reason = reasonInput.value.trim();
+        if (!reason) {
+            alert("សូមបញ្ចូលមូលហេតុ!");
+            return;
+        }
+        popup.style.display = "none";
+        handleScan(true, reason);
+    };
+
+    document.getElementById("cancelEarlyScan").onclick = () => {
+        popup.style.display = "none";
+        document.getElementById("scanEarlyButton").disabled = false;
+        document.getElementById("scanEarlyButton").style.display = "block";
+    };
+}
+
+// អនុគមន៍គ្រប់គ្រងការស្កេន
+function handleScan(isEarly, earlyReason = "") {
+    const scanButton = document.getElementById("scanFingerprint");
+    const earlyButton = document.getElementById("scanEarlyButton");
+    const statusElement = document.getElementById("status");
+
+    if (!locationReady) {
+        statusElement.textContent = "សូមរង់ចាំទីតាំងមុននឹងស្កេន!";
+        getLocation((success) => {
+            if (success) handleScan(isEarly, earlyReason);
+        });
+        return;
+    }
+
+    scanButton.disabled = true;
+    earlyButton.disabled = true;
+    scanButton.style.display = "none";
+    earlyButton.style.display = "none";
+
+    localStorage.setItem("buttonStateTime", Date.now());
+
+    const action = document.getElementById("actionSelect").value;
+    const actionElement = document.getElementById("action");
+    const timestampElement = document.getElementById("timestamp");
+    const userName = document.getElementById("userNameInput").value.trim();
+
+    if (!userName) {
+        alert("សូមបញ្ជូលឈ្មោះរបស់អ្នក");
+        scanButton.disabled = false;
+        earlyButton.disabled = false;
+        scanButton.style.display = "block";
+        earlyButton.style.display = "block";
+        localStorage.removeItem("buttonStateTime");
+        return;
+    }
+
+    const currentTime = new Date();
+    const currentTimeFormatted = currentTime.toLocaleString();
+    const scanTime = currentTime.getHours() * 60 + currentTime.getMinutes();
+
+    let scanStatus = "🔵Good";
+
+    if (!isEarly) {
+const ranges = [
+  { start: 6 * 60, end: 8 * 60 , status: "🔵Good" }, // 6:00 AM - 7:30 AM
+  { start: 8 * 60 + 1, end: 11 * 60 + 59, status: "🔴Late" }, // 7:31 AM - 10:59 AM
+  { start: 12 * 60, end: 13 * 60, status: "🔵Good" }, // 11:00 AM - 12:00 PM
+  { start: 13 * 60 + 1, end: 16 * 60 + 59, status: "🔴Late" }, // 12:01 PM - 4:59 PM
+  { start: 17 * 60, end: 24 * 60, status: "🔵Good" }, // 5:00 PM onward
+];
+
+scanStatus = "🔴Late";
+        for (const range of ranges) {
+            if (scanTime >= range.start && scanTime <= range.end) {
+                scanStatus = range.status;
+                break;
+            }
+        }
+    }
+
+    fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLatitude}&lon=${currentLongitude}`,
+        { headers: { "Accept-Language": "km" } }
+    )
+        .then((response) => response.json())
+        .then((data) => {
+            const address = data.address.road || "មិនអាចរកទីតាំងបាន";
+            
+            const mapLink = `https://www.google.com/maps?q=${currentLatitude},${currentLongitude}`;
+
+
+if (action === "Check-Out") {
+    userState[userName] = "Check-Out";
+    statusElement.textContent = `សំណាងល្អ, ${userName}! ${scanStatus}`;
+    actionElement.textContent = "Check-Out";
+
+    let telegramMessage = `ឈ្មោះ ៖ ${userName}\n**Checked out**`;
+    if (isEarly) {
+        telegramMessage += `\nស្កេនមុន (មូលហេតុ): ${earlyReason}`;
+    }
+    telegramMessage += `\n\nStatus: ${scanStatus}\n\nID: ${document.getElementById("idSelect").value}\nDepartment: ${document.getElementById("departmentSelect").value}\nPosition: ${document.getElementById("PositionSelect").value}\nBranch: ${document.getElementById("BranchSelect").value}\nថ្ងៃខែឆ្នាំ/ម៉ោង ៖ ${currentTimeFormatted}\nទីតាំង ៖ ${address}\n[មើលទីតាំង] ${mapLink}`;
+    sendToTelegram(telegramMessage);
+} else {
+    userState[userName] = "Check-In";
+    statusElement.textContent = `សូមស្វាគមន៍, ${userName}! ${scanStatus}`;
+    actionElement.textContent = "Check-In";
+
+    let telegramMessage = `ឈ្មោះ ៖ ${userName}\n**Checked in**`;
+    if (isEarly) {
+        telegramMessage += `\nស្កេនមុន (មូលហេតុ): ${earlyReason}`;
+    }
+    telegramMessage += `\n\nStatus: ${scanStatus}\n\nID: ${document.getElementById("idSelect").value}\nDepartment: ${document.getElementById("departmentSelect").value}\nPosition: ${document.getElementById("PositionSelect").value}\nBranch: ${document.getElementById("BranchSelect").value}\nថ្ងៃខែឆ្នាំ/ម៉ោង ៖ ${currentTimeFormatted}\nទីតាំង ៖ ${address}\n[មើលទីតាំង] ${mapLink}`;
+    sendToTelegram(telegramMessage);
+}
+
+            timestampElement.textContent = currentTimeFormatted;
+
+            const userData = JSON.parse(localStorage.getItem("userData")) || [];
+            userData.push({
+                userName,
+                action,
+                timestamp: currentTimeFormatted,
+                location: { latitude: currentLatitude, longitude: currentLongitude },
+                status: scanStatus,
+                address,
+                isEarlyScan: isEarly,
+                earlyReason: isEarly ? earlyReason : null
+            });
+            localStorage.setItem("userData", JSON.stringify(userData));
+
+            setTimeout(() => {
+                window.location.href = window.location.href;
+            }, 60000);
+        })
+}
+
+    // Check the button state on page load
+    window.addEventListener('load', () => {
+      const buttonStateTime = localStorage.getItem("buttonStateTime");
+      if (buttonStateTime) {
+        const elapsedTime = Date.now() - buttonStateTime;
+        if (elapsedTime < 600) { // 1 minute = 60000 milliseconds
+          document.getElementById('scanFingerprint').disabled = true;
+          document.getElementById('scanFingerprint').style.display = 'none';
+        } else {
+          localStorage.removeItem("buttonStateTime");
+        }
+      }
+    });
+
+    // Disable the scan button if no name is selected
+    document.getElementById('userNameInput').addEventListener('change', function () {
+      const userName = this.value.trim();
+      if (userName) {
+        scanButton.disabled = false;
+      } else {
+        scanButton.disabled = true;
+      }
+    });
+
+    // Save displayed data to localStorage before reloading the page
+    window.addEventListener('beforeunload', () => {
+      const displayedData = {
+        action: document.getElementById('action').textContent,
+        timestamp: document.getElementById('timestamp').textContent,
+        location: document.getElementById('location').textContent,
+        mapLink: document.getElementById('mapLink').href,
+        status: document.getElementById('status').textContent
+      };
+      localStorage.setItem('displayedData', JSON.stringify(displayedData));
+    });
+
+    // Restore displayed data from localStorage on page load
+    window.addEventListener('load', () => {
+      const displayedData = JSON.parse(localStorage.getItem('displayedData'));
+      if (displayedData) {
+        document.getElementById('action').textContent = displayedData.action;
+        document.getElementById('timestamp').textContent = displayedData.timestamp;
+        document.getElementById('location').textContent = displayedData.location;
+        document.getElementById('mapLink').href = displayedData.mapLink;
+        document.getElementById('status').textContent = displayedData.status;
+      }
+    });
+      </script>
+    </section>
+  </body>
+</html>

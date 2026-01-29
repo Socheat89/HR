@@ -1,0 +1,16 @@
+{
+    "income": 10000,
+    "expense": 0,
+    "history": [
+        {
+            "type": "income",
+            "amount": 5000,
+            "reason": "coffee"
+        },
+        {
+            "type": "income",
+            "amount": 5000,
+            "reason": "Unknown"
+        }
+    ]
+}

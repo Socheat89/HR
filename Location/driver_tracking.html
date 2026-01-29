@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Driver Location Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #status { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h2>Driver Location Tracker</h2>
+    <p>Driver ID: <input type="number" id="driverId" value="1"></p>
+    <button onclick="startTracking()">Start Tracking</button>
+    <button onclick="stopTracking()">Stop Tracking</button>
+    <div id="status">Status: Not tracking</div>
+
+    <script>
+        let trackingInterval = null;
+
+        function sendLocation(driverId, latitude, longitude, status) {
+            fetch('https://app.vvc.asia/Location/save_driver_location.php', {
+                method: 'POST',
+                headers: { 'Content-Type: application/json' },
+                body: JSON.stringify({
+                    driver_id: driverId,
+                    latitude: latitude,
+                    longitude: longitude,
+                    status: status
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').innerText = `Status: ${data.message}`;
+            })
+            .catch(error => {
+                document.getElementById('status').innerText = `Status: Error - ${error}`;
+            });
+        }
+
+        function startTracking() {
+            const driverId = document.getElementById('driverId').value;
+
+            if (!navigator.geolocation) {
+                alert('Your device does not support GPS');
+                return;
+            }
+
+            if (trackingInterval) {
+                alert('Already tracking!');
+                return;
+            }
+
+            trackingInterval = setInterval(() => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const latitude = position.coords.latitude;
+                        const longitude = position.coords.longitude;
+                        sendLocation(driverId, latitude, longitude, 'delivering');
+                    },
+                    (error) => {
+                        document.getElementById('status').innerText = `Status: GPS Error - ${error.message}`;
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            }, 10000); // ផ្ញើរៀងរាល់ 10 វិនាទី
+
+            document.getElementById('status').innerText = 'Status: Tracking started';
+        }
+
+        function stopTracking() {
+            if (trackingInterval) {
+                clearInterval(trackingInterval);
+                trackingInterval = null;
+                document.getElementById('status').innerText = 'Status: Tracking stopped';
+            }
+        }
+    </script>
+</body>
+</html>

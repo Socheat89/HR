@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All_CKD&CH1_meeting</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="style1.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="/node_modules/bootstrap-icons/icons/">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+
+    .list-group-item:hover {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+    }
+
+    /* Styling for the filter input */
+    .filter-input {
+      margin-bottom: 20px;
+    }
+    body{
+        font-family: Kh Battambang;
+    }
+    .meeting-card {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Light shadow effect */
+      border-radius: 10px;
+      margin-bottom: 15px;
+      transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .meeting-card:hover {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+    }
+
+    .meeting-card img {
+      max-width: 100%;
+      border-radius: 10px;
+      height: auto;
+    }
+    .audio-player {
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      align-items: center;
+    }
+    #audioPlayer iframe{
+      position: relative;
+      background: none;
+      width: 1130px;
+      border-radius: 5px;
+      height: 10vh;
+      align-items: center;
+      text-align: center;
+      margin: auto;
+      border: none;
+      outline: none;
+    }
+    .play-button {
+      top: -1rem;
+      position: relative;
+      left: 58%;
+      justify-content: center;
+      text-align: center;
+    }
+        .page {
+            display: none;
+            text-align: center;
+            margin-top: 50px;
+        }
+        a {
+            text-decoration: none;
+            color: #007bff;
+            cursor: pointer;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+      .menu-card{
+        position: relative;
+        top: -5rem;
+      }
+      .main-menu{
+        position: relative;
+        top: -4rem;
+      }
+      .navbar-brand img{
+        text-align: center;
+        position: relative;
+        left: 40%;
+        align-items: center;
+      }
+
+      .mes{
+        width: 5%;
+        position: relative;
+        left: 0;
+        top: 5rem;
+      }
+      #audioPlayer iframe{
+      position: relative;
+      background: none;
+      border-radius: 5px;
+      height: 10vh;
+      width: 350px;
+      align-items: center;
+      text-align: center;
+      margin: auto;
+      border: none;
+      outline: none;
+    }
+    .play-button {
+      top: -1.5rem;
+      left: -1%;
+      position: relative;
+      justify-content: center;
+      text-align: center;
+    }
+    }
+    /* computer */
+    .main-menu{
+      top: 3rem;
+      position: relative;
+    }
+    .navbar-custom {
+      background-color: #050049;
+      position: fixed;
+    }
+
+    .menu-icon {
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      height: 80px;
+      bottom: 0;
+      width: 100%;
+    }
+    .navbar-brand img{
+      text-decoration: none;
+      width: 200px;
+      text-align: center;
+      align-items: center;
+      position: relative;
+    }
+    .navbar-toggler{
+      background: none;
+    }
+
+    .bottom-menu a {
+      color: #007bff;
+      text-decoration: none;
+      font-size: 1.5rem;
+    }
+    .btn{
+      color: white;
+    }
+    .main-cart{
+      position: relative;
+      align-items: center;
+      text-align: center;
+      top: 5rem;
+    }
+    .card-footer{
+      position: relative;
+      justify-content: center;
+      text-align: center;
+      align-items: center;
+    }
+    .sort-list{
+      position: relative;
+      top: -1rem;
+    }
+    .form-label{
+      position: relative;
+      justify-content: start;
+    }
+    .cart-box {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      background: #f9f9f9;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease-in-out;
+    }
+    .cart-box:hover {
+      transform: translateY(-5px);
+    }
+    .cart-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .cart-title{
+      font-size: 1.1rem;
+      margin: 12px 0;
+      color: blue;
+      font-family: Kh Muol;
+    }
+    .text-title{
+      font-family: Kh Muol;
+      color: blue;
+    }
+    .text-h5 a{
+      text-decoration: none;
+    }
+    .menu-list1 {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 12px 20px;
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .menu-list1:hover{
+      transform: translateY(-5px);
+      transition: all 0.3s ease-in-out;
+    }
+
+    .menu-list1 img {
+      width: 80px;
+      height: 80px;
+    }
+    
+
+    .menu-list1 span {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #333;
+      flex-grow: 1;
+      margin-left: 15px;
+    }
+    .main-list-meeting{
+      font-family: Kh Battambang;
+    }
+    .txt-date{
+      color: gold;
+      font-size: 11px;
+    }
+    .txt-main-content{
+      color: rgb(0, 0, 63);
+    }
+    .chevron-right{
+      color: blue;
+      font-size: 20px;
+    }
+    #meetingList a{
+      text-decoration: none;
+    }
+    .main-header{
+      position: relative;
+      top: 7.9rem;
+    }
+    .list-group-item {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+      border-radius: 10px; /* Rounded corners */
+      margin-bottom: 15px; /* Spacing between items */
+      transition: box-shadow 0.3s ease-in-out; /* Smooth transition on hover */
+    }
+
+    .list-group-item:hover {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+    }
+
+    /* Styling for the filter input */
+    .filter-input {
+      margin-bottom: 20px;
+    }
+    body{
+        font-family: Kh Battambang;
+    }
+    .meeting-card {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      margin-bottom: 15px;
+      transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .meeting-card:hover {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .meeting-card img {
+      max-width: 100%;
+      border-radius: 10px;
+      height: auto;
+    }
+    .swiper {
+      width: 90%;
+      top: -2rem;
+      position: relative;
+      height: 70vh; /* Adjust height */
+    }
+    .swiper-slide {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5rem;
+      color: #fff;
+      background-size: cover;
+      background-position: center;
+    }
+    @media (max-width: 768px) {
+      .swiper {
+        position: relative;
+        top: -2.7rem;
+        width: 94%;
+        border-radius: 10px;
+        height: 35vh; /* Adjust height for smaller devices */
+      }
+      .bottom-menu{
+        left: 0;
+        position: fixed;
+        width: 50%;
+      }
+      .menu-card{
+        position: relative;
+        top: -5rem;
+      }
+      .main-menu{
+        position: relative;
+        top: -4rem;
+      }
+      .navbar-brand img{
+        text-align: center;
+        position: relative;
+        left: 40%;
+        align-items: center;
+      }
+    }
+    /* computer */
+    .main-menu{
+      top: -3rem;
+      position: relative;
+    }
+    .menu-card{
+      position: relative;
+      top: -4rem;
+    }
+    .navbar-custom {
+      background-color: #050049;
+      position: fixed;
+    }
+
+    /* .menu-icon {
+      font-size: 1.5rem;
+      color: white;
+    } */
+
+    .list-group-item {
+      display: flex;
+      align-items: center;
+      font-size: 1.2rem;
+    }
+
+    .list-group-item i {
+      font-size: 1.5rem;
+      margin-right: 10px;
+    }
+    .list-group-item i:hover{
+      color: blue;
+      transform: scale(1.1);
+    }
+    .list-group a:hover{
+      color: blue;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      height: 80px;
+      bottom: 0;
+      width: 100%;
+    }
+
+    .bottom-nav a {
+      color: #6c757d;
+      position: relative;
+      font-size: 1.2rem;
+      padding: 20px 30px 0 0;
+      height: 20vh;
+      top: -1rem;
+      text-decoration: none;
+
+    }
+
+    .bottom-nav .active {
+      color: #b08a29;
+    }
+    .navbar-brand img{
+      text-decoration: none;
+      width: 200px;
+      text-align: center;
+      align-items: center;
+      position: relative;
+    }
+    .navbar-toggler{
+      background: none;
+    }
+    .menu-card {
+      border-radius: 15px;
+      text-decoration: none;
+      color: white;
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      font-weight: bold;
+      height: 150px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .menu-card a{
+      text-decoration: none;
+      color: white;
+    }
+    .menu-card a:hover{
+      transform: scale(1.1);
+      transition: all 0.5s ease;
+    }
+
+    .menu-card i {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .bottom-menu {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background-color: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      left: 0;
+      justify-content: space-around;
+      padding: 25px 0;
+    }
+
+    .bottom-menu a {
+      color: #007bff;
+      text-decoration: none;
+      font-size: 1.5rem;
+    }
+
+    .bottom-menu a:hover {
+      color: #0056b3;
+    }
+    .swiper-slide{
+      border-radius: 5px;
+    }
+    .main-header{
+      position: relative;
+      top: 6rem;
+    }
+    .f-boks{
+      position: relative;
+      top: 13rem;
+    }
+    .btn-home{
+      position: relative;
+      top: -4.2rem;
+      left: 30%;
+    }
+    .btn-home:hover{
+      transform: scale(1.01);
+      transition: all 0.5s linear;
+    }
+    .navbar-custom{
+      width: 100%;
+      top: 0;
+      z-index: 99;
+    }
+    a #logout{
+  outline: none;
+  background: none;
+  color: white;
+  font-size: 25px;
+  border: none;
+  justify-content: end;
+  padding: 20px 20px;
+  left: 85%;
+  z-index: 99;
+  top: 1rem;
+  position: absolute;
+  border-radius: 10px;
+  align-items: center;
+  text-align: center;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  -ms-border-radius: 10px;
+  -o-border-radius: 10px;
+}
+.main-sort{
+  position: relative;
+  top: -1rem;
+}
+.block-1{
+  position: relative;
+  top: -1rem;
+}
+.block-2{
+  position: relative;
+  top: 3rem;
+}
+    </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-custom shadow-lg mb-5">
+    <div class="container-fluid text-decoration-none">
+      <a href="index1.html"><span class="navbar-brand text-white text-decoration-none"><img src="https://i.ibb.co/HTksMQd/Logo-Van-Van-2.png" alt=""></span></a>
+    </button>
+    <a href="index7.html"><button id="logout"><i class="fa-solid fa-right-from-bracket"></i></button></a>
+  </div>
+</nav>
+<div class="main-header mt-6">
+  <div class="container mt-3 main-list-meeting">
+  <div class="main-sort">
+    <label for="sortBy" class="form-label">Sort By</label>
+    <select class="form-select" id="sortBy" onchange="sortMeetings()">
+      <option value="date-asc">A-Z</option>
+      <option value="date-desc">Z-A</option>
+    </select>
+  </div>
+<div id="main" class="main-page">
+  <ul class="list-group" id="meetingList">
+        <a href="#" data-page="1">
+         <li class="list-group-item1 " data-date="01" data-participants="50">
+            <div class="menu-list1">
+              <span class="fs-6">01 - ការប្រជុំប្រចាំទូទៅជាមួយបុគ្គលិកកម្មករ CKD<br><p class="mt-2 txt-date">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;“ ថ្ងៃពុធ ៣រោច ខែមិគសិរ ឆ្នាំរោង ឆស័ក ព.ស ២៥៦៨ ”<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;“ ត្រូវនឹង ថ្ងៃទី១៨ ខែធ្នូ ឆ្នាំ២០២៤ ”</p></span>
+              <div class="chevron-right">
+              <i class="bi bi-chevron-right"></i>
+                </div>
+              </div>
+             </li>
+            </a>
+
+        <!-- <a href="#" data-page="2">
+         <li class="list-group-item1 " data-date="02" data-participants="50">
+            <div class="menu-list1">
+              <span class="fs-6">02 - ការប្រជុំប្រចាំទូទៅជាមួយបុគ្គលិកកម្មករ CH1<br><p class="mt-2 txt-date">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;“ ថ្ងៃអាទិត្យ ១៥កើត ខែមិគសិរ ឆ្នាំរោង ឆស័ក ព.ស ២៥៦៨ ”<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;“ ត្រូវនឹង ថ្ងៃទី១៥ ខែធ្នូ ឆ្នាំ២០២៤ ”</p></span>
+              <div class="chevron-right">
+              <i class="bi bi-chevron-right"></i>
+                </div>
+              </div>
+             </li>
+            </a> -->
+    </ul>
+</div>
+</div>
+<!--  2024-12-04   -->
+<div id="page-1" class="page">
+  <div class="container mb-4 block-1">
+  <li class="list-group-item1 d-block justify-content-between align-items-center text-center meeting-card" data-date="1" data-participants="50">
+    <div class="text-center">
+      <h6 class="mt-5"><strong></strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ថ្ងៃពុធ ៣រោច ខែមិគសិរ ឆ្នាំរោង ឆស័ក ព.ស ២៥៦៨<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ត្រូវនឹង ថ្ងៃទី១៨ ខែធ្នូ ឆ្នាំ២០២៤</h6>
+        <strong class="mt-2">របៀបវារៈប្រជុំ</strong>
+      <div class="mt-3 Agenda">
+          <img src="https://i.ibb.co/BZ1L1B2/image.png" style=" width: 60%;" alt="Meeting Image">
+      </div>
+        <strong class="mt-2">រូបភាពប្រជុំ</strong>
+      <div class="mt-3 pic-meeting">
+          <img src="https://i.ibb.co/ccKs6jm/image.png" style=" width: 60%;" alt="Meeting Image">
+      </div>
+      <strong class="mt-6" style=" top: 3rem;">សំឡេងប្រជុំ</strong>
+      <iframe src="https://drive.google.com/file/d/1f5HjAM6LX5IMtcEmSEenKC3ge3ABhPpD/preview" style="background: none; border: none; width: 100%; height: 120px; top: 5rem;"></iframe>
+    </div>
+  </li>
+</div>
+</div>
+</div>
+<!-- 2024-12-15 -->
+<div id="page-2" class="page">
+  <div class="container mt-6 mb-4 block-2">
+  <li class="list-group-item1 d-block justify-content-between align-items-center text-center meeting-card" data-date="2" data-participants="50">
+    <div class="text-center">
+      <h6 class="mt-5"><strong></strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ថ្ងៃអាទិត្យ ១៥កើត ខែមិគសិរ ឆ្នាំរោង ឆស័ក ព.ស ២៥៦៨<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ត្រូវនឹង ថ្ងៃទី១៥ ខែធ្នូ ឆ្នាំ២០២៤</h6>
+        <strong class="mt-2">របៀបវារៈប្រជុំ</strong>
+      <div class="mt-3">
+          <img src="https://i.ibb.co/hBn73Cy/image.png" style=" width: 60%;" alt="Meeting Image">
+      </div>
+        <strong class="mt-2">រូបភាពប្រជុំ</strong>
+      <div class="mt-3">
+          <img src="https://i.ibb.co/ydQwrM3/image.png" style=" width: 60%;" alt="Meeting Image">
+      </div>
+      <strong class="mt-6" style=" top: 3rem;">សំឡេងប្រជុំ</strong>
+      <iframe src="https://drive.google.com/file/d/1YL12tpOieRkiIrfX9s1mRo3WVcKUEdrq/preview" style="background: none; border: none; width: 100%; height: 120px; top: 5rem;"></iframe>
+    </div>
+  </li>
+</div>
+</div>
+
+<div id="page-3" class="page">
+    <h1>Page 3</h1>
+    <p>This is the content of Page 3.</p>
+    <button onclick="goBack()">Go Back</button>
+</div>
+
+<script>
+    // Function to show a specific page and hide the main page
+    function showPage(pageId) {
+        document.getElementById('main').style.display = 'none'; // Hide main page
+        document.getElementById('page-' + pageId).style.display = 'block'; // Show the selected page
+    }
+
+    // Function to go back to the main page
+    function goBack() {
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(page => page.style.display = 'none'); // Hide all pages
+        document.getElementById('main').style.display = 'block'; // Show the main page
+    }
+
+    // Add event listeners to page links
+    document.querySelectorAll('.main-page a').forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault(); // Prevent default link behavior
+            const pageId = this.getAttribute('data-page'); // Get the page ID
+            showPage(pageId); // Show the selected page
+        });
+    });
+    function sortMeetings() {
+    const meetingList = document.getElementById('meetingList');
+    const meetings = Array.from(meetingList.getElementsByClassName('list-group-item1'));
+    const sortBy = document.getElementById('sortBy').value;
+
+    // Sort meetings based on selected criteria
+    if (sortBy === 'date-asc') {
+      meetings.sort((a, b) => new Date(a.getAttribute('data-date')) - new Date(b.getAttribute('data-date')));
+    } else if (sortBy === 'date-desc') {
+      meetings.sort((a, b) => new Date(b.getAttribute('data-date')) - new Date(a.getAttribute('data-date')));
+    } else if (sortBy === 'participants-asc') {
+      meetings.sort((a, b) => parseInt(a.getAttribute('data-participants')) - parseInt(b.getAttribute('data-participants')));
+    } else if (sortBy === 'participants-desc') {
+      meetings.sort((a, b) => parseInt(b.getAttribute('data-participants')) - parseInt(a.getAttribute('data-participants')));
+    }
+
+    // Clear the current list and append sorted meetings
+    meetingList.innerHTML = '';
+    meetings.forEach(meeting => meetingList.appendChild(meeting));
+  }
+</script>
+
+</body>
+</html>

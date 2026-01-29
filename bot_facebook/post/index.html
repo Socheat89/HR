@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload & Post Video Carousel</title>
+    <style>
+        body { font-family: 'Koulen', sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        form { display: flex; flex-direction: column; gap: 15px; }
+        input, textarea, button { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
+        button { background-color: #1877F2; color: white; cursor: pointer; border: none; font-weight: bold; }
+        /* Style for file input */
+        input[type="file"] { border: 1px dashed #ccc; background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+
+    <h1>បង្ហោះវីដេអូ Carousel ពីកុំព្យូទ័រ</h1>
+    <p>ជ្រើសរើសវីដេអូ (រហូតដល់ 10) ដើម្បី Upload និងបង្កើតជា Carousel Post។</p>
+
+    <!-- សំខាន់៖ ត្រូវតែមាន enctype="multipart/form-data" សម្រាប់ File Upload -->
+    <form action="upload_and_post.php" method="post" enctype="multipart/form-data">
+        
+        <label for="page_id">Page ID:</label>
+        <input type="text" id="page_id" name="page_id" placeholder="ID របស់ Facebook Page" required>
+
+        <label for="access_token">Page Access Token:</label>
+        <textarea id="access_token" name="access_token" rows="4" placeholder="Token ដែលមានសិទ្ធិបង្ហោះ" required></textarea>
+        
+        <label for="message">សារ (Post Caption):</label>
+        <textarea id="message" name="message" rows="5" placeholder="សរសេរសាររួមសម្រាប់ Post..." required></textarea>
+
+        <label for="videos">ជ្រើសរើសវីដេអូ (អាចជ្រើសរើសច្រើន):</label>
+        <!-- សំខាន់៖ name="videos[]" និង attribute "multiple" -->
+        <input type="file" id="videos" name="videos[]" accept="video/*" multiple required>
+
+        <button type="submit">ចាប់ផ្តើម Upload និង បង្ហោះ</button>
+    </form>
+    
+</body>
+</html>

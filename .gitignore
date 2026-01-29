@@ -1,0 +1,16 @@
+node_modules/
+vendor/
+.env
+.DS_Store
+dist/
+build/
+.vscode/
+.idea/
+*.log
+*.zip
+Uploads/
+user_devices/
+Signature/
+worker/error_log
+Fingerprint/Iphone.MP4
+*.MP4

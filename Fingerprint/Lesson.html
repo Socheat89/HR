@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Learn web development basics with HTML, CSS, and JavaScript through lessons and video tutorials. Download QR codes for branch locations.">
+    <meta name="keywords" content="web development, HTML, CSS, JavaScript, video tutorials, QR code, beginner tutorial">
+    <meta name="author" content="Lesson Website">
+    <title>ការណែនាំពីប្រព័ន្ធស្កេន</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for consistent visuals */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+        }
+        .shadow-glow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .focus-ring {
+            transition: all 0.2s ease;
+        }
+        .focus-ring:focus {
+            outline: none;
+            ring: 2px solid #2563eb;
+            ring-offset-2;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        /* Mobile-specific styles for Video Lessons */
+        @media (max-width: 639px) {
+            .video-section {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .video-card {
+                margin-bottom: 2rem; /* Space between videos for "one by one" effect */
+            }
+            .video-container {
+                padding-bottom: 75%; /* 4:3-ish for mobile to fit better */
+            }
+            .video-card h3 {
+                font-size: 1.125rem; /* Smaller heading for mobile */
+            }
+            .video-card p {
+                font-size: 0.875rem; /* Smaller text for mobile */
+            }
+            .v-2{
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                color: #daa520;
+            }
+        }
+        /* Smooth scrolling for in-page navigation */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="#" class="text-1xl font-bold text-gray-900">Lesson Website</a>
+            <ul class="flex space-x-6">
+            <li><a href="#overview" class="text-gray-700 hover:text-blue-600 font-semibold focus-ring">សេចក្តីណែនាំ</a></li>
+            <li><a href="#videos" class="text-gray-700 hover:text-blue-600 font-semibold focus-ring">វីដេអូបន្ថែម</a></li>
+            <li><a href="#qr-code" class="text-gray-700 hover:text-blue-600 font-semibold focus-ring">ទាញយក QR Code ទីតាំង</a></li>
+            </ul>
+            <style>
+            @media screen and (max-width: 640px) {
+                nav ul {  
+                    align-items: flex-start;
+                    font-size: 12px;
+                    width: 100%;
+                }
+                nav ul li {
+                    margin-bottom: 0.5rem;
+                }
+                nav ul li:last-child {
+                    margin-bottom: 0;
+                }
+            }
+            </style>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="gradient-bg text-white py-12">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold tracking-tight">ការណែនាំពីរបៀបប្រើប្រាស់និងរបៀបតម្លើង</h1>
+            <p class="mt-3 text-lg md:text-xl text-blue-100">សូមធ្វើតាមការណែនាំរបស់យើងដើម្បីទទួលបានប្រសិទ្ធភាព</p>
+        </div>
+    </header>
+
+    <!-- Image Section -->
+    <section class="container mx-auto py-12 px-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div class="rounded-xl overflow-hidden shadow-glow hover-scale bg-white">
+                <img src="https://i.ibb.co/JP6rCLT/image.png" alt="HTML Code Snippet" class="w-full  object-cover" loading="lazy" width="100px" height="156">
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-800">ទម្រង់នៃប្រព័ន្ធស្កេនទី១</h3>
+                    <p class="text-sm text-gray-600 mt-1">The backbone of every webpage.</p>
+                </div>
+            </div>
+            <div class="rounded-xl overflow-hidden shadow-glow hover-scale bg-white">
+                <img src="https://i.ibb.co/PZ2PFxtQ/image.png" alt="CSS Styling Example" class="w-full  object-cover" loading="lazy">
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-800">ទម្រង់នៃប្រព័ន្ធស្កេនទី២</h3>
+                    <p class="text-sm text-gray-600 mt-1">Bring your pages to life with style.</p>
+                </div>
+            </div>
+            <div class="rounded-xl overflow-hidden shadow-glow hover-scale bg-white">
+                <img src="https://placehold.co/600x400?text=JavaScript+Code" alt="JavaScript Example" class="w-full h-64 object-cover" loading="lazy">
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-800">ទម្រង់នៃប្រព័ន្ធស្កេនទី៣</h3>
+                    <p class="text-sm text-gray-600 mt-1">Add dynamic behavior to your site.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lesson Overview Section -->
+    <section id="overview" class="container mx-auto py-12 px-4">
+        <div class="bg-white p-8 rounded-xl shadow-glow">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">សេចក្តីណែនាំ</h2>
+            <p class="text-gray-700 text-lg leading-relaxed mb-4">
+                សូមធ្វើតាមការណែនាំដែលផ្នែក IT បានដាក់ឱ្យនេះដើម្បីប្រសិទ្ធភាពក្នុងការស្កេននិងមិនមានបញ្ហាកើតឡើងផ្សេងៗពេលកំពុងស្កេនទិន្នន័យ ពិនិត្យការកំណត់ <strong>Camera</strong>,<strong>Location</strong> ដោយបើកដំណើរការវា ឱ្យវា Allow ទាំងអស់
+            </p>
+            <strong class="text-gray-700 text-mg mb-4" style="color: rgb(165, 0, 0);">
+                *សម្រាប់ការស្កេនទិន្នន័យសូមធ្វើតាមការណែនាំដូចខាងក្រោមនិងចូលទៅមើលវិដេអូណែនាំបន្ថែមនៅខាងក្រោម៖
+            </strong>
+            <h3 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">របៀបស្កេន</h3>
+            <ul class="list-disc list-inside text-gray-700 space-y-2">
+                <li><strong>ការបើក Camera Scan</strong>: សូមចុច "ចាប់ផ្តើមស្កេន Checkin/Out" នោះ Camera និងបង្ហាញឱ្យយើងស្កេន QR Code ទីតាំងនោះទីតាំងនិងបង្ហាញថាត្រឹមត្រូវទិន្នន័យបញ្ជូន <br> ប៉ុន្តែប្រសិនយើង GPS ក្នុងទូរសព្ទយើងមានបញ្ហាការចាប់ទីតាំងបច្ចប្បន្នយឹត វានិងធ្វើឱ្យមានបញ្ហា ដូចច្នេះ សូមស្កេនវត្តមានមុខយ៉ាងហោចណាស់ ១០ នាទីមុខដែរ។ <br>បញ្ហាមួយទៀតនៅពេលបើក Camera ស្កេន គឺកុំបើក Camera ស្កេនឱ្យជាប់លើ QR Code ព្រោះវាអាចធ្វើឱ្យបញ្ហាការបញ្ជូនទិន្នន័យព្រោះល្បឿននៃការចាប់ QR Code <br> ទីតាំងវាលឿនវាអាចធ្វើឱ្យទិន្នន័យស្ទួនធ្វើឱ្យគាំងក្នុងការបញ្ជូនទិន្នន័យ</li>
+                <li><strong>ការបើកទិន្នន័យបន្ទាប់ពីស្កេនរួចរាល់</strong>: បញ្ហាដែលយើងស្កេនទិន្ន័យរួចរាល់ហើយមិនលោតចូលក្នុង Telegram បញ្ហាដោយសារយើងមិនបានបើក Telegram និងបញ្ហាមួយទៀតអាចនិង Internet យើង Slow ធ្វើឱ្យការ Alert យឺត នេះជាបញ្ហាធ្វើឱ្យស្កេនទិន្នន័យស្ទួនច្រើនដង។ <br>ដើម្បីដោះស្រាយបញ្ហានេះសូមបើក Telegram ឱ្យវាដំណើរការសិននិងពេលដែលស្កេនរួចរាល់សូមពិនិត្យមើលក្នុងទិន្នន័យស្កេនវត្តមានដើម្បីមើលថាទិន្នន័យយើងបានចូលអត់ និងការពារការស្កេនច្រើនដង។</li>
+                <li><strong>JavaScript</strong>: Adds interactivity and dynamic behavior.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Video Lessons Section -->
+    <section id="videos" class="container mx-auto py-12 px-4 video-section">
+        <div class="bg-white p-8 rounded-xl shadow-glow">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">វីដេអូ ណែនាំ</h2>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                សូមមើលវីដេអូបន្ថែមពីការណែនាំរៀបចំតម្លើង Fingerprint Online ឱ្យបានត្រឹមត្រូវ។
+            </p>
+            <div class="grid sm:grid-cols-2 gap-6 v-2 font-khmer">
+                <!-- Video 1: HTML Basics -->
+                <div class="rounded-xl overflow-hidden shadow-glow hover-scale video-card">
+                    <div class="video-container">
+                        <iframe src="https://drive.google.com/file/d/1RZlfwAy1Se6I2bGNzTar5xEriMOaauhF/preview" title="HTML Basics Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                    <div class="p-6 bg-white">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Iphone</h3>
+                        <p class="text-sm text-gray-500 mt-2">Duration: 03:08m </p>
+                    </div>
+                </div>
+
+
+                <!-- Video 2: CSS Fundamentals -->
+                <div class="rounded-xl overflow-hidden shadow-glow hover-scale video-card">
+                    <div class="video-container">
+                        <iframe src="https://drive.google.com/file/d/1FD5JKhxpg40CbTv4eWL3oUVTdLAjJldO/preview" title="CSS Fundamentals Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                    <div class="p-6 bg-white">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Android</h3>
+                        <p class="text-sm text-gray-500 mt-2">Duration: 02:28m </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+
+    <!-- QR Code Download Section -->
+    <section id="qr-code" class="container mx-auto py-12 px-4">
+        <div class="bg-white p-8 rounded-xl shadow-glow">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">ទាញយក QR Code ទីតាំងរបស់អ្នក</h2>
+            <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                សូមជ្រើសរើសទីតាំងដែលអ្នកចង់ទាញយក QR Code ដើម្បីធ្វើការស្កេន។
+            </p>
+            <form class="flex flex-col sm:flex-row gap-6 items-start">
+                <div class="w-full sm:w-1/2">
+                    <label for="branch-select" class="block text-gray-800 font-semibold mb-2">ជ្រើសរើសសាខា</label>
+                    <select id="branch-select" class="w-full p-3 border border-gray-300 rounded-lg focus-ring text-gray-700 bg-gray-50" aria-describedby="branch-help" required>
+                        <option value="" disabled selected>មិនមានការជ្រើសរើស</option>
+                        <option value="head-office" data-url="https://i.ibb.co/6JXg5wCP/QR.jpg">Head Office</option>
+                        <option value="318" data-url="https://i.ibb.co/4n4GgmM6/QR1.jpg">318</option>
+                        <option value="ch1" data-url="https://i.ibb.co/6JXg5wCP/QR.jpg?branch=CH1">CH1</option>
+                        <option value="st1" data-url="https://i.ibb.co/6JXg5wCP/QR.jpg?branch=ST1">ST1</option>
+                        <option value="ckd" data-url="https://i.ibb.co/6JXg5wCP/QR.jpg?branch=CKD">CKD</option>
+                        <option value="psp" data-url="https://i.ibb.co/6JXg5wCP/QR.jpg?branch=PSP">PSP</option>
+                    </select>
+                    <p id="branch-help" class="text-sm text-gray-500 mt-2">Choose a branch to generate its QR code.</p>
+                </div>
+            </form>
+            <div id="qr-image-container" class="mt-8 hidden" aria-hidden="true">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">រូបភាពសាខា <span id="branch-image-name"></span>:</h3>
+                <img id="branch-image" src="" alt="Branch QR Image" class="mx-auto border-2 border-gray-200 rounded-lg object-contain" style="background:#fff; max-width:100%; width:400px; height:400px; image-rendering: auto;" />
+                <button id="download-image" type="button" class="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus-ring font-semibold hidden">Download Image (PNG)</button>
+            </div>
+            <div id="qr-code-container" class="mt-8 hidden" aria-hidden="true">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">សូមទាញយក QR Code<span id="branch-name"></span>:</h3>
+                <p id="qr-error" class="text-red-600 hidden mb-4">Failed to generate QR code. Please try another branch.</p>
+                <div id="qr-loading" class="hidden text-center">
+                    <svg class="animate-spin h-8 w-8 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-gray-700 mt-2">Generating QR code...</p>
+                </div>
+                <canvas id="qr-code-canvas" class="mx-auto h-[400px] w-[400px] border-2 border-gray-200 rounded-lg hidden" aria-label="QR Code for selected branch"></canvas>
+                <button id="download-qr" type="button" class="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus-ring font-semibold hidden">Download QR Code (PNG)</button>
+            </div>
+        </div>
+        <script>
+            // Download image button logic
+            const downloadImageBtn = document.getElementById('download-image');
+            const branchImage = document.getElementById('branch-image');
+            const branchSelectImg = document.getElementById('branch-select');
+            const qrImageContainerImg = document.getElementById('qr-image-container');
+
+            branchSelectImg.addEventListener('change', () => {
+                const selectedOption = branchSelectImg.options[branchSelectImg.selectedIndex];
+                const branchUrl = selectedOption.getAttribute('data-url');
+                const branchText = selectedOption.text;
+
+                if (branchUrl) {
+                    downloadImageBtn.classList.remove('hidden');
+                    downloadImageBtn.setAttribute('data-url', branchUrl);
+                    downloadImageBtn.setAttribute('data-filename', `${branchText.replace(/\s+/g, '-').toLowerCase()}-qr-image.png`);
+                } else {
+                    downloadImageBtn.classList.add('hidden');
+                }
+            });
+
+            downloadImageBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const imageUrl = branchImage.src;
+                const filename = downloadImageBtn.getAttribute('data-filename') || 'qr-image.png';
+
+                // Download image without opening new tab
+                fetch(imageUrl)
+                    .then(resp => resp.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(url);
+                    });
+            });
+        </script>
+        </section>
+        <script>
+            // Show branch image when selected
+            const branchSelectImg2 = document.getElementById('branch-select');
+            const qrImageContainer2 = document.getElementById('qr-image-container');
+            const branchImage2 = document.getElementById('branch-image');
+            const branchImageName = document.getElementById('branch-image-name');
+
+            branchSelectImg2.addEventListener('change', () => {
+                const selectedOption = branchSelectImg2.options[branchSelectImg2.selectedIndex];
+                const branchUrl = selectedOption.getAttribute('data-url');
+                const branchText = selectedOption.text;
+
+                if (branchUrl) {
+                    // Show image
+                    branchImage2.src = branchUrl;
+                    branchImage2.alt = "QR Image for " + branchText;
+                    branchImageName.textContent = branchText ? " (" + branchText + ")" : "";
+                    qrImageContainer2.classList.remove('hidden');
+                    qrImageContainer2.setAttribute('aria-hidden', 'false');
+                } else {
+                    qrImageContainer2.classList.add('hidden');
+                    qrImageContainer2.setAttribute('aria-hidden', 'true');
+                }
+            });
+        </script>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-sm">© 2025 Lesson Website. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript for QR Code Download -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script>
+        const branchSelect = document.getElementById('branch-select');
+        const qrCodeContainer = document.getElementById('qr-code-container');
+        const qrCodeCanvas = document.getElementById('qr-code-canvas');
+        const downloadButton = document.getElementById('download-qr');
+        const branchName = document.getElementById('branch-name');
+        const errorMessage = document.getElementById('qr-error');
+        const loadingSpinner = document.getElementById('qr-loading');
+
+        branchSelect.addEventListener('change', () => {
+            const selectedOption = branchSelect.options[branchSelect.selectedIndex];
+            const branchUrl = selectedOption.getAttribute('data-url');
+            const branchText = selectedOption.text;
+
+            if (branchUrl) {
+                // Hide loading spinner, show QR code immediately
+                loadingSpinner.classList.add('hidden');
+                errorMessage.classList.add('hidden');
+                qrCodeContainer.classList.remove('hidden');
+                qrCodeContainer.setAttribute('aria-hidden', 'false');
+
+                QRCode.toCanvas(qrCodeCanvas, branchUrl, { width: 256, margin: 2, color: { dark: '#1f2937' } }, (error) => {
+                    if (error) {
+                        console.error(error);
+                        errorMessage.classList.remove('hidden');
+                        qrCodeContainer.classList.add('hidden');
+                        qrCodeContainer.setAttribute('aria-hidden', 'true');
+                    } else {
+                        qrCodeCanvas.classList.remove('hidden');
+                        branchName.textContent = branchText;
+                        qrCodeContainer.classList.remove('hidden');
+                        qrCodeContainer.style.display = '';
+                        qrCodeContainer.setAttribute('aria-hidden', 'false');
+                        downloadButton.classList.remove('hidden');
+                        downloadButton.setAttribute('data-url', branchUrl);
+                        downloadButton.setAttribute('data-filename', `${branchText.replace(/\s+/g, '-').toLowerCase()}-qr-code.png`);
+                        downloadButton.focus();
+                    }
+                });
+            }
+        });
+
+        downloadButton.addEventListener('click', () => {
+            const canvas = document.getElementById('qr-code-canvas');
+            const filename = downloadButton.getAttribute('data-filename');
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+</html>

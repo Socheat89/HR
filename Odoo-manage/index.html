@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Trading - Odoo Ecommerce</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    body { 
+      background-color: #f8f9fa; 
+      font-family: 'Kantumruy Pro', sans-serif;
+    }
+    .product-card {
+      border-radius: 15px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      border: 1px solid #e9ecef;
+    }
+    .product-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+    .product-img {
+      height: 160px;
+      object-fit: contain;
+      margin: 15px auto 10px auto;
+    }
+    .price { 
+      font-weight: bold; 
+      font-size: 1.25rem; 
+      color: #8545bd;
+    }
+    .rating i { 
+      color: orange; 
+    }
+    .btn-buy {
+      border-radius: 0 0 14px 14px;
+      font-weight: 500;
+      padding: 12px;
+      background-color: #632b95;
+      color: #fff;
+      border-top: 1px solid #e9ecef;
+    }
+    .btn-buy:hover {
+      background-color: #8545bd;
+    }
+
+    @media screen and (max-width: 576px) {
+        .container {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        .row.grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .row.grid > * {
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .product-card {
+            margin-bottom: 0;
+        }
+        .product-img {
+            height: 120px;
+        }
+        .card-body {
+            padding: 0.8rem;
+        }
+        .card-title {
+            font-size: 1rem;
+        }
+        .card-text {
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem !important;
+        }
+        .price {
+            font-size: 1.1rem;
+        }
+        .rating {
+            font-size: 0.8rem;
+            margin-bottom: 0.8rem !important;
+        }
+        .btn-buy {
+            padding: 10px;
+        }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container py-5">
+  <div class="row g-4 grid" id="productContainer">
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Base API URL
+  const API_URL = 'https://app.vvc.asia/Odoo-manage/api.php';
+
+  // Function to fetch and render products
+  async function fetchProducts() {
+    try {
+      const response = await fetch(API_URL);
+      const products = await response.json();
+      renderProducts(products);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+    }
+  }
+
+  // Function to render product cards
+  function renderProducts(products) {
+    const container = document.getElementById('productContainer');
+    container.innerHTML = '';
+    products.forEach(product => {
+      const stars = Math.floor(product.rating);
+      const hasHalfStar = product.rating % 1 >= 0.5;
+      const card = `
+        <div class="col-md-3 col-sm-6">
+          <div class="card product-card shadow-sm h-100 text-center">
+            <img src="${product.image}" class="card-img-top product-img" alt="${product.name}" loading="lazy">
+            <div class="card-body">
+              <h5 class="card-title mb-2">${product.name}</h5>
+              <p class="card-text text-muted mb-2">${product.description}</p>
+              <p class="price mb-2">$${parseFloat(product.price).toFixed(2)}</p>
+              <div class="rating mb-3">
+                ${'<i class="bi bi-star-fill"></i>'.repeat(stars)}
+                ${hasHalfStar ? '<i class="bi bi-star-half"></i>' : ''}
+                ${'<i class="bi bi-star"></i>'.repeat(5 - stars - (hasHalfStar ? 1 : 0))}
+              </div>
+            </div>
+            <button class="btn btn-buy w-100">ទិញឥឡូវ</button>
+          </div>
+        </div>
+      `;
+      container.innerHTML += card;
+    });
+  }
+
+  // Initial fetch
+  fetchProducts();
+</script>
+
+</body>
+</html>
