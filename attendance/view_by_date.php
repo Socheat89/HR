@@ -128,7 +128,7 @@ try {
             $column = $_POST['column'] ?? null;
             $value = $_POST['value'] ?? '';
 
-            if (!$id || !$key || !$column || !isset($table_configs[$key])) {
+            if (!$key || !$column || !isset($table_configs[$key])) {
                 echo json_encode(['success' => false, 'message' => 'ទិន្នន័យមិនត្រឹមត្រូវ']);
                 exit();
             }
@@ -140,6 +140,49 @@ try {
             }
 
             try {
+                if (!$id && $config['type'] === 'store') {
+                    $report_date = $_POST['reports_date'] ?? $selected_date;
+                    $new_record = [
+                        'gm' => 0,
+                        'manager_store' => 0,
+                        'manager_stock' => 0,
+                        'staff_skks2' => 0,
+                        'staff_nr3' => 0,
+                        'reports_date' => $report_date ?: $selected_date
+                    ];
+
+                    if ($column === 'reports_date') {
+                        $new_record['reports_date'] = $value ?: $selected_date;
+                    } else {
+                        $new_record[$column] = (int)$value;
+                    }
+
+                    $total = calculateStaffTotal($new_record, $config);
+                    $stmt = $pdo->prepare("INSERT INTO {$config['db_table']} (gm, manager_store, manager_stock, staff_skks2, staff_nr3, total, reports_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([
+                        $new_record['gm'],
+                        $new_record['manager_store'],
+                        $new_record['manager_stock'],
+                        $new_record['staff_skks2'],
+                        $new_record['staff_nr3'],
+                        $total,
+                        $new_record['reports_date']
+                    ]);
+
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'បានបង្កើត និងរក្សាទុកទិន្នន័យ!',
+                        'id' => (int)$pdo->lastInsertId(),
+                        'new_total' => $total
+                    ]);
+                    exit();
+                }
+
+                if (!$id) {
+                    echo json_encode(['success' => false, 'message' => 'ទិន្នន័យមិនត្រឹមត្រូវ']);
+                    exit();
+                }
+
                 if (tableHasTotal($config)) {
                     $stmt = $pdo->prepare("SELECT * FROM {$config['db_table']} WHERE id = ?");
                     $stmt->execute([$id]);
@@ -266,6 +309,8 @@ try {
 // មុខងារសម្រាប់បង្ហាញតារាង (Render Table Function)
 // =============================================================================
 function renderTable(string $key, array $config, array $records) {
+    global $selected_date;
+
     $label = htmlspecialchars($config['label']);
     $type = $config['type'];
 
@@ -305,7 +350,19 @@ function renderTable(string $key, array $config, array $records) {
                         <td class='actions-column'><button class='action-btn delete-btn' onclick=\"deleteRecord({$record['id']}, '{$key}_delete', 'តើអ្នកប្រាកដជាចង់លុប?')\">លុប</button></td>
                     </tr>";
         }
-        if (empty($records)) echo "<tr><td colspan='8'>មិនមានទិន្នន័យសម្រាប់ថ្ងៃនេះទេ។</td></tr>";
+        if (empty($records)) {
+            $date = htmlspecialchars($selected_date);
+            echo "<tr data-key='{$key}' data-new-row='1'>
+                        <td class='editable' data-column='gm'>0</td>
+                        <td class='editable' data-column='manager_store'>0</td>
+                        <td class='editable' data-column='manager_stock'>0</td>
+                        <td class='editable' data-column='staff_skks2'>0</td>
+                        <td class='editable' data-column='staff_nr3'>0</td>
+                        <td data-column='total'><b>0 នាក់</b></td>
+                        <td class='editable' data-column='reports_date'>{$date}</td>
+                        <td class='actions-column'><span class='inline-hint'>ចុចកែ</span></td>
+                    </tr>";
+        }
 
     } elseif ($type === 'warehouse') {
         echo "<tr><th colspan='5' class='section-header text-h2'>{$label}</th></tr>";
@@ -366,6 +423,7 @@ function renderTable(string $key, array $config, array $records) {
         .insert-btn:hover { background-color: #157347; }
         .delete-btn { background-color: #dc3545; padding: 6px 12px; }
         .delete-btn:hover { background-color: #bb2d3b; }
+        .inline-hint { color: #6c757d; font-size: 13px; }
         .message { text-align: center; padding: 12px; margin-bottom: 20px; border-radius: 6px; }
         .error { color: #842029; background-color: #f8d7da; border: 1px solid #f5c2c7; }
         .success { color: #0f5132; background-color: #d1e7dd; border: 1px solid #badbcc; }
@@ -720,17 +778,28 @@ function renderTable(string $key, array $config, array $records) {
             const newValue = inputElement.value.trim();
             if (newValue !== originalText) {
                 const row = cell.closest('tr');
+                const reportDateCell = row.querySelector('td[data-column="reports_date"]');
                 const data = {
-                    id: row.dataset.id,
+                    id: row.dataset.id || '',
                     key: row.dataset.key,
                     column: column,
-                    value: newValue
+                    value: newValue,
+                    reports_date: reportDateCell ? reportDateCell.textContent.trim() : selectedDate
                 };
                 
                 const result = await saveData('update_inline', data);
                 
                 if (result.success) {
                     cell.innerHTML = (column === 'note') ? newValue.replace(/\n/g, '<br>') : newValue;
+                    if (!row.dataset.id && result.id) {
+                        row.dataset.id = result.id;
+                        delete row.dataset.newRow;
+
+                        const actionCell = row.querySelector('.actions-column');
+                        if (actionCell) {
+                            actionCell.innerHTML = `<button class="action-btn delete-btn" onclick="deleteRecord(${result.id}, '${row.dataset.key}_delete', 'តើអ្នកប្រាកដជាចង់លុប?')">លុប</button>`;
+                        }
+                    }
                     updateRowAndGrandTotals(row);
                 } else {
                     cell.innerHTML = originalValue;
