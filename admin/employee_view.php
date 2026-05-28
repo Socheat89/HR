@@ -318,7 +318,7 @@ try {
                             <p>ID: <?php echo htmlspecialchars($employee['id']); ?></p>
                         </div>
                         <div class="employee-actions">
-                            <a href="view_employee.php?id=<?php echo htmlspecialchars($employee['id']); ?>" class="action-btn btn-view">View</a>
+                            <a href="../employee/view_employee.php?id=<?php echo htmlspecialchars($employee['id']); ?>" class="action-btn btn-view">View</a>
                            
                             <?php if (isAdmin()): ?>
                                 <a href="delete_user.php?id=<?php echo htmlspecialchars($employee['id']); ?>" class="action-btn btn-delete" onclick="return confirm('Are you sure?')">Delete</a>

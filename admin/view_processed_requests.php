@@ -1,7 +1,7 @@
 <?php
 require_once 'includes/auth.php';
 if (!isLoggedIn()) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -88,7 +88,8 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Processed Requests</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%); font-family: 'Poppins', sans-serif; color: #e0e0e0; }
@@ -119,6 +120,16 @@ try {
     </style>
 </head>
 <body>
+    <nav class="flex m-6 mb-8 items-center gap-3 text-slate-300 font-bold text-[10px] uppercase tracking-widest animate-fade-in" aria-label="Breadcrumb">
+        <a href="dashboard.php" class="flex items-center gap-2 hover:text-amber-400 transition-colors bg-white/5 px-4 py-2 rounded-xl shadow-sm border border-white/10 no-underline text-slate-300 backdrop-blur-md">
+            <i class="fas fa-home text-amber-500"></i>
+            <span>ផ្ទាំងគ្រប់គ្រង</span>
+        </a>
+        <i class="fas fa-chevron-right text-slate-500 text-[8px]"></i>
+        <span class="bg-amber-500/10 text-amber-500 px-4 py-2 rounded-xl border border-amber-500/10">
+            សំណើបានដំណើរការ
+        </span>
+    </nav>
     <div class="container">
         <h1>Processed Requests</h1>
         <?php if (empty($processedRequests)): ?>

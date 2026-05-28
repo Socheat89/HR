@@ -23,7 +23,7 @@ if (!function_exists('isLoggedIn')) {
 }
 
 if (!isLoggedIn()) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 

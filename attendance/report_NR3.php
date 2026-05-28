@@ -23,7 +23,6 @@ $department_configs = [
     'stock'    => ['label' => 'ផ្នែកស្តុក'],
     'sales'    => ['label' => 'ផ្នែកលក់'],
     'cashier'  => ['label' => 'ផ្នែកគិតលុយ'],
-    'delivery' => ['label' => 'ផ្នែកដឹកជញ្ជូន'], // បន្ថែមថ្មី
 ];
 
 // =============================================================================
@@ -47,14 +46,13 @@ function handle_post_request(PDO $pdo, string $main_db_table, string $new_staff_
         $column = $_POST['column'] ?? null;
         $value = isset($_POST['value']) ? (int)$_POST['value'] : 0;
         
-        // បន្ថែម delivery ចូលក្នុងបញ្ជីអនុញ្ញាត
+        // បញ្ជីអនុញ្ញាត (Allowed columns)
         $allowed_columns = [
             'store_female', 'store_male', 
             'intern_female', 'intern_male', 
             'stock_female', 'stock_male', 
             'sales_female', 'sales_male', 
-            'cashier_female', 'cashier_male',
-            'delivery_female', 'delivery_male'
+            'cashier_female', 'cashier_male'
         ];
         
         if (!$date || !$column || !in_array($column, $allowed_columns)) {
@@ -63,9 +61,9 @@ function handle_post_request(PDO $pdo, string $main_db_table, string $new_staff_
         }
 
         try {
-            $sql = "INSERT INTO {$main_db_table} (reports_date, {$column}) VALUES (:reports_date, :value) ON DUPLICATE KEY UPDATE {$column} = :value";
+            $sql = "INSERT INTO {$main_db_table} (reports_date, {$column}) VALUES (:reports_date, :value) ON DUPLICATE KEY UPDATE {$column} = :value_update";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute(['reports_date' => $date, 'value' => $value]);
+            $stmt->execute(['reports_date' => $date, 'value' => $value, 'value_update' => $value]);
             echo json_encode(['success' => true, 'message' => 'រក្សាទុកទិន្នន័យរួចរាល់!']);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -189,7 +187,7 @@ try {
         $columns = [
             'store_female', 'store_male', 'intern_female', 'intern_male', 
             'stock_female', 'stock_male', 'sales_female', 'sales_male', 
-            'cashier_female', 'cashier_male', 'delivery_female', 'delivery_male'
+            'cashier_female', 'cashier_male'
         ];
         foreach($columns as $col){ $daily_record[$col] = 0; }
     }

@@ -1,6 +1,30 @@
 <?php
 include 'includes/auth.php';
 
+// Load Theme Config
+$themeConfigPath = __DIR__ . '/includes/theme_config.json';
+$currentTheme = 'default';
+$customImage = '';
+if (file_exists($themeConfigPath)) {
+    $configData = json_decode(file_get_contents($themeConfigPath), true);
+    $currentTheme = $configData['theme'] ?? 'default';
+    $customImage = $configData['custom_image'] ?? '';
+}
+
+// Default Background Images for each theme
+$themeBackgrounds = [   
+    'kny'  => 'https://i.ibb.co/RKMS4tb/khmer-new-year-bg-1770518313913.jpg',
+    'pb'   => 'https://i.ibb.co/S4dYb35p/khmer-new-year-bg-1770518389358.jpg',
+    'cny'  => 'https://i.ibb.co/4462998/khmer-new-year-bg-1770518448823.jpg',
+    'wf'   => 'https://i.ibb.co/2611144/khmer-new-year-bg-1770518505378.jpg',
+    'kb'   => 'https://images.unsplash.com/photo-1596701062351-be5f6a200a45?q=80&w=1600',
+    'indy' => 'https://images.unsplash.com/photo-1629813289069-7c8704204d60?q=80&w=1600'
+];
+
+// Determine which image to use
+$bgImage = !empty($customImage) ? $customImage : ($themeBackgrounds[$currentTheme] ?? '');
+
+
 include 'includes/db.php';
 $conn = include 'includes/db.php';
 
@@ -37,7 +61,80 @@ $error_message = '';
     <title>View Lesson - <?php echo htmlspecialchars($lesson['title']); ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        body { font-family: 'Kantumruy Pro', sans-serif !important; }
+        
+        @keyframes bgZoom {
+            from { background-size: 100% 100%; }
+            to { background-size: 110% 110%; }
+        }
+
+        /* Floating Animation for Theme Icons */
+        @keyframes floatUpDown {
+            0% { transform: translateY(0) rotate(-15deg); }
+            50% { transform: translateY(-15px) rotate(-10deg); }
+            100% { transform: translateY(0) rotate(-15deg); }
+        }
+
+        /* Season/Festival Theme Overrides */
+        <?php if ($currentTheme === 'kny'): ?>
+        :root { --primary: #f59e0b; --primary-light: #fbbf24; --primary-dark: #d97706; }
+        .text-indigo-600 { color: #f59e0b !important; }
+        .bg-indigo-600 { background-color: #f59e0b !important; }
+        .bg-indigo-600:hover { background-color: #d97706 !important; }
+        .bg-white { background-color: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(10px); }
+        /* Fireworks Overlay for KNY */
+        body::after {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://media.tenor.com/XesYJjyNYgAAAAAi/fireworks-putukan.gif');
+            background-size: cover; background-repeat: no-repeat;
+            pointer-events: none; z-index: -1; opacity: 0.35; mix-blend-mode: screen;
+        }
+        
+        <?php elseif ($currentTheme === 'pb'): ?>
+        :root { --primary: #ea580c; --primary-light: #fdba74; --primary-dark: #c2410c; }
+        .text-indigo-600 { color: #ea580c !important; }
+        .bg-indigo-600 { background-color: #ea580c !important; }
+        .bg-indigo-600:hover { background-color: #c2410c !important; }
+        .bg-white { background-color: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(10px); }
+
+        <?php elseif ($currentTheme === 'cny'): ?>
+        :root { --primary: #dc2626; --primary-light: #f87171; --primary-dark: #b91c1c; }
+        .text-indigo-600 { color: #dc2626 !important; }
+        .bg-indigo-600 { background-color: #dc2626 !important; }
+        .bg-indigo-600:hover { background-color: #b91c1c !important; }
+        .bg-white { background-color: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(10px); }
+
+        <?php elseif ($currentTheme === 'wf'): ?>
+        :root { --primary: #0284c7; --primary-light: #38bdf8; --primary-dark: #0369a1; }
+        .text-indigo-600 { color: #0284c7 !important; }
+        .bg-indigo-600 { background-color: #0284c7 !important; }
+        .bg-indigo-600:hover { background-color: #0369a1 !important; }
+        .bg-white { background-color: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(10px); }
+        <?php endif; ?>
+
+        /* Apply Theme Background Image */
+        <?php if (!empty($bgImage)): ?>
+        body {
+            background-image: url('<?php echo $bgImage; ?>') !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+            background-repeat: no-repeat !important;
+            animation: bgZoom 20s ease-in-out infinite alternate;
+        }
+
+        /* Overlay to ensure readability */
+        body::before {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(2px);
+            z-index: -2;
+        }
+        <?php endif; ?>
         .video-player {
             position: relative;
             padding-bottom: 56.25%;
@@ -142,7 +239,7 @@ $error_message = '';
         }
     </script>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans antialiased">
+<body class="min-h-screen font-sans antialiased text-gray-900">
     <!-- Container -->
     <div class="max-w-6xl mx-auto px-4 py-8">
         <!-- Header -->

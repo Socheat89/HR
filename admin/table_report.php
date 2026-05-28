@@ -2,13 +2,32 @@
 // Start session for user tracking
 session_start();
 
+// Load Theme Config
+$themeConfigPath = __DIR__ . '/includes/theme_config.json';
+$currentTheme = 'default';
+$customImage = '';
+if (file_exists($themeConfigPath)) {
+    $configData = json_decode(file_get_contents($themeConfigPath), true);
+    $currentTheme = $configData['theme'] ?? 'default';
+    $customImage = $configData['custom_image'] ?? '';
+}
+
+// Default Background Images for each theme
+$themeBackgrounds = [   
+    'kny'  => 'https://i.ibb.co/RKMS4tb/khmer-new-year-bg-1770518313913.jpg',
+    'pb'   => 'https://i.ibb.co/S4dYb35p/khmer-new-year-bg-1770518389358.jpg',
+    'cny'  => 'https://i.ibb.co/4462998/khmer-new-year-bg-1770518448823.jpg',
+    'wf'   => 'https://i.ibb.co/2611144/khmer-new-year-bg-1770518505378.jpg',
+    'kb'   => 'https://images.unsplash.com/photo-1596701062351-be5f6a200a45?q=80&w=1600',
+    'indy' => 'https://images.unsplash.com/photo-1629813289069-7c8704204d60?q=80&w=1600'
+];
+
+// Determine which image to use
+$bgImage = !empty($customImage) ? $customImage : ($themeBackgrounds[$currentTheme] ?? '');
+
+
 // --- CONFIGURATION ---
-$dbHost = 'localhost';
-$dbName = 'samann1_admin_panel';
-$dbUser = 'samann1_admin_panel';
-$dbPass = 'admin_panel@2025';
-$telegramChatId = '-1002496391098';
-define('BASE_URL', $_SERVER['PHP_SELF']);
+require_once __DIR__ . '/includes/db.php';
 
 // --- PAGINATION SETUP ---
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
@@ -17,26 +36,26 @@ $offset = ($page - 1) * $limit;
 
 // --- END CONFIGURATION ---
 
+if (!defined('BASE_URL')) {
+    define('BASE_URL', 'table_report.php');
+}
+
 $isAdmin = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 require_once __DIR__ . '/includes/telegram.php';
 
+// Map $conn to $pdo if needed
+if (isset($conn)) {
+    $pdo = $conn;
+}
+
+// Get existing columns for requests table to allow conditional inserts/fields
 try {
-    $pdo = new PDO("mysql:host=$dbHost;dbname=$dbName", $dbUser, $dbPass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
-    $pdo->exec("SET NAMES 'utf8mb4'");
-    // Get existing columns for requests table to allow conditional inserts/fields
-    try {
-        $stmtCols = $pdo->prepare("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'requests'");
-        $stmtCols->execute([$dbName]);
-        $existingRequestColumns = $stmtCols->fetchAll(PDO::FETCH_COLUMN);
-    } catch (Exception $e) {
-        $existingRequestColumns = [];
-    }
-} catch (PDOException $e) {
-    die("កំហុសក្នុងការភ្ជាប់មូលដ្ឋានទិន្នន័យ: " . $e->getMessage());
+    $stmtCols = $pdo->prepare("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'requests'");
+    // $dbname is defined in includes/db.php
+    $stmtCols->execute([$dbname]);
+    $existingRequestColumns = $stmtCols->fetchAll(PDO::FETCH_COLUMN);
+} catch (Exception $e) {
+    $existingRequestColumns = [];
 }
 
 // Fetch current user details
@@ -67,6 +86,88 @@ $requestFields = [
     'reason', 'assigned_to', 'location', 'contact_number', 'status', 'signature', 'signature_date'
 ];
 
+// --- HANDLE AJAX: GET REQUEST DETAILS ---
+if (isset($_GET['action']) && $_GET['action'] === 'get_request_details' && isset($_GET['id'])) {
+    header('Content-Type: application/json');
+    $reqId = (int)$_GET['id'];
+    
+    $stmt = $pdo->prepare("SELECT * FROM requests WHERE id = ?");
+    $stmt->execute([$reqId]);
+    $request = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($request) {
+        echo json_encode(['success' => true, 'data' => $request]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Request not found']);
+    }
+    exit;
+}
+
+// --- HANDLE AJAX: GET LATEST SIGNATURE ---
+if (isset($_GET['action']) && $_GET['action'] === 'get_latest_signature' && (isset($_GET['user_id']) || isset($_GET['requester_name']))) {
+    header('Content-Type: application/json');
+    $uId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+    $rName = $_GET['requester_name'] ?? null;
+    
+    if ($uId) {
+        $stmt = $pdo->prepare("SELECT signature, signature_date FROM requests WHERE user_id = ? AND signature IS NOT NULL AND signature != '' ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$uId]);
+    } else {
+        $stmt = $pdo->prepare("SELECT signature, signature_date FROM requests WHERE requester_name = ? AND signature IS NOT NULL AND signature != '' ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$rName]);
+    }
+    
+    $sig = $stmt->fetch(PDO::FETCH_ASSOC);
+    echo json_encode(['success' => true, 'data' => $sig]);
+    exit;
+}
+
+// --- HANDLE AJAX: GET SIGNATURE HISTORY ---
+
+// --- HANDLE AJAX: QUICK SIGNATURE UPLOAD ---
+if (isset($_GET['action']) && $_GET['action'] === 'quick_signature_upload' && isset($_POST['request_id'])) {
+    header('Content-Type: application/json');
+    try {
+        $requestId = (int)$_POST['request_id'];
+        $signatureData = $_POST['signature_data'] ?? '';
+        $isDeptHead = ($_POST['is_department_head'] ?? '0') === '1';
+
+        if (!$requestId) throw new Exception('Request ID missing');
+        if (!$signatureData) throw new Exception('Signature data missing');
+
+        // Fetch original
+        $stmt = $pdo->prepare("SELECT * FROM requests WHERE id = ?");
+        $stmt->execute([$requestId]);
+        $original = $stmt->fetch();
+        if (!$original) throw new Exception('Request not found');
+
+        // History
+        $oldSig = $isDeptHead ? $original['department_head_signature'] : $original['signature'];
+        if ($oldSig) {
+            $stmtHist = $pdo->prepare("INSERT INTO signature_history (request_id, old_signature, changed_by_user_id, changed_at) VALUES (?, ?, ?, NOW())");
+            $stmtHist->execute([$requestId, $oldSig, $currentUserId]);
+        }
+
+        // Update
+        if ($isDeptHead) {
+            $stmtUpd = $pdo->prepare("UPDATE requests SET department_head_signature = ?, department_head_signature_date = NOW() WHERE id = ?");
+        } else {
+            $stmtUpd = $pdo->prepare("UPDATE requests SET signature = ?, signature_date = NOW() WHERE id = ?");
+        }
+        $stmtUpd->execute([$signatureData, $requestId]);
+
+        // Get new history count
+        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM signature_history WHERE request_id = ?");
+        $stmtCount->execute([$requestId]);
+        $historyCount = $stmtCount->fetchColumn();
+
+        echo json_encode(['success' => true, 'signature' => $signatureData, 'history_count' => $historyCount]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+    exit;
+}
+
 // --- HANDLE ADD NEW REQUEST (FIXED) ---
 if (isset($_POST['submit_add_request'])) {
     $newRequestData = [];
@@ -93,12 +194,35 @@ if (isset($_POST['submit_add_request'])) {
     $newRequestData['requester_name'] = $finalRequesterName;
     $newRequestData['created_at'] = date('Y-m-d H:i:s');
 
+    // --- NEW: AUTO-PULL PREVIOUS SIGNATURE ---
+    // If signature is not provided in $_POST (which it usually isn't in add form), 
+    // fetch the latest signature from previous requests of this user.
+    if (empty($newRequestData['signature'])) {
+        try {
+            $stmtSig = $pdo->prepare("SELECT signature, signature_date FROM requests WHERE user_id = ? AND signature IS NOT NULL AND signature != '' ORDER BY id DESC LIMIT 1");
+            $stmtSig->execute([$finalUserId]);
+            $prevSig = $stmtSig->fetch();
+            if ($prevSig) {
+                $newRequestData['signature'] = $prevSig['signature'];
+                // Only pull date if signature existed
+                if ($prevSig['signature_date']) {
+                    $newRequestData['signature_date'] = $prevSig['signature_date'];
+                } else {
+                    $newRequestData['signature_date'] = date('Y-m-d');
+                }
+            }
+        } catch (Exception $e) {
+            // Silently fail if signature pull fails
+        }
+    }
+
     if (empty($newRequestData['request_type']) || empty($newRequestData['user_id']) || empty($newRequestData['request_date'])) {
         $error = "សូមបំពេញគ្រប់ Field ដែលមានសញ្ញា (*) នៅក្នុងទម្រង់បន្ថែម។";
     } else {
         try {
             $filteredRequestData = array_filter($newRequestData, function($key) use ($requestFields, $existingRequestColumns) {
                 // Only keep keys that are in our allowed requestFields AND actually exist in the DB table
+                // Note: 'signature' and 'signature_date' are in $requestFields
                 return ($key === 'created_at') || (in_array($key, $requestFields) && in_array($key, $existingRequestColumns));
             }, ARRAY_FILTER_USE_KEY);
 
@@ -542,6 +666,105 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
             min-height: 100vh;
             padding: 20px;
         }
+
+        @keyframes bgZoom {
+            from { background-size: 100% 100%; }
+            to { background-size: 110% 110%; }
+        }
+
+        /* Floating Animation for Theme Icons */
+        @keyframes floatUpDown {
+            0% { transform: translateY(0) rotate(-15deg); }
+            50% { transform: translateY(-15px) rotate(-10deg); }
+            100% { transform: translateY(0) rotate(-15deg); }
+        }
+
+        /* Season/Festival Theme Overrides */
+        <?php if ($currentTheme === 'kny'): ?>
+        :root { --primary-btn: #f59e0b; --primary-btn-hover: #d97706; }
+        .report-title { color: #d97706 !important; }
+        .btn-success { background: linear-gradient(90deg, #f59e0b, #d97706) !important; border: none !important; }
+        th { background-color: #f59e0b !important; color: #fff !important; }
+        .report-container::after { 
+            content: ""; position: absolute; bottom: -20px; right: -20px; width: 120px; height: 120px;
+            background-image: url('https://i.ibb.co/qFRZ8SCK/khmer-new-year.png');
+            background-size: contain; background-repeat: no-repeat;
+            opacity: 0.12; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.1));
+            animation: floatUpDown 6s ease-in-out infinite;
+        }
+        /* Fireworks Overlay for KNY */
+        body::after {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://media.tenor.com/XesYJjyNYgAAAAAi/fireworks-putukan.gif');
+            background-size: cover; background-repeat: no-repeat;
+            pointer-events: none; z-index: -1; opacity: 0.35; mix-blend-mode: screen;
+        }
+        
+        <?php elseif ($currentTheme === 'pb'): ?>
+        :root { --primary-btn: #ea580c; --primary-btn-hover: #c2410c; }
+        .report-title { color: #c2410c !important; }
+        .btn-success { background: linear-gradient(90deg, #ea580c, #c2410c) !important; border: none !important; }
+        th { background-color: #ea580c !important; color: #fff !important; }
+        .report-container::after { 
+            content: "\f67f"; font-family: "Font Awesome 6 Free"; font-weight: 900; 
+            position: absolute; bottom: -10px; right: -10px; font-size: 80px;
+            opacity: 0.1; color: #ea580c; animation: floatUpDown 6s ease-in-out infinite;
+        }
+
+        <?php elseif ($currentTheme === 'cny'): ?>
+        :root { --primary-btn: #dc2626; --primary-btn-hover: #b91c1c; }
+        .report-title { color: #b91c1c !important; }
+        .btn-success { background: linear-gradient(90deg, #dc2626, #b91c1c) !important; border: none !important; }
+        th { background-color: #dc2626 !important; color: #fff !important; }
+        .report-container::after { 
+            content: ""; position: absolute; bottom: -20px; right: -20px; width: 120px; height: 120px;
+            background-image: url('https://i.ibb.co/G4K8Mv36/chinese-new-year.png');
+            background-size: contain; background-repeat: no-repeat;
+            opacity: 0.12; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.1));
+            animation: floatUpDown 6s ease-in-out infinite;
+        }
+
+        <?php elseif ($currentTheme === 'wf'): ?>
+        :root { --primary-btn: #0284c7; --primary-btn-hover: #0369a1; }
+        .report-title { color: #0369a1 !important; }
+        .btn-success { background: linear-gradient(90deg, #0284c7, #0369a1) !important; border: none !important; }
+        th { background-color: #0284c7 !important; color: #fff !important; }
+        .report-container::after { 
+            content: "\f773"; font-family: "Font Awesome 6 Free"; font-weight: 900; 
+            position: absolute; bottom: -10px; right: -10px; font-size: 100px;
+            opacity: 0.1; color: #0284c7; animation: floatUpDown 6s ease-in-out infinite;
+        }
+        <?php endif; ?>
+        /* Ensure header and important UI text is white on themed backgrounds */
+        .report-container thead th,
+        .report-container thead th a,
+        .report-container thead th span,
+        .report-container thead th .badge,
+        table thead th,
+        th {
+            color: #fff !important;
+        }
+
+        /* Apply Theme Background Image */
+        <?php if (!empty($bgImage)): ?>
+        body {
+            background-image: url('<?php echo $bgImage; ?>') !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+            background-repeat: no-repeat !important;
+            animation: bgZoom 20s ease-in-out infinite alternate !important;
+        }
+
+        /* Overlay to ensure readability */
+        body::before {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            z-index: -2;
+        }
+        <?php endif; ?>
         body, .btn, .modal-title, .form-table td, .main-footer th, .report-title, input::placeholder, .span, .form-label {
             font-family: 'Noto Sans Khmer', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -583,15 +806,249 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
         .print-request-form .form-table { width: 100%; border-collapse: collapse; }
         .print-request-form .form-table td { border: 1px solid #000; padding: 8px; font-family: 'Noto Sans Khmer', sans-serif; font-size: 14px; }
         .icon-group { display: flex; flex-wrap: wrap; gap: 15px; margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #e0e6f0; align-items: center; justify-content: center; }
-        .request-icon-print { display: flex; align-items: center; font-size: 10px; font-family: 'Noto Sans Khmer', sans-serif; padding: 6px 10px; border-radius: 5px; background-color: #f0f0f0; color: #555; opacity: 0.7; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; }
-        .request-icon-print.selected { background-color: #28a745 !important; color: #ffffff !important; opacity: 1 !important; font-weight: bold; }
+        .request-icon-print { display: flex; align-items: center; font-size: 10px; font-family: 'Noto Sans Khmer', sans-serif; padding: 6px 10px; border-radius: 8px; background-color: #f0f0f0; color: #555; opacity: 0.9; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); transition: transform 220ms ease, box-shadow 220ms ease, opacity 220ms ease, background 220ms ease; cursor: default; }
+        .request-icon-print:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.08); opacity: 1; }
+        .request-icon-print:focus { outline: none; box-shadow: 0 6px 14px rgba(0,0,0,0.12); }
+        .request-icon-print.selected {
+            background: linear-gradient(90deg, #34d399 0%, #10b981 100%) !important;
+            color: #ffffff !important;
+            opacity: 1 !important;
+            font-weight: 700 !important;
+            box-shadow: 0 10px 30px rgba(16,185,129,0.18) !important;
+            transform: translateY(-4px);
+            border: 1px solid rgba(16,185,129,0.18) !important;
+        }
+        /* small badge-like appearance for selected state on small screens */
+        @media (max-width: 480px) {
+            .request-icon-print { padding: 6px 8px; font-size: 11px; }
+            .request-icon-print.selected { transform: none; box-shadow: 0 6px 18px rgba(16,185,129,0.14) !important; }
+        }
         .print-request-form .main-footer { width: 100%; border: none; border-collapse: collapse; margin-top: 20px; }
         .print-request-form .main-footer th {  background-color: transparent; border: none;  padding: 8px;  font-family: 'Noto Sans Khmer', sans-serif;  font-size: 14px;  color: black;  }
         .print-request-form .main-footer tr { border: none; }
         .table-actions button, .table-actions a { margin-right: 5px; margin-bottom: 5px; }
+
+        /* Premium Table UI Redesign */
+        .report-container {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+            padding: 30px;
+        }
+
+        .action-bar h2 {
+            font-size: 1.75rem;
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .search-wrapper {
+            margin-bottom: 30px;
+        }
+
+        #searchInput {
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            height: 48px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        #searchInput:focus {
+            background: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .main-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 1rem;
+            vertical-align: top;
+            border-color: #f1f5f9;
+        }
+
+        .main-table thead th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05rem;
+            padding: 16px 20px;
+            border-bottom: 2px solid #f1f5f9 !important;
+        }
+
+        .main-table tbody tr {
+            transition: background-color 0.2s ease;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .main-table tbody tr:hover {
+            background-color: #f9fafb !important;
+        }
+
+        .main-table tbody td {
+            padding: 18px 20px;
+            font-size: 0.9rem;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .id-badge {
+            font-family: 'Monaco', 'Consolas', monospace;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .requester-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .requester-avatar {
+            width: 36px;
+            height: 36px;
+            background: #eff6ff;
+            color: #3b82f6;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            border: 1px solid #dbeafe;
+        }
+
+        /* Modern Badges */
+        .badge-request {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+        
+        .badge-annual { background: #ecfdf5; color: #059669; border-color: #d1fae5; }
+        .badge-late { background: #fff1f2; color: #e11d48; border-color: #ffe4e6; }
+        .badge-early { background: #fffbeb; color: #d97706; border-color: #fef3c7; }
+        .badge-ot { background: #f0f9ff; color: #0284c7; border-color: #e0f2fe; }
+        .badge-forgot { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+        .badge-default { background: #f9fafb; color: #64748b; border-color: #f1f5f9; }
+
+        /* Actions Dropdown Refinement */
+        .btn-action-trigger {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .btn-action-trigger:hover, .btn-action-trigger:focus {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-menu {
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            min-width: 210px;
+        }
+
+        .dropdown-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .dropdown-item i {
+            font-size: 1rem;
+            width: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dropdown-header {
+            padding: 8px 12px 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .dropdown-divider {
+            margin: 6px 0;
+            border-color: #f1f5f9;
+        }
+
+        /* Redesign Delete Button in Dropdown */
+        .dropdown-item.text-danger:hover {
+            background-color: #fef2f2;
+            color: #dc2626;
+        }
+
+        .back-btn {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .back-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
     /* Use Font Awesome caret icon instead of Bootstrap's default caret for our dropdowns */
     .dropdown-toggle.fa-caret-override::after { display: none !important; }
     .dropdown-toggle.fa-caret-override i.fa, .dropdown-toggle.fa-caret-override i.fas { font-size: 0.95rem; margin-left: 0; vertical-align: middle; }
+    
+    .table-actions .dropdown-toggle::after {
+        display: none !important;
+    }
+    .table-actions .btn-link:focus {
+        box-shadow: none;
+    }
+    .table-actions .dropdown-item:active {
+        background-color: #f8f9fa;
+        color: inherit;
+    }
+    .table-actions .dropdown-menu {
+        min-width: 200px;
+    }
+    .table-actions .dropdown-item i {
+        width: 20px;
+        text-align: center;
+    }
     @media print { body * { visibility: hidden; } .print-request-form, .print-request-form * { visibility: visible; } .print-request-form { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; } .report-container { display: none; } .no-print { display: none !important; } @page { size: A5; margin: 3mm; } .request-icon-print { background-color: #f0f0f0 !important; color: #555 !important; opacity: 0.7 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .request-icon-print.selected { background-color: #28a745 !important; color: #ffffff !important; opacity: 1 !important; font-weight: bold !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
         @media (max-width: 768px) { .report-container { padding: 0.5rem; } th, td { font-size: 11px; padding: 8px; } .detail-item { flex: 1 1 100%; } .request-icon-print { font-size: 9px; padding: 5px 8px; } .print-logo { max-width: 150px; height: auto; } .report-title { font-size: 1.5rem; } .btn-detail, .btn-delete, .btn-print, .btn-edit { font-size: 0.8rem; padding: 5px 10px; } }
         .span { display: block; text-align: center; margin: 10px 0; font-family: 'Noto Sans Khmer', sans-serif;}
@@ -690,13 +1147,16 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
             margin-top: 5px;
         }
 
-.report-container {
-      background: #fff;
+    .report-container {
+      background: rgba(255, 255, 255, 0.95);
       padding: 25px;
       margin: 40px auto;
       max-width: 1200px;
       border-radius: 10px;
       box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.3);
     }
     #loadingSpinner {
       display: none;
@@ -716,9 +1176,9 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                     <i class="fas fa-trash"></i> លុបអ្នកជ្រើសរើស
                 </button>
                 <?php endif; ?>
-                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addRequestModal">
-                    <i class="fas fa-plus"></i> បន្ថែមសំណើថ្មី
-                </button>
+                <a href="../homes.php" class="btn btn-secondary shadow-sm">
+                <i class="fas fa-arrow-left"></i> ត្រឡប់ក្រោយ
+            </a>
             </div>
         </div>
 
@@ -729,84 +1189,141 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
             <div class="alert alert-danger no-print"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
 
-        <div class="mb-3 no-print">
-            <input type="text" id="searchInput" class="form-control" placeholder="ស្វែងរក (ID, ឈ្មោះ, ប្រភេទ, ហេតុផល...)....">
+        <div class="search-wrapper no-print">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" class="form-control" placeholder="ស្វែងរកតាម ID, ឈ្មោះ, ប្រភេទសំណើ, ឬមូលហេតុ...">
         </div>
 
         <?php if (empty($requests)): ?>
-            <p class="text-center">មិនមានសំណើណាមួយត្រូវបានរកឃើញទេ។</p>
+            <div class="text-center py-5">
+                <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                <p class="text-muted">មិនមានសំណើណាមួយត្រូវបានរកឃើញទេ។</p>
+            </div>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
+                <table class="table main-table">
                     <thead>
                         <tr>
                             <?php if ($isAdmin || in_array($currentUserId, $editableUserIds)): ?>
-                            <th class="no-print"><input type="checkbox" id="selectAll"></th>
+                            <th class="no-print" style="width: 50px;"><input type="checkbox" id="selectAll" class="form-check-input"></th>
                             <?php endif; ?>
-                            <th>ID</th>
+                            <th style="width: 100px;">ID</th>
                             <th>ប្រភេទសំណើ</th>
                             <th>ឈ្មោះអ្នកស្នើសុំ</th>
-                            <th>ផ្នែក</th>
-                            <th>កាលបរិច្ឆេទស្នើសុំ</th>
-                            <th style="min-width: 150px;">មូលហេតុ</th>
-                            <th class="no-print" style="min-width: 180px;">សកម្មភាព</th>
+                            <th>ផ្នែក / សាខា</th>
+                            <th>កាលបរិច្ឆេទ</th>
+                            <th style="min-width: 200px;">មូលហេតុ</th>
+                            <th class="no-print text-center">សកម្មភាព</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($requests as $request): ?>
+                        <?php foreach ($requests as $request): 
+                            $type = $request['request_type'] ?? 'N/A';
+                            $badgeClass = 'badge-default';
+                            if (stripos($type, 'Annual') !== false || stripos($type, 'សម្រាកប្រចាំឆ្នាំ') !== false) $badgeClass = 'badge-annual';
+                            elseif (stripos($type, 'Late') !== false || stripos($type, 'មកយឺត') !== false) $badgeClass = 'badge-late';
+                            elseif (stripos($type, 'Early') !== false || stripos($type, 'ចេញមុន') !== false) $badgeClass = 'badge-early';
+                            elseif (stripos($type, 'OT') !== false || stripos($type, 'ថែម') !== false) $badgeClass = 'badge-ot';
+                            elseif (stripos($type, 'Forgot') !== false || stripos($type, 'ភ្លេច') !== false) $badgeClass = 'badge-forgot';
+                        ?>
                             <tr>
                                 <?php if ($isAdmin || in_array($currentUserId, $editableUserIds)): ?>
-                                <td class="no-print"><input type="checkbox" class="rowCheckbox" value="<?php echo $request['id']; ?>"></td>
+                                <td class="no-print"><input type="checkbox" class="rowCheckbox form-check-input" value="<?php echo $request['id']; ?>"></td>
                                 <?php endif; ?>
-                                <td><?php echo htmlspecialchars($request['id'] ?? 'N/A'); ?></td>
-                                <td><?php echo htmlspecialchars($request['request_type'] ?? 'N/A'); ?></td>
-                                <td><?php echo htmlspecialchars($request['requester_name'] ?? 'N/A'); ?></td>
-                                <td><?php echo htmlspecialchars($request['department'] ?? 'N/A'); ?></td>
-                                <td><?php echo htmlspecialchars(isset($request['request_date']) ? date("d-m-Y", strtotime($request['request_date'])) : 'N/A'); ?></td>
-                                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo htmlspecialchars($request['reason'] ?? ''); ?>">
-                                    <?php echo htmlspecialchars($request['reason'] ?? 'N/A'); ?>
+                                <td><span class="id-badge">#<?php echo htmlspecialchars($request['id'] ?? 'N/A'); ?></span></td>
+                                <td>
+                                    <span class="badge-request <?php echo $badgeClass; ?>">
+                                        <?php echo htmlspecialchars($type); ?>
+                                    </span>
                                 </td>
-                                <td class="no-print table-actions">
-                                    <button class="btn btn-sm btn-detail" data-bs-toggle="modal" data-bs-target="#detailModal" 
-                                        data-request='<?php echo htmlspecialchars(json_encode($request), ENT_QUOTES, 'UTF-8'); ?>'
-                                        data-can-edit="<?php echo ($isAdmin || in_array($request['user_id'], $editableUserIds)) ? 'true' : 'false'; ?>">
-                                        <i class="fas fa-eye"></i> មើល/កែ
-                                    </button>
-
-                                    <!-- signature actions grouped under caret dropdown -->
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-sm btn-light dropdown-toggle fa-caret-override" data-bs-toggle="dropdown" aria-expanded="false" title="សកម្មភាពហត្ថលេខា">
-                                            <i class="fa-solid fa-caret-down" aria-hidden="true"></i>
-                                            <span class="visually-hidden">បើកមឺនុយសកម្មភាពហត្ថលេខា</span>
+                                <td>
+                                    <div class="requester-info">
+                                        <div class="requester-avatar">
+                                            <?php 
+                                                $initials = '';
+                                                if (!empty($request['requester_name'])) {
+                                                    $parts = explode(' ', $request['requester_name']);
+                                                    foreach ($parts as $p) $initials .= mb_substr($p, 0, 1, 'UTF-8');
+                                                }
+                                                echo htmlspecialchars(mb_substr($initials, 0, 2, 'UTF-8'));
+                                            ?>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold"><?php echo htmlspecialchars($request['requester_name'] ?? 'N/A'); ?></div>
+                                            <div class="text-muted small">ID: <?php echo htmlspecialchars($request['user_id'] ?? '-'); ?></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-medium text-dark"><?php echo htmlspecialchars($request['department'] ?? 'N/A'); ?></div>
+                                    <div class="text-muted small"><?php echo htmlspecialchars($request['branch'] ?? 'N/A'); ?></div>
+                                </td>
+                                <td>
+                                    <div class="fw-medium"><?php echo htmlspecialchars(isset($request['request_date']) ? date("d-m-Y", strtotime($request['request_date'])) : 'N/A'); ?></div>
+                                    <div class="text-muted small"><?php echo htmlspecialchars(isset($request['created_at']) ? date("H:i", strtotime($request['created_at'])) : ''); ?></div>
+                                </td>
+                                <td>
+                                    <div style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?php echo htmlspecialchars($request['reason'] ?? ''); ?>">
+                                        <?php echo htmlspecialchars($request['reason'] ?? 'N/A'); ?>
+                                    </div>
+                                </td>
+                                <td class="no-print table-actions text-end align-middle">
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-action-trigger dropdown-toggle" type="button" id="actionsDropdown<?php echo $request['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown<?php echo $request['id']; ?>">
+                                            <li class="dropdown-header">សកម្មភាពសំណើ</li>
+                                            <li>
+                                                <button class="dropdown-item btn-detail" 
+                                                    data-request-id="<?php echo (int)$request['id']; ?>"
+                                                    data-can-edit="<?php echo ($isAdmin || (in_array($request['user_id'], $editableUserIds))) ? 'true' : 'false'; ?>">
+                                                    <i class="fas fa-edit text-warning"></i> មើល និងកែសម្រួល
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item btn-table-print" 
+                                                    data-request-id="<?php echo (int)$request['id']; ?>">
+                                                    <i class="fas fa-print text-success"></i> បោះពុម្ពសំណើ
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item btn-table-pdf" 
+                                                    data-request-id="<?php echo (int)$request['id']; ?>">
+                                                    <i class="fas fa-file-pdf text-danger"></i> ទាញយកជា PDF
+                                                </button>
+                                            </li>
+                                            
                                             <?php if ($isAdmin || in_array($request['user_id'], $editableUserIds)): ?>
+                                                <li class="dropdown-divider"></li>
+                                                <li class="dropdown-header">ហត្ថលេខា</li>
                                                 <li>
                                                     <button class="dropdown-item btn-dept-detail" 
-                                                        data-request='<?php echo htmlspecialchars(json_encode($request), ENT_QUOTES, 'UTF-8'); ?>'
                                                         data-request-id="<?php echo (int)$request['id']; ?>">
-                                                        <i class="fas fa-user-tie me-2"></i> មើល/កែ ហត្ថលេខាប្រធាន
+                                                        <i class="fas fa-user-tie text-primary"></i> ហត្ថលេខាប្រធាន
                                                     </button>
                                                 </li>
-                                            <?php endif; ?>
-                                            <?php if ($isAdmin || in_array($request['user_id'], $editableUserIds)): ?>
                                                 <li>
                                                     <button class="dropdown-item btn-quick-signature" 
                                                         data-request-id="<?php echo (int)$request['id']; ?>">
-                                                        <i class="fas fa-signature me-2"></i> Upload ហត្ថលេខាផ្ទាល់ខ្លួន
+                                                        <i class="fas fa-signature text-info"></i> ហត្ថលេខាផ្ទាល់ខ្លួន
+                                                    </button>
+                                                </li>
+                                            <?php endif; ?>
+
+                                            <?php if ($isAdmin || (int)$request['user_id'] === (int)$currentUserId): ?>
+                                                <li class="dropdown-divider"></li>
+                                                <li>
+                                                    <button class="dropdown-item text-danger btn-delete font-weight-bold" 
+                                                        data-id="<?php echo $request['id']; ?>"
+                                                        data-name="<?php echo htmlspecialchars($request['request_type'] . ' ដោយ ' . $request['requester_name']); ?>"
+                                                        data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
+                                                        <i class="fas fa-trash"></i> លុបសំណើនេះ
                                                     </button>
                                                 </li>
                                             <?php endif; ?>
                                         </ul>
                                     </div>
-
-                                    <?php if ($isAdmin || (int)$request['user_id'] === (int)$currentUserId): ?>
-                                        <button class="btn btn-sm btn-delete" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal"
-                                            data-id="<?php echo $request['id']; ?>"
-                                            data-name="<?php echo htmlspecialchars($request['request_type'] . ' ដោយ ' . $request['requester_name']); ?>">
-                                            <i class="fas fa-trash"></i> លុប
-                                        </button>
-                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -882,7 +1399,7 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
             <button type="button" class="btn btn-info" id="printRequestFormButton">
                 <i class="fas fa-print"></i> បោះពុម្ពសំណើ (ទាំងអស់ដែលបង្ហាញ)
             </button>
-            <button type="button" class="back-btn btn btn-secondary" onclick="window.location.href='https://app.vvc.asia/requests_menu.php'">
+            <button type="button" class="back-btn btn btn-secondary" onclick="window.location.href='../requests/requests_menu.php'">
                 <i class="fas fa-arrow-left"></i> ត្រឡប់ទៅ Menu
             </button>
         </div>
@@ -1050,6 +1567,9 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
 
                                     <button type="button" class="btn btn-outline-danger btn-sm mt-2" id="delete_signature_btn" style="display:none;">
                                         <i class="fas fa-trash"></i> លុបហត្ថលេខា
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info btn-sm mt-2" id="pull_prev_signature_btn" style="display:none;">
+                                        <i class="fas fa-magic"></i> ប្រើហត្ថលេខាមុន
                                     </button>
                                 </div>
 
@@ -1324,6 +1844,26 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                     historyBtn.style.display = 'none';
                 }
 
+                // Handle pull previous signature button
+                const pullPrevSigBtn = document.getElementById('pull_prev_signature_btn');
+                if (pullPrevSigBtn) {
+                    pullPrevSigBtn.style.display = 'none'; // hidden by default
+                    if (!requestData.signature || !requestData.signature.startsWith('data:image')) {
+                        // If signature missing, check if this user has any previous one
+                        const uId = requestData.user_id;
+                        const rName = requestData.requester_name;
+                        fetch(`<?php echo BASE_URL; ?>?action=get_latest_signature&user_id=${uId}&requester_name=${rName}`)
+                            .then(res => res.json())
+                            .then(json => {
+                                if (json.success && json.data && json.data.signature) {
+                                    pullPrevSigBtn.style.display = 'inline-block';
+                                    pullPrevSigBtn.dataset.prevSig = json.data.signature;
+                                    pullPrevSigBtn.dataset.prevDate = json.data.signature_date;
+                                }
+                            });
+                    }
+                }
+
                 toggleDetailModalEditMode(false, canEditThisRequest);
             }
 
@@ -1356,14 +1896,106 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                 if (closeButton) closeButton.innerHTML = isEditing ? '<i class="fas fa-times"></i> បោះបង់' : '<i class="fas fa-times"></i> បិទ';
             }
 
-            detailModalEl.addEventListener('show.bs.modal', function (event) {
-                const button = event.relatedTarget;
-                try {
-                    const requestData = JSON.parse(button.getAttribute('data-request'));
-                    const canEditThisRequest = button.getAttribute('data-can-edit') === 'true';
-                    populateDetailModal(requestData, canEditThisRequest);
-                } catch (e) {
-                    console.error('Error populating detail/edit modal:', e);
+            // Direct click handler for View/Edit button for better reliability
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.btn-detail');
+                if (btn) {
+                    console.log('View/Edit button clicked manually');
+                    const requestId = btn.getAttribute('data-request-id');
+                    const canEditThisRequest = btn.getAttribute('data-can-edit') === 'true';
+                    
+                    if (!requestId) return;
+
+                    // Reset and Show Modal
+                    const editIdField = document.getElementById('edit_id_field');
+                    if (editIdField) editIdField.value = requestId;
+                    detailModalEl.querySelectorAll('.display-text').forEach(span => span.textContent = 'កំពុងផ្ទុក...');
+                    detailModalEl.querySelectorAll('.edit-field').forEach(input => input.value = '');
+                    
+                    const sigImg = document.getElementById('signature-image');
+                    const deptSigImg = document.getElementById('dept-signature-image');
+                    if (sigImg) sigImg.style.display = 'none';
+                    if (deptSigImg) deptSigImg.style.display = 'none';
+
+                    detailModalInstance.show();
+
+                    console.log('Fetching details for ID (Manual):', requestId);
+                    fetch(`<?php echo BASE_URL; ?>?action=get_request_details&id=${requestId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success && data.data) {
+                                populateDetailModal(data.data, canEditThisRequest);
+                            } else {
+                                alert('បរាជ័យក្នុងការទាញយកទិន្នន័យ: ' + (data.message || 'Unknown error'));
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Error fetching details:', err);
+                            alert('មានបញ្ហាក្នុងការតភ្ជាប់ទៅកាន់ Server');
+                        });
+                }
+            });
+
+            // Handle Print from table dropdown
+            document.addEventListener('click', async function(e) {
+                const printBtn = e.target.closest('.btn-table-print');
+                if (printBtn) {
+                    const requestId = printBtn.getAttribute('data-request-id');
+                    if (!requestId) return;
+
+                    const originalContent = printBtn.innerHTML;
+                    printBtn.disabled = true;
+                    printBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> កំពុងរៀបចំ...';
+
+                    try {
+                        const res = await fetch(`<?php echo BASE_URL; ?>?action=get_request_details&id=${requestId}`);
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            const printContentEl = document.getElementById('printableForm');
+                            printContentEl.style.display = 'block';
+                            populatePrintForm([data.data]);
+                            setTimeout(() => { 
+                                window.print(); 
+                                printContentEl.style.display = 'none'; 
+                            }, 250);
+                        } else {
+                            alert('បរាជ័យក្នុងការទាញយកទិន្នន័យ');
+                        }
+                    } catch (err) {
+                        console.error('Error fetching print details:', err);
+                        alert('មានកំហុសក្នុងការតភ្ជាប់ Server');
+                    } finally {
+                        printBtn.disabled = false;
+                        printBtn.innerHTML = originalContent;
+                    }
+                }
+
+                // Handle PDF Download from table dropdown
+                const pdfBtn = e.target.closest('.btn-table-pdf');
+                if (pdfBtn) {
+                    const requestId = pdfBtn.getAttribute('data-request-id');
+                    if (!requestId) return;
+
+                    const originalContent = pdfBtn.innerHTML;
+                    pdfBtn.disabled = true;
+                    pdfBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> កំពុងបង្កើត...';
+
+                    try {
+                        const res = await fetch(`<?php echo BASE_URL; ?>?action=get_request_details&id=${requestId}`);
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            currentRequestForDetailModal = data.data; // Essential for downloadRequestAsPDF
+                            await downloadRequestAsPDF();
+                        } else {
+                            alert('បរាជ័យក្នុងការទាញយកទិន្នន័យ');
+                        }
+                    } catch (err) {
+                        console.error('Error fetching PDF details:', err);
+                        alert('មានកំហុសក្នុងការតភ្ជាប់ Server');
+                    } finally {
+                        pdfBtn.disabled = false;
+                        pdfBtn.innerHTML = originalContent;
+                    }
                 }
             });
             
@@ -1512,6 +2144,27 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                 img.src = ''; img.style.display='none'; noText.style.display='block';
             });
             
+            // Pull previous signature handler
+            document.getElementById('pull_prev_signature_btn')?.addEventListener('click', function(){
+                const sig = this.dataset.prevSig;
+                const date = this.dataset.prevDate;
+                if (!sig) return;
+                
+                const img = document.getElementById('signature-image');
+                const noText = document.getElementById('no-signature-text');
+                const sigDataInput = document.getElementById('signature_data_input');
+                
+                img.src = sig; img.style.display='block'; noText.style.display='none';
+                if (sigDataInput) sigDataInput.value = sig;
+                // Optionally update signature date if needed
+                
+                this.style.display = 'none'; // hide after pulling
+                const delBtn = document.getElementById('delete_signature_btn');
+                if (delBtn) delBtn.style.display = 'inline-block';
+                
+                showAlert('ទាញយកហត្ថលេខាមុនបានជោគជ័យ! សូមចុចរក្សាទុកដើម្បីរក្សាការផ្លាស់ប្តូរ។', 'success');
+            });
+            
             // NEW: Event Listener for History Button Click
             document.getElementById('view_signature_history_btn').addEventListener('click', function() {
                 if (!currentRequestForDetailModal) return;
@@ -1647,14 +2300,34 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                 });
             }
 
-            document.getElementById('printRequestFormButton')?.addEventListener('click', function() {
-                const allVisibleRequests = Array.from(document.querySelectorAll('table tbody tr:not([style*="display: none"]) .btn-detail'))
-                    .map(button => JSON.parse(button.getAttribute('data-request')));
-                if (allVisibleRequests.length === 0) { alert("មិនមានសំណើដើម្បីបោះពុម្ពទេ។"); return; }
-                const printContentEl = document.getElementById('printableForm');
-                printContentEl.style.display = 'block';
-                populatePrintForm(allVisibleRequests);
-                setTimeout(() => { window.print(); printContentEl.style.display = 'none'; }, 250);
+            document.getElementById('printRequestFormButton')?.addEventListener('click', async function() {
+                const visibleButtons = Array.from(document.querySelectorAll('table tbody tr:not([style*="display: none"]) .btn-detail'));
+                if (visibleButtons.length === 0) { alert("គ្មានទិន្នន័យសម្រាប់បោះពុម្ព"); return; }
+                
+                const originalText = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> កំពុងទាញយកទិន្នន័យ...';
+                
+                try {
+                    const requestsToPrint = [];
+                    for (const btn of visibleButtons) {
+                        const id = btn.getAttribute('data-request-id');
+                        const res = await fetch(`<?php echo BASE_URL; ?>?action=get_request_details&id=${id}`);
+                        const data = await res.json();
+                        if (data.success) requestsToPrint.push(data.data);
+                    }
+                    
+                    const printContentEl = document.getElementById('printableForm');
+                    printContentEl.style.display = 'block';
+                    populatePrintForm(requestsToPrint);
+                    setTimeout(() => { window.print(); printContentEl.style.display = 'none'; }, 250);
+                } catch (e) {
+                    alert('មានកំហុសក្នុងការរៀបចំការបោះពុម្ព');
+                    console.error(e);
+                } finally {
+                    this.disabled = false;
+                    this.innerHTML = originalText;
+                }
             });
             
             document.getElementById('detail_print_button')?.addEventListener('click', function() {
@@ -1688,6 +2361,21 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                 const formToCapture = document.getElementById('printableForm');
                 
                 try {
+                    // Temporarily apply PDF capture mode to remove theme/backgrounds
+                    const styleId = 'pdf-capture-style';
+                    let styleEl = document.getElementById(styleId);
+                    if (!styleEl) {
+                        styleEl = document.createElement('style');
+                        styleEl.id = styleId;
+                        styleEl.innerHTML = `
+                            .pdf-mode, .pdf-mode * { background-image: none !important; background-color: #ffffff !important; box-shadow: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                            .pdf-mode th, .pdf-mode .request-icon-print, .pdf-mode td { background-color: transparent !important; color: #000 !important; }
+                            .pdf-mode img { background: transparent !important; }
+                        `;
+                        document.head.appendChild(styleEl);
+                    }
+                    formToCapture.classList.add('pdf-mode');
+
                     const canvas = await html2canvas(formToCapture, { 
                         scale: 2.5, 
                         useCORS: true, 
@@ -1726,6 +2414,14 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                     printFormContainer.style.left = '';
                     printFormContainer.style.top = '';
                     printFormContainer.style.padding = '';
+                    // Remove temporary PDF capture overrides
+                    try {
+                        formToCapture.classList.remove('pdf-mode');
+                        const styleElRem = document.getElementById('pdf-capture-style');
+                        if (styleElRem && styleElRem.parentNode) styleElRem.parentNode.removeChild(styleElRem);
+                    } catch (e) {
+                        console.warn('Could not remove pdf-mode styles:', e);
+                    }
                     button.disabled = false;
                     button.innerHTML = originalButtonText;
                 }
@@ -1799,20 +2495,7 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                     const resp = await fetch('<?php echo BASE_URL; ?>?action=quick_signature_upload', { method: 'POST', body: fd });
                     const json = await resp.json();
                     if (!json.success) throw new Error(json.message || 'Upload បរាជ័យ');
-                    // Update the row button history count if present in detail modal later
-                    // Find matching detail button and update its embedded data-request JSON
-                    const detailBtn = Array.from(document.querySelectorAll('.btn-detail')).find(b => {
-                        try { const r = JSON.parse(b.getAttribute('data-request')); return parseInt(r.id) === parseInt(reqId); } catch(e){ return false; }
-                    });
-                    if (detailBtn) {
-                        try {
-                            const r = JSON.parse(detailBtn.getAttribute('data-request'));
-                            r.signature = json.signature;
-                            r.signature_date = r.signature_date || (new Date().toISOString().split('T')[0]);
-                            r.signature_history_count = json.history_count;
-                            detailBtn.setAttribute('data-request', JSON.stringify(r));
-                        } catch(e) {}
-                    }
+                    // No need to update data-request attribute as we now fetch via AJAX on every modal open
                     showAlert('អាប់ឡូដហត្ថលេខាជោគជ័យ!', 'success');
                     quickModalInstance.hide();
                 } catch (err) {
@@ -1836,28 +2519,37 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
             // Open modal when clicking the per-row button
             document.querySelectorAll('.btn-dept-detail').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    try {
-                        const reqJson = btn.getAttribute('data-request');
-                        const req = reqJson ? JSON.parse(reqJson) : null;
-                        const reqId = btn.getAttribute('data-request-id') || (req && req.id) || '';
-                        deptModalRequestId.value = reqId;
-                        deptModalFile.value = '';
-                        deptModalPreview.src = '';
-                        deptModalPreview.style.display = 'none';
-                        deptModalEmpty.style.display = 'block';
-                        if (req && req.department_head_signature && req.department_head_signature.startsWith('data:image')) {
-                            deptModalPreview.src = req.department_head_signature;
-                            deptModalPreview.style.display = 'block';
-                            deptModalEmpty.style.display = 'none';
-                            deptModalPreview.dataset.cleaned = req.department_head_signature;
-                        } else {
-                            deptModalPreview.dataset.cleaned = '';
-                        }
-                        deptModalInstance.show();
-                    } catch (e) {
-                        console.error('Error opening dept modal:', e);
-                        alert('មិនអាចបើក modal បាន');
-                    }
+                    const requestId = btn.getAttribute('data-request-id');
+                    if (!requestId) return;
+                    
+                    deptModalRequestId.value = requestId;
+                    deptModalFile.value = '';
+                    deptModalPreview.src = '';
+                    deptModalPreview.style.display = 'none';
+                    deptModalEmpty.style.display = 'block';
+
+                    console.log('Fetching dept signature details for ID:', requestId);
+                    fetch(`<?php echo BASE_URL; ?>?action=get_request_details&id=${requestId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success && data.data) {
+                                const req = data.data;
+                                if (req.department_head_signature && req.department_head_signature.startsWith('data:image')) {
+                                    deptModalPreview.src = req.department_head_signature;
+                                    deptModalPreview.style.display = 'block';
+                                    deptModalEmpty.style.display = 'none';
+                                    deptModalPreview.dataset.cleaned = req.department_head_signature;
+                                } else {
+                                    deptModalPreview.dataset.cleaned = '';
+                                }
+                            }
+                            deptModalInstance.show();
+                        })
+                        .catch(err => {
+                            console.error('Error opening dept modal:', err);
+                            alert('មិនអាចបើក modal បាន');
+                            deptModalInstance.show(); // Still show modal even if fetch fails
+                        });
                 });
             });
 
@@ -1895,17 +2587,7 @@ if (empty($error) && isset($_SESSION['error_message'])) { $error = $_SESSION['er
                     const json = await resp.json();
                     if (!json.success) throw new Error(json.message || 'Upload បរាជ័យ');
 
-                    // Update the embedded request JSON on the detail button(s)
-                    document.querySelectorAll('.btn-detail').forEach(b => {
-                        try {
-                            const r = JSON.parse(b.getAttribute('data-request'));
-                            if (parseInt(r.id) === parseInt(reqId)) {
-                                r.department_head_signature = json.signature;
-                                r.department_head_signature_date = r.department_head_signature_date || (new Date().toISOString().split('T')[0]);
-                                b.setAttribute('data-request', JSON.stringify(r));
-                            }
-                        } catch (e) {}
-                    });
+                    // No need to update data-request attribute as we now fetch via AJAX on every modal open
 
                     // Update inline thumbnail if exists
                     const thumb = document.getElementById('dept-sign-thumb-' + reqId);

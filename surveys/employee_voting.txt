@@ -1,0 +1,1003 @@
+<?php
+session_start();
+// Debugging: Temporarily uncomment these lines to see immediate PHP errors on the browser if any.
+// REMEMBER TO COMMENT THEM OUT FOR PRODUCTION.
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
+
+require_once '../system/log.php'; // Ensure ../system/log.php exists and is correctly configured
+
+if (!isset($_SESSION['user_id'])) {
+    $_SESSION['error'] = 'сс╝ссс╝ссссс╕сс╖с!';
+    header("Location: ../auth/login.php");
+    exit();
+}
+
+// Database connection
+try {
+    $db = new PDO("mysql:host=localhost;dbname=samann1_admin_panel;charset=utf8mb4", 'root', '');
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Corrected PDO::EXCEPTION to PDO::ERRMODE_EXCEPTION
+
+    // --- AUTO-FIX DATABASE SCHEMA ---
+    try {
+        // Ensure vote_count column exists
+        $check_col = $db->query("SHOW COLUMNS FROM peer_votes LIKE 'vote_count'");
+        if ($check_col && $check_col->rowCount() == 0) {
+            $db->exec("ALTER TABLE peer_votes ADD COLUMN vote_count INT DEFAULT 1");
+        }
+
+        // Ensure allowed_usernames column exists in polls
+        $check_col_polls = $db->query("SHOW COLUMNS FROM polls LIKE 'allowed_usernames'");
+        if ($check_col_polls && $check_col_polls->rowCount() == 0) {
+            $db->exec("ALTER TABLE polls ADD COLUMN allowed_usernames TEXT DEFAULT NULL");
+        }
+
+        // Ensure exempted_usernames column exists in polls
+        $check_col_exempt = $db->query("SHOW COLUMNS FROM polls LIKE 'exempted_usernames'");
+        if ($check_col_exempt && $check_col_exempt->rowCount() == 0) {
+            $db->exec("ALTER TABLE polls ADD COLUMN exempted_usernames TEXT DEFAULT NULL");
+        }
+
+        // Migrate data from excluded_usernames to exempted_usernames if needed
+        try {
+            $db->exec("UPDATE polls SET exempted_usernames = excluded_usernames WHERE exempted_usernames IS NULL AND excluded_usernames IS NOT NULL");
+        } catch (Exception $e) {
+            // Ignore if excluded_usernames doesn't exist
+        }
+
+        // Ensure correct unique index on (poll_id, voter_user_id, voted_for_user_id)
+        $idx_stmt = $db->query("SHOW INDEX FROM peer_votes");
+        $indexes = $idx_stmt ? $idx_stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        // Group indexes by name -> ordered column list
+        $idx_by_name = [];
+        foreach ($indexes as $row) {
+            $k = $row['Key_name'];
+            if (!isset($idx_by_name[$k])) { $idx_by_name[$k] = []; }
+            $idx_by_name[$k][(int)$row['Seq_in_index']] = $row['Column_name'];
+        }
+        foreach ($idx_by_name as $k => $cols) {
+            ksort($cols); // order by sequence
+            $cols = array_values($cols);
+            $idx_by_name[$k] = $cols;
+        }
+
+        // Drop any legacy unique index that blocks multi-candidate votes (unique on poll_id or poll_id+voter_user_id)
+        foreach ($indexes as $row) {
+            if ((int)$row['Non_unique'] === 0) { // unique index
+                $k = $row['Key_name'];
+                $cols = $idx_by_name[$k] ?? [];
+                if ($cols === ['poll_id'] || $cols === ['poll_id', 'voter_user_id']) {
+                    try { $db->exec("ALTER TABLE peer_votes DROP INDEX `" . str_replace('`','', $k) . "`"); } catch (Exception $ex) { /* ignore */ }
+                }
+            }
+        }
+
+        // Re-check if correct unique index exists
+        $idx_stmt2 = $db->query("SHOW INDEX FROM peer_votes WHERE Key_name = 'unique_vote'");
+        $idx_rows2 = $idx_stmt2 ? $idx_stmt2->fetchAll(PDO::FETCH_ASSOC) : [];
+        $has_correct_unique = false;
+        if ($idx_rows2) {
+            $cols = array_column($idx_rows2, 'Column_name');
+            if ($cols === ['poll_id', 'voter_user_id', 'voted_for_user_id']) {
+                $has_correct_unique = true;
+            }
+        }
+        if (!$has_correct_unique) {
+            try { $db->exec("ALTER TABLE peer_votes DROP INDEX unique_vote"); } catch (Exception $ex) { /* ignore */ }
+            try {
+                $db->exec("ALTER TABLE peer_votes ADD UNIQUE KEY `unique_vote` (`poll_id`, `voter_user_id`, `voted_for_user_id`)");
+            } catch (Exception $ex) { /* ignore if already added */ }
+        }
+    } catch (Exception $e) {
+    }
+    // --------------------------------
+} catch (PDOException $e) {
+    $_SESSION['error'] = 'сс╢сссссас╢сссс╗ссс╢ссПсссс╢сссс╖сссссРсс сс╝ссссс╢сс╢ссссПссссПс';
+    error_log("DB Connection Error: " . $e->getMessage());
+    header("Location: error.php");
+    exit();
+}
+
+$current_user_id = (int)$_SESSION['user_id'];
+$message = '';
+$message_type = ''; // success or danger
+
+// Poll question constants used in multiple sections
+$poll_question_office = 'сс╗ссссс╖ссссс╛ссс╢сс╖сс╢ссРсссссПс╢с ссссс╢ссПссс╕сс╢ссс╕сд сссссс╢ссвсасвсе';
+$poll_question_wh_legacy = 'сс╗ссссс╖ссссс╛ссБс╢ссссс╢ссссссс╢ссПссс╕сс╢ссс╕сд сссссс╢ссвсасвсе';
+$poll_question_psp = 'сс╗ссссс╖ссссс╛ссБс╢ссссс╢ссPSP ссссс╢ссПссс╕сс╢ссс╕сд сссссс╢ссвсасвсе';
+$poll_question_ckd = 'сс╗ссссс╖ссссс╛ссБс╢ссссс╢ссCKD ссссс╢ссПссс╕сс╢ссс╕сд сссссс╢ссвсасвсе';
+
+// Handle vote submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['vote_submit'])) {
+    $poll_id = filter_input(INPUT_POST, 'poll_id', FILTER_VALIDATE_INT);
+
+    // Determine current user's department for POST handling
+    $current_user_department_post = '';
+    try {
+        $stmt_dep = $db->prepare("SELECT LOWER(department) AS department FROM users WHERE id = :uid LIMIT 1");
+        $stmt_dep->execute(['uid' => $current_user_id]);
+        $row_dep = $stmt_dep->fetch(PDO::FETCH_ASSOC);
+        if ($row_dep && !empty($row_dep['department'])) {
+            $current_user_department_post = $row_dep['department'];
+        }
+    } catch (PDOException $e) {
+    }
+
+    $eligible_wh_depts_post = ['assistant-wh','manager-wh','assistant-wh-ckd','assistant-wh-psp','manager-wh-ckd','wh-manager-psp','manager-store-318','assistant-general-manager-stock','general-manager-stock'];
+
+    // If eligible WH dept: accept quantity inputs per candidate via votes[user_id]
+    $votes_map = [];
+    if (isset($_POST['votes']) && is_array($_POST['votes']) && in_array($current_user_department_post, $eligible_wh_depts_post, true)) {
+        foreach ($_POST['votes'] as $uid => $qty) {
+            $uid = (int)$uid;
+            $qty = (int)$qty;
+            if ($uid > 0 && $qty > 0) {
+                $votes_map[$uid] = $qty;
+            }
+        }
+    }
+
+    // Also support legacy inputs (radio/checkbox) for non-eligible departments
+    $selected_ids = [];
+    if (empty($votes_map) && isset($_POST['voted_for_user_id'])) {
+        if (is_array($_POST['voted_for_user_id'])) {
+            $selected_ids = array_filter(array_map('intval', $_POST['voted_for_user_id']));
+        } else {
+            $single = filter_input(INPUT_POST, 'voted_for_user_id', FILTER_VALIDATE_INT);
+            if ($single) { $selected_ids = [$single]; }
+        }
+    }
+
+    if ($poll_id && (!empty($votes_map) || !empty($selected_ids))) {
+        // Fetch poll question to apply special per-poll rules
+        $single_vote_polls = [
+            $poll_question_office,
+            $poll_question_wh_legacy
+        ];
+        $poll_question = '';
+        try {
+            $stmt_q = $db->prepare("SELECT question FROM polls WHERE id = :pid LIMIT 1");
+            $stmt_q->execute(['pid' => $poll_id]);
+            $poll_question = (string)($stmt_q->fetchColumn() ?: '');
+        } catch (PDOException $e) { }
+        // Vote limit resolution: default 3; eligible WH depts fixed at 3; specific polls fixed at 1
+        $vote_limit = 3;
+        try {
+            $stmt_limit = $db->prepare("SELECT COALESCE(vote_limit, 3) AS vote_limit FROM users WHERE id = :uid");
+            $stmt_limit->execute(['uid' => $current_user_id]);
+            $row_limit = $stmt_limit->fetch(PDO::FETCH_ASSOC);
+            if ($row_limit && isset($row_limit['vote_limit'])) {
+                $vote_limit = (int)$row_limit['vote_limit'];
+            }
+        } catch (PDOException $e) {
+        }
+        if (in_array($current_user_department_post, $eligible_wh_depts_post, true)) {
+            $vote_limit = 3; // enforce 3 for eligible WH departments
+        }
+        if (in_array($poll_question, $single_vote_polls, true)) {
+            $vote_limit = 1; // enforce single vote for specified polls
+        }
+
+        try {
+            // Current votes already cast in this poll by this user
+            $stmt_count = $db->prepare("SELECT SUM(COALESCE(vote_count, 1)) FROM peer_votes WHERE poll_id = :poll AND voter_user_id = :voter");
+            $stmt_count->execute(['poll' => $poll_id, 'voter' => $current_user_id]);
+            $already = (int)$stmt_count->fetchColumn();
+            $remaining = max(0, $vote_limit - $already);
+
+            if (!empty($votes_map)) {
+                // If this is a single-vote poll, collapse to legacy single selection
+                if ($vote_limit === 1) {
+                    // pick first positive quantity candidate
+                    $first = null;
+                    foreach ($votes_map as $uid => $qty) { if ($qty > 0) { $first = $uid; break; } }
+                    $votes_map = [];
+                    $selected_ids = $first ? [$first] : [];
+                }
+                // Enforce per-person cap of 3
+                foreach ($votes_map as $k => $v) { $votes_map[$k] = max(0, min(3, (int)$v)); }
+                $total_requested = array_sum($votes_map);
+                if ($total_requested <= 0) {
+                    $message = 'сс╝сссссс╝ссссс╜сссссссссПссс╢ссасссс╢сс 1с';
+                    $message_type = 'danger';
+                } else if ($total_requested > $vote_limit) {
+                    $message = 'свссссвс╢сссссссссПсс╢ссПссс╣ссПс ' . $vote_limit . ' ссссссс╢сссс╢сссссссссПссБсс';
+                    $message_type = 'danger';
+                } else if ($already >= $vote_limit) {
+                    $message = 'свссссс╢ссссс╛сс╖сссс╖ссссссссПссссс ' . $vote_limit . ' сссс╜ссас╛сссссс╢сссс╢сссссссссПссБсс';
+                    $message_type = 'danger';
+                } else if ($total_requested > $remaining) {
+                    $message = 'ссс╗ссссс╜сссссссссПсс╛ссс╖сссс╖сссссссс (' . $remaining . ')с';
+                    $message_type = 'danger';
+                } else {
+                    $db->beginTransaction();
+                    // Upsert to keep cumulative quantities if the same voter votes again for the same person
+                    $stmt_ins = $db->prepare(
+                        "INSERT INTO peer_votes (poll_id, voter_user_id, voted_for_user_id, vote_count)
+                         VALUES (:poll_id, :voter_user_id, :voted_for_user_id, :vote_count)
+                         ON DUPLICATE KEY UPDATE vote_count = LEAST(3, vote_count + VALUES(vote_count))"
+                    );
+
+                    $inserted = 0;
+                    foreach ($votes_map as $uid => $qty) {
+                        try {
+                            $stmt_ins->execute([
+                                'poll_id' => $poll_id,
+                                'voter_user_id' => $current_user_id,
+                                'voted_for_user_id' => $uid,
+                                'vote_count' => $qty
+                            ]);
+                            $inserted += $qty;
+                        } catch (PDOException $e) {
+                            // Gracefully skip duplicate/constraint errors but log for diagnostics
+                            $code = $e->getCode();
+                            if ($code === '23000') { // integrity constraint violation
+                                continue;
+                            }
+                            throw $e; // rethrow unexpected errors
+                        }
+                    }
+                    $db->commit();
+                    $message = 'сс╢сссссссссПсссссвссссПссс╝ссс╢сссПссПссс╢ ' . $inserted . ' ссс';
+                    $message_type = 'success';
+                }
+            } else {
+                // Legacy path: single selection or multi without quantities
+                $selected_ids = array_values(array_unique($selected_ids));
+                if (empty($selected_ids)) {
+                    $message = 'сс╝ссссс╛ссс╛ссс╗ссссс╖сссс╢ссасссс╢сс сб сс╢ссс';
+                    $message_type = 'danger';
+                } else if (count($selected_ids) > $remaining) {
+                    $message = 'свссссвс╢ссссс╛ссс╛ссс╢ссссс╛ссссс╗сП ' . $remaining . ' сс╢ссссссс╢сссс╢сссссссссПссБсс';
+                    $message_type = 'danger';
+                } else {
+                    $db->beginTransaction();
+                    $stmt_ins = $db->prepare("INSERT INTO peer_votes (poll_id, voter_user_id, voted_for_user_id, vote_count) VALUES (:poll_id, :voter_user_id, :voted_for_user_id, 1)");
+                    $inserted = 0;
+                    foreach ($selected_ids as $vid) {
+                        try {
+                            $stmt_ins->execute(['poll_id' => $poll_id, 'voter_user_id' => $current_user_id, 'voted_for_user_id' => $vid]);
+                            $inserted++;
+                        } catch (PDOException $e) {
+                            $code = $e->getCode();
+                            if ($code === '23000') {
+                                continue;
+                            }
+                            throw $e;
+                        }
+                    }
+                    $db->commit();
+                    $message = 'сс╢сссссссссПсссссвссссПссс╝ссс╢сссПссПссс╢ ' . $inserted . ' ссс';
+                    $message_type = 'success';
+                }
+            }
+        } catch (PDOException $e) {
+            if ($db->inTransaction()) { $db->rollBack(); }
+            $message = 'сс╢сссссас╢сссс╗ссс╢сссПссПссс╢сс╢сссссссссПсссссвсссс сс╝ссссс╢сс╢ссссПссссПс Error: ' . $e->getMessage();
+            $message_type = 'danger';
+        }
+    } else {
+        $message = 'сс╢сссссссссПсс╖ссПссс╣ссПссс╝сс';
+        $message_type = 'danger';
+    }
+}
+
+// Fetch active polls
+$polls = [];
+try {
+    // Get the current user's department for filtering
+    $current_user_department = '';
+    $current_user_name = $_SESSION['username'] ?? 'Unknown User';
+    
+    $stmt_user_info = $db->prepare("SELECT full_name, department, username FROM users WHERE id = :user_id LIMIT 1");
+    $stmt_user_info->execute(['user_id' => $current_user_id]);
+    $user_info = $stmt_user_info->fetch(PDO::FETCH_ASSOC);
+    if ($user_info) {
+        if (!empty($user_info['full_name'])) {
+            $current_user_name = $user_info['full_name'];
+        }
+        $current_user_department = strtolower($user_info['department'] ?? '');
+        $current_username = strtolower($user_info['username'] ?? '');
+    }
+    
+    // DEBUG: Log current user's department
+    
+    // Define allowed departments for Worker to vote for (warehouse managers)
+    $worker_allowed_vote_departments = [
+        'manager-wh-ckd',
+        'assistant-wh-ckd',
+        'assistant-general-manager-stock',
+        'general-manager-stock',
+        'assistant-wh-psp',
+        'manager-store-318'
+    ];
+    
+    // Legacy single warehouse poll (kept for non-eligible depts if present)
+    $worker_allowed_poll = $poll_question_wh_legacy;
+    
+    // Fetch active polls - filter based on user's department
+    // Determine eligible departments for special warehouse voting
+    $eligible_wh_depts = [
+        'assistant-wh','manager-wh','assistant-wh-ckd','assistant-wh-psp','manager-wh-ckd','wh-manager-psp','manager-store-318','assistant-general-manager-stock','general-manager-stock'
+    ];
+
+    // Fetch all active polls for all users; visibility and candidate logic will handle restrictions
+    $stmt = $db->prepare("SELECT id, question, is_active, exempted_usernames, allowed_usernames FROM polls WHERE start_date <= NOW() AND end_date >= NOW() AND is_active = 1 ORDER BY created_at DESC");
+    $stmt->execute();
+    $active_polls = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // DEBUG: Log active polls count and questions
+
+    foreach ($active_polls as $poll) {
+        $poll_id = $poll['id'];
+        $poll_data = $poll;
+        $poll_data['user_voted'] = false;
+        $poll_data['employees'] = [];
+
+        // Check visibility: if allowed_usernames is set, only allow those users
+        $allowed_usernames = [];
+        if (!empty($poll['allowed_usernames'])) {
+            $parts = array_map('trim', explode(',', strtolower($poll['allowed_usernames'])));
+            $allowed_usernames = array_filter($parts);
+        }
+        if (!empty($allowed_usernames) && !in_array($current_username, $allowed_usernames, true)) {
+            continue; // Skip this poll if user is not allowed
+        }
+
+        $base_excluded_usernames = ['admin','adminbt','bt123','it','test'];
+        $extra_excluded = [];
+        if (!empty($poll['exempted_usernames'])) {
+            $parts = array_map('trim', explode(',', strtolower($poll['exempted_usernames'])));
+            $extra_excluded = array_filter($parts);
+        }
+        $excluded_usernames = array_values(array_unique(array_merge($base_excluded_usernames, $extra_excluded)));
+        
+        // Check if user has voted for this poll
+        $stmt_voted = $db->prepare("SELECT id FROM peer_votes WHERE poll_id = :poll_id AND voter_user_id = :user_id");
+        $stmt_voted->execute(['poll_id' => $poll_id, 'user_id' => $current_user_id]);
+        if ($stmt_voted->fetch()) {
+            $poll_data['user_voted'] = true;
+        }
+
+        // Fetch employees to vote for based on poll question first, then fall back to department rules
+        $is_psp_poll = ($poll['question'] === $poll_question_psp);
+        $is_ckd_poll = ($poll['question'] === $poll_question_ckd);
+        $is_wh_legacy_poll = ($poll['question'] === $poll_question_wh_legacy);
+        $is_office_poll = ($poll['question'] === $poll_question_office);
+        $is_single_vote_poll = ($is_wh_legacy_poll || $is_office_poll);
+
+        if ($is_psp_poll || $is_ckd_poll) {
+            // PSP/CKD polls: only workers are candidates
+            $stmt_employees = $db->prepare("SELECT id, full_name, username FROM users WHERE LOWER(department) = 'worker' AND (status = 'active' OR status IS NULL) AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test') ORDER BY full_name ASC, username ASC");
+            $stmt_employees->execute();
+        } else if ($is_single_vote_poll) {
+            // Single-vote polls: constrain candidates only when voter is worker on warehouse poll
+            if ($is_wh_legacy_poll && $current_user_department === 'worker') {
+                $allowed_depts = [
+                    'manager-wh-ckd',
+                    'assistant-wh-ckd',
+                    'assistant-general-manager-stock',
+                    'general-manager-stock',
+                    'assistant-wh-psp',
+                    'manager-store-318'
+                ];
+                $allowed_depts = array_values(array_unique(array_map('strtolower', $allowed_depts)));
+                $dept_placeholders = implode(',', array_fill(0, count($allowed_depts), '?'));
+                $sql = "SELECT id, full_name, username FROM users WHERE LOWER(department) IN ($dept_placeholders) AND (status = 'active' OR status IS NULL) AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test') ORDER BY full_name ASC, username ASC";
+                $params = $allowed_depts;
+                $stmt_employees = $db->prepare($sql);
+                $stmt_employees->execute($params);
+            } else if ($is_office_poll) {
+                // Central Office poll: show all employees
+                $stmt_employees = $db->prepare("SELECT id, full_name, username FROM users WHERE (status = 'active' OR status IS NULL) AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test') ORDER BY full_name ASC, username ASC");
+                $stmt_employees->execute();
+            } else {
+                // Other users on warehouse poll: show all (excluding ../admin/test accounts)
+                $stmt_employees = $db->prepare("SELECT id, full_name, username FROM users WHERE (status = 'active' OR status IS NULL) AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test','ly') ORDER BY full_name ASC, username ASC");
+                $stmt_employees->execute();
+            }
+        } else if ($current_user_department === 'worker') {
+            // Worker can only vote for specific warehouse manager departments (legacy rule)
+            $dept_placeholders = implode(',', array_fill(0, count($worker_allowed_vote_departments), '?'));
+            $sql = "SELECT id, full_name, username FROM users WHERE LOWER(department) IN ($dept_placeholders) AND (status = 'active' OR status IS NULL) AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test') ORDER BY full_name ASC, username ASC";
+            $params = $worker_allowed_vote_departments;
+            $stmt_employees = $db->prepare($sql);
+            $stmt_employees->execute($params);
+        } else if (in_array($current_user_department, ['assistant-general-manager-stock', 'general-manager-stock'], true)) {
+            // Specific managers vote for workers
+            $stmt_employees = $db->prepare("SELECT id, full_name, username FROM users WHERE LOWER(department) = 'worker' AND (status = 'active' OR status IS NULL) AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test') ORDER BY full_name ASC, username ASC");
+            $stmt_employees->execute();
+        } else if (in_array($current_user_department, $eligible_wh_depts, true)) {
+            // Eligible WH users: default to all employees for other polls
+            $stmt_employees = $db->prepare("SELECT id, full_name, username FROM users WHERE (status = 'active' OR status IS NULL) AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test') ORDER BY full_name ASC, username ASC");
+            $stmt_employees->execute();
+        } else {
+            // Other users can vote for all employees (excluding admin and specific usernames)
+            $stmt_employees = $db->prepare("SELECT id, full_name, username FROM users WHERE (role != 'admin' OR role IS NULL) AND (status = 'active' OR status IS NULL) AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test') ORDER BY full_name ASC, username ASC");
+            $stmt_employees->execute();
+        }
+        $poll_data['employees'] = $stmt_employees->fetchAll(PDO::FETCH_ASSOC);
+
+        // Apply per-poll excluded usernames to filter out exempted users from the candidates list
+        if (!empty($poll_data['employees'])) {
+            $poll_data['employees'] = array_values(array_filter($poll_data['employees'], function($emp) use ($excluded_usernames) {
+                $uname = strtolower($emp['username'] ?? '');
+                return $uname !== '' && !in_array($uname, $excluded_usernames, true);
+            }));
+        }
+
+        // --- DEBUGGING: Logs fetched employees to your server error log ---
+        // --- END DEBUGGING ---
+
+        // For office poll, get list of employees who haven't voted
+        if ($is_office_poll) {
+            // Get eligible usernames: all users except workers, not in excluded
+            $excluded_list = [];
+            if (!empty($poll['exempted_usernames'])) {
+                $excluded_list = array_map('trim', explode(',', strtolower($poll['exempted_usernames'])));
+            }
+            $stmt_eligible = $db->prepare("SELECT username, full_name FROM users WHERE LOWER(department) != 'worker' AND LOWER(username) NOT IN ('admin', 'adminbt', 'bt123', 'it', 'test') ORDER BY full_name ASC, username ASC");
+            $stmt_eligible->execute();
+            $eligible_users = $stmt_eligible->fetchAll(PDO::FETCH_ASSOC);
+            $eligible_usernames = array_map('strtolower', array_column($eligible_users, 'username'));
+            $eligible_usernames = array_diff($eligible_usernames, $excluded_list);
+            
+            // Get voted usernames
+            $stmt_voted = $db->prepare("SELECT DISTINCT LOWER(u.username) AS username FROM peer_votes pv JOIN users u ON pv.voter_user_id = u.id WHERE pv.poll_id = :poll_id");
+            $stmt_voted->execute(['poll_id' => $poll_id]);
+            $voted_usernames = $stmt_voted->fetchAll(PDO::FETCH_COLUMN);
+            
+            // Non-voters
+            $non_voted_usernames = array_diff($eligible_usernames, $voted_usernames);
+            $non_voters = array_filter($eligible_users, function($user) use ($non_voted_usernames) {
+                return in_array(strtolower($user['username']), $non_voted_usernames);
+            });
+            $poll_data['non_voters'] = array_values($non_voters);
+        }
+
+        $polls[] = $poll_data;
+    }
+
+} catch (PDOException $e) {
+    $_SESSION['error'] = 'сс╢сссссас╢сссс╗ссс╢ссс╢ссс╖сссссРссс╢сссссссссПс сс╝ссссс╢сс╢ссссПссссПс';
+    header("Location: error.php");
+    exit();
+}
+
+$current_page = '../surveys/employee_voting.php'; // For bottom navigation active state
+?>
+
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Employee Voting - HR App</title>
+    
+    <!-- Frameworks & Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Favicon & Theme Color -->
+    <link rel="icon" type="image/png" href="https://i.ibb.co/k6ysLFZd/Logo-Van-Van-1.png">
+    <meta name="theme-color" content="#6366f1">
+    
+    <style>
+        /* === SHARED DESIGN SYSTEM === */
+        :root {
+            --primary: #6366f1;
+            --primary-light: #8b5cf6;
+            --primary-dark: #4f46e5;
+            --secondary: #06b6d4;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-500: #64748b;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --border-radius: 12px;
+            --border-radius-lg: 16px;
+            --border-radius-xl: 20px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Kantumruy Pro', sans-serif;
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+            color: var(--gray-800);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* Prevent horizontal scrolling */
+        html, body { overflow-x: hidden; width: 100%; }
+
+        .app-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px;
+            padding-bottom: 90px;
+        }
+
+        /* === HEADER STYLES === */
+        .app-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius-xl);
+            padding: 16px 24px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--border-radius);
+            object-fit: cover;
+            box-shadow: var(--shadow);
+        }
+
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--gray-900);
+            display: none;
+        }
+        @media (min-width: 768px) { .user-name { display: block; } }
+
+        .btn-logout {
+            color: var(--danger);
+            font-size: 1.1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.1);
+            transition: all 0.2s;
+        }
+        .btn-logout:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* === POLL CARDS === */
+        .card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeInUp 0.5s ease-out;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 16px 24px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border: none;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* === EMPLOYEE LIST === */
+        .employee-checkbox-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .form-check {
+            margin: 0;
+            padding: 12px 16px;
+            background: var(--gray-50);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--gray-200);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .form-check:hover {
+            border-color: var(--primary);
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .form-check-input {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            cursor: pointer;
+            border: 2px solid var(--gray-300);
+            background-color: white;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .form-check-label {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray-800);
+            font-size: 0.95rem;
+            flex: 1;
+        }
+        
+        /* Highlight selected card */
+        .form-check:has(.form-check-input:checked) {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+            transition: all 0.3s;
+            margin-top: 24px;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+            color: white;
+        }
+
+        /* === BOTTOM NAV === */
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            justify-content: space-around;
+            padding: 8px 0;
+            box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border-top-left-radius: var(--border-radius-lg);
+            border-top-right-radius: var(--border-radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-height: 64px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--gray-500);
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex: 1;
+            padding: 6px;
+        }
+
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 1.3rem; margin-bottom: 2px; }
+
+        /* Animation */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container { padding: 12px; padding-bottom: 90px; }
+            .app-header { padding: 12px 16px; margin-bottom: 20px; }
+            .logo-img { width: 40px; height: 40px; }
+            .app-title { font-size: 1.25rem; }
+            .content-card { padding: 20px; }
+            .bottom-nav { display: flex; }
+            .employee-checkbox-list { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Modern Header -->
+        <header class="app-header animate__animated animate__fadeInDown">
+            <a href="homes.php" class="logo-container">
+                <img src="https://i.ibb.co/k6ysLFZd/Logo-Van-Van-1.png" alt="Logo" class="logo-img">
+                <h1 class="app-title"></h1>
+            </a>
+            <div class="user-profile">
+                <span class="user-name">
+                    <?php echo htmlspecialchars($current_user_name); ?>
+                </span>
+                <a href="?logout=true" class="btn-logout" title="">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </header>
+
+        <?php if ($message): ?>
+            <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show animate__animated animate__bounceIn" role="alert">
+                <i class="fas <?php echo $message_type == 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'; ?> me-2"></i>
+                <?php echo $message; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (empty($polls)): ?>
+            <div class="alert alert-info text-center animate__animated animate__fadeInUp">
+                <i class="fas fa-info-circle me-2"></i>
+                
+            </div>
+        <?php else: ?>
+            <?php foreach ($polls as $poll): ?>
+                <?php if (!$poll['is_active']) continue; ?>
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-vote-yea me-2"></i>
+                        <?php echo htmlspecialchars($poll['question']); ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if ($poll['user_voted']): ?>
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle text-success fs-1 mb-3"></i>
+                                <h4 class="text-success fw-bold">!</h4>
+                                <p class="text-muted mb-0"></p>
+                            </div>
+                        <?php else: ?>
+                            <?php if (empty($poll['employees'])): ?>
+                                <div class="alert alert-warning">
+                                    
+                                </div>
+                            <?php else: ?>
+                                <form method="POST" action="../surveys/employee_voting.php">
+                                    <input type="hidden" name="poll_id" value="<?php echo $poll['id']; ?>">
+                                    
+                                    <?php 
+                                    $is_wh_poll = ($poll['question'] === $poll_question_wh_legacy);
+                                    $is_office = ($poll['question'] === $poll_question_office);
+                                    // Logic determines if current user dept is eligible for Quantity inputs on "warehouse" polls
+                                    $eligible_wh_depts_for_qty = ['assistant-wh','manager-wh','assistant-wh-ckd','assistant-wh-psp','manager-wh-ckd','wh-manager-psp','manager-store-318','assistant-general-manager-stock','general-manager-stock'];
+                                    $show_qty = ($is_wh_poll && in_array($current_user_department, $eligible_wh_depts_for_qty));
+                                    ?>
+                                    
+                                    <h6 class="mb-3 text-muted">
+                                        <?php if ($show_qty): ?>
+                                              ( 3 ):
+                                            <input type="hidden" name="eligible_wh_qty_poll" value="1">
+                                        <?php elseif ($is_wh_poll || $is_office): ?>
+                                             (1):
+                                        <?php else: ?>
+                                             ( 3 ):
+                                        <?php endif; ?>
+                                    </h6>
+
+                                    <div class="employee-checkbox-list">
+                                        <?php foreach ($poll['employees'] as $employee): ?>
+                                            <div class="employee-item-wrapper">
+                                                <?php if ($show_qty): ?>
+                                                    <!-- Quantity input style for managers on WH poll -->
+                                                    <div class="d-flex align-items-center justify-content-between p-2 border rounded mb-2 bg-light">
+                                                        <label class="fw-bold mb-0 flex-grow-1" for="vote_<?php echo $poll['id']; ?>_<?php echo $employee['id']; ?>">
+                                                            <?php echo htmlspecialchars($employee['full_name']); ?>
+                                                        </label>
+                                                        <input type="number" 
+                                                               name="votes[<?php echo $employee['id']; ?>]" 
+                                                               id="vote_<?php echo $poll['id']; ?>_<?php echo $employee['id']; ?>"
+                                                               class="form-control qty-input" 
+                                                               style="width: 80px;"
+                                                               min="0" max="3" placeholder="0" value="0">
+                                                    </div>
+                                                <?php else: ?>
+                                                    <!-- Standard Checkbox/Radio selection -->
+                                                    <div class="form-check">
+                                                        <?php 
+                                                        $inputType = ($is_wh_poll || $is_office) ? 'radio' : 'checkbox'; 
+                                                        ?>
+                                                        <input class="form-check-input" type="<?php echo $inputType; ?>" 
+                                                               name="voted_for_user_id<?php echo ($inputType === 'checkbox') ? '[]' : ''; ?>" 
+                                                               value="<?php echo $employee['id']; ?>" 
+                                                               id="employee_<?php echo $poll['id']; ?>_<?php echo $employee['id']; ?>"
+                                                               <?php echo ($inputType === 'radio') ? 'required' : ''; ?>>
+                                                        <label class="form-check-label" for="employee_<?php echo $poll['id']; ?>_<?php echo $employee['id']; ?>">
+                                                            <?php echo htmlspecialchars($employee['full_name']); ?>
+                                                        </label>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+
+                                    <div class="text-end">
+                                        <button type="submit" name="vote_submit" class="btn btn-submit">
+                                            <i class="fas fa-paper-plane me-2"></i> 
+                                        </button>
+                                    </div>
+                                </form>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                        
+                        <!-- Show non-voters for Office Poll -->
+                        <?php if (isset($poll['non_voters']) && !empty($poll['non_voters'])): ?>
+                            <div class="mt-4 pt-3 border-top">
+                                <h6 class="text-secondary fw-bold mb-2">
+                                    <i class="fas fa-user-clock me-2"></i>:
+                                </h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <?php foreach ($poll['non_voters'] as $nv): ?>
+                                        <span class="badge bg-light text-dark border">
+                                            <?php echo htmlspecialchars($nv['full_name']); ?>
+                                        </span>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="homes.php" class="nav-item <?php echo $current_page === 'homes.php' ? 'active' : ''; ?>">
+            <i class="fas fa-home nav-icon"></i>
+            <span></span>
+        </a>
+        <a href="../requests/requests_menu.php" class="nav-item <?php echo $current_page === '../requests/requests_menu.php' ? 'active' : ''; ?>">
+            <i class="fas fa-clipboard-list nav-icon"></i>
+            <span></span>
+        </a>
+        <a href="../system/checklist.php" class="nav-item <?php echo $current_page === '../system/checklist.php' ? 'active' : ''; ?>">
+            <i class="fas fa-tasks nav-icon"></i>
+            <span></span>
+        </a>
+        <a href="https://app.vvc.asia/admin/profile.php" class="nav-item <?php echo $current_page === 'profile.php' ? 'active' : ''; ?>">
+            <i class="fas fa-user nav-icon"></i>
+            <span></span>
+        </a>
+    </nav>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            const eligibleWhQtyPollInput = form.querySelector('input[name="eligible_wh_qty_poll"]');
+            if (!eligibleWhQtyPollInput) return; // Only apply this logic to forms with quantity inputs
+
+            const LIMIT = 3; // total per poll
+            const PER_PERSON_LIMIT = 3; // per candidate
+            const checkboxes = form.querySelectorAll('input.form-check-input[type="checkbox"][name="voted_for_user_id[]"]');
+            const qtyInputs = form.querySelectorAll('input.qty-input[name^="votes["]');
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            const sumQty = () => {
+                let s = 0;
+                qtyInputs.forEach(inp => { s += parseInt(inp.value || '0', 10) || 0; });
+                return s;
+            };
+            const updateState = () => {
+                const total = sumQty();
+                if (submitBtn) submitBtn.disabled = total === 0 || total > LIMIT;
+            };
+
+            checkboxes.forEach(cb => {
+                const id = cb.value;
+                const qty = form.querySelector(`input.qty-input[name="votes[${id}]"]`);
+                cb.addEventListener('change', () => {
+                    if (!qty) return;
+                    if (cb.checked) {
+                        if ((parseInt(qty.value || '0', 10) || 0) === 0) qty.value = '1';
+                        qty.disabled = false;
+                    } else {
+                        qty.value = '0';
+                        qty.disabled = true;
+                    }
+                    updateState();
+                });
+            });
+
+            qtyInputs.forEach(inp => {
+                inp.addEventListener('input', () => {
+                    let val = parseInt(inp.value || '0', 10) || 0;
+                    if (val < 0) val = 0;
+                    if (val > PER_PERSON_LIMIT) val = PER_PERSON_LIMIT;
+                    inp.value = String(val);
+                    // Sync checkbox
+                    const m = inp.name.match(/votes\[(\d+)\]/);
+                    if (m) {
+                        const cb = form.querySelector(`input.form-check-input[type="checkbox"][name="voted_for_user_id[]"][value="${m[1]}"]`);
+                        if (cb) {
+                            cb.checked = val > 0;
+                        }
+                    }
+                    // Enforce total limit by capping current input
+                    let total = sumQty();
+                    if (total > LIMIT) {
+                        const over = total - LIMIT;
+                        const newVal = Math.max(0, val - over);
+                        inp.value = String(newVal);
+                        // Recalculate
+                    }
+                    updateState();
+                });
+            });
+
+            // Initialize state
+            updateState();
+        });
+    });
+    </script>
+</body>
+</html>
+

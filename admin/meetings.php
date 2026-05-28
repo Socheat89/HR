@@ -76,7 +76,7 @@ try {
                 </li>
             <?php endif; ?>
             <li>
-                <a href="logout.php" class="flex items-center space-x-2 hover:text-indigo-300 focus:text-indigo-300">
+                <a href="../auth/logout.php" class="flex items-center space-x-2 hover:text-indigo-300 focus:text-indigo-300">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>
@@ -149,7 +149,7 @@ try {
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-4 px-6 text-sm text-gray-700 space-x-2">
-                                        <a href="view_meeting.php?id=<?php echo $meeting['id']; ?>" class="text-blue-600 hover:text-blue-800">View</a>
+                                        <a href="../meetings/view_meeting.php?id=<?php echo $meeting['id']; ?>" class="text-blue-600 hover:text-blue-800">View</a>
                                         <a href="edit_meeting.php?id=<?php echo $meeting['id']; ?>" class="text-green-600 hover:text-green-800">Edit</a>
                                         <a href="delete_meeting.php?id=<?php echo $meeting['id']; ?>" class="text-red-600 hover:text-red-800" onclick="return confirm('Are you sure?')">Delete</a>
                                     </td>

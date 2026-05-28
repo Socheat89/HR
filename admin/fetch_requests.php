@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php';
+require_once '../system/config.php';
 
 $limit = 20;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;

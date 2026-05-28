@@ -4,14 +4,14 @@ include 'admin/includes/auth.php'; // Ensure this path matches your file structu
 
 // Handle logout
 if (isset($_GET['logout'])) {
-    logout(); // Use the logout() function from auth.php
-    header("Location: login.php");
+    logout(); // Use the logout() function from ../auth/auth.php
+    header("Location: ../auth/login.php");
     exit();
 }
 
-// Check if user is logged in; if not, redirect to login.php
+// Check if user is logged in; if not, redirect to ../auth/login.php
 if (!isLoggedIn()) {
-    header("Location: login.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -219,7 +219,7 @@ $analytics_data = [
         </div>
     </div>
     
-    <a href="requests_menu.php" class="btn-custom mt-4">
+    <a href="../requests/requests_menu.php" class="btn-custom mt-4">
         <i class="fa-solid fa-arrow-left"></i>ត្រឡប់ទៅម៉ឺនុយ
     </a>
     
@@ -229,7 +229,7 @@ $analytics_data = [
 </div>
 
 <div class="bottom-menu">
-    <a href="index.php"><i class="fa-solid fa-house"></i></a>
+    <a href="../index.php"><i class="fa-solid fa-house"></i></a>
     <a href="submit_requests.php"><i class="fa-solid fa-plus"></i></a>
     <a href="table_requests.php"><i class="fa-solid fa-table"></i></a>
     <a href="?logout=true" id="logout" title="ចាកចេញ"><i class="fa-solid fa-right-from-bracket"></i></a>

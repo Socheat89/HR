@@ -1,7 +1,7 @@
 <?php
 include 'includes/auth.php';
 if (!isLoggedIn()) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 include 'includes/db.php';
@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </a>
                 </li>
                 <li>
-                    <a href="post_lesson.php" class="flex items-center space-x-3 hover:text-orange-300 transition duration-200">
+                    <a href="../posts/post_lesson.php" class="flex items-center space-x-3 hover:text-orange-300 transition duration-200">
                         <i class="fas fa-book"></i>
                         <span>Post Lesson</span>
                     </a>
@@ -155,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </li>
             <?php endif; ?>
             <li>
-                <a href="logout.php" class="flex items-center space-x-3 hover:text-orange-300 transition duration-200">
+                <a href="../auth/logout.php" class="flex items-center space-x-3 hover:text-orange-300 transition duration-200">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>

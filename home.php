@@ -2,23 +2,23 @@
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
-    $_SESSION['error'] = 'בב¼ב˜ב…ב¼ב›ב‚בב“ב¸בב·ב“!';
-    header("Location: login.php"); // Changed from logintest.php
+    $_SESSION['error'] = 'בב¼בבב¼בבבבב¸בב·ב!';
+    header("Location: auth/login.php"); // Changed from logintest.php
     exit();
 }
 
 if (isset($_GET['logout'])) {
     session_unset();
     session_destroy();
-    header("Location: login.php");
+    header("Location: auth/login.php");
     exit();
 }
 // Database connection
 try {
-    $db = new PDO("mysql:host=localhost;dbname=samann1_admin_panel;charset=utf8mb4", "samann1_admin_panel", "admin_panel@2025");
+    $db = new PDO("mysql:host=localhost;dbname=samann1_admin_panel;charset=utf8mb4", 'root', '');
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("ב€ב¶בבב—ב’ב‡ב¶ב”ב‹ב˜ב¼ב›בב’ב‹ב¶ב“ב‘ב·ב“ב’ב“ב“בב™ב”בב¶ב‡בב™: " . $e->getMessage());
+    die("בב¶בבבבבב¶בבבב¼בבבבב¶בבב·בבבבבבבבב¶בבב: " . $e->getMessage());
 }
 
 // Fetch announcements
@@ -45,7 +45,7 @@ try {
     }
     $filtered_announcements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    die("ב€ב†ב ב»בב€ב’ב“ב»ב„ב€ב¶בב‘ב¶ב‰ב‘ב·ב“ב’ב“ב“בב™: " . $e->getMessage());
+    die("בבב ב»בבבבב»בבב¶בבב¶בבב·בבבבבב: " . $e->getMessage());
 }
 ?>
 
@@ -539,7 +539,7 @@ try {
                 <div class="user-avatar">
                     <a href="https://app.vvc.asia/admin/profile.php"><i class="fas fa-user"></i></a>
                 </div>
-                <a href="?logout=true" class="btn btn-danger btn-sm">ב…ב¶ב€ב…בב‰</a>
+                <a href="?logout=true" class="btn btn-danger btn-sm">בב¶בבבב</a>
             </div>
         </header>
         
@@ -550,8 +550,8 @@ try {
                 <div class="action-icon">
                     <i class="fas fa-plus"></i>
                 </div>
-                <h3 class="action-title">בב’ב“ב¾בב»ב†בב’ב˜ב¸</h3>
-                <p class="action-desc">ב”ב„ב’ב€ב¾בבב†בב¾בבב»ב†בב’ב˜ב¸</p>
+                <h3 class="action-title">בבבב¾בב»בבבבב¸</h3>
+                <p class="action-desc">בבבבב¾בבבבב¾בבב»בבבבב¸</p>
             </div>
             </a>
             <a href="https://app.vvc.asia/request_analysis.php"  class="dashboard-card animate-card" style="animation-delay: 0.1s">
@@ -560,8 +560,8 @@ try {
                     <i class="fas fa-calendar-check"></i>
           
                 </div>
-                <h3 class="action-title">ב˜ב¾ב›ב€ב¶בבב’ב“ב¾בבב»ב†ב•ב’בבב„ב—</h3>
-                <p class="action-desc">ב˜ב¾ב›בב”ב¶ב™ב€ב¶בבבבב’ב“ב¾בבב»ב†ב•ב’בבב„ב—בב”בב‹בב’ב›ב½ב“</p>
+                <h3 class="action-title">בב¾בבב¶בבבבב¾בבב»בבבבבבב</h3>
+                <p class="action-desc">בב¾בבבב¶בבב¶בבבבבבב¾בבב»בבבבבבבבבבבבבבב½ב</p>
            </div>
            </a>
             <a href="#"  class="dashboard-card animate-card" style="animation-delay: 0.1s">
@@ -569,62 +569,62 @@ try {
                 <div class="action-icon" style="background: linear-gradient(135deg, var(--warning), #fbbf24);">
                     <i class="fas fa-file-upload"></i>
                 </div>
-                <h3 class="action-title">בב¶ב€ב‹ב¯ב€בב¶ב</h3>
-                <p class="action-desc">בב¶ב€ב‹ב¯ב€בב¶בבב’ב˜ב¸</p>
+                <h3 class="action-title">בב¶בבב¯בבב¶ב</h3>
+                <p class="action-desc">בב¶בבב¯בבב¶בבבבב¸</p>
             </div>
             </a>
-            <a href="announcements.php"  class="dashboard-card animate-card" style="animation-delay: 0.1s">
+            <a href="posts/announcements.php"  class="dashboard-card animate-card" style="animation-delay: 0.1s">
             <div class="action-card animate-card" style="animation-delay: 0.4s">
                 <div class="action-icon" style="background: linear-gradient(135deg, var(--danger), #f87171);">
                     <i class="fas fa-bell"></i>
                 </div>
-                <h3 class="action-title">ב€ב¶בב‡ב¼ב“בב†בב¹ב„</h3>
-                <p class="action-desc">ב˜ב¾ב›ב€ב¶בב‡ב¼ב“בב†בב¹ב„בב’ב˜ב¸ב—</p>
+                <h3 class="action-title">בב¶בבב¼בבבבב¹ב</h3>
+                <p class="action-desc">בב¾בבב¶בבב¼בבבבב¹בבבבב¸ב</p>
             </div>
               </a>
         </div>
         
         <!-- Main Dashboard Grid -->
         <div class="dashboard-grid">
-            <a href="index27.php" class="dashboard-card animate-card" style="animation-delay: 0.1s">
+            <a href="reports/daily_report_list.php" class="dashboard-card animate-card" style="animation-delay: 0.1s">
                 <i class="fas fa-file-alt card-icon"></i>
-                <h3 class="card-title">בב”ב¶ב™ב€ב¶בבבב”ב’בב…ב¶ב†בב’ב„בƒ</h3>
-                <p class="card-desc">ב”ב†ב–בב‰בב”ב¶ב™ב€ב¶בבבב€ב¶בב„ב¶בב”ב’בב…ב¶ב†בב’ב„בƒבב”בב‹ב¢ב’ב“ב€</p>
+                <h3 class="card-title">בבב¶בבב¶בבבבבבבב¶בבבבב</h3>
+                <p class="card-desc">בבבבבבבב¶בבב¶בבבבב¶בבב¶בבבבבב¶בבבבבבבבבב¢בבב</p>
             </a>
-            <a href="requests_menu.php" class="dashboard-card animate-card" style="animation-delay: 0.2s">
+            <a href="requests/requests_menu.php" class="dashboard-card animate-card" style="animation-delay: 0.2s">
                 <i class="fas fa-paper-plane card-icon" style="color: #ef4444;"></i>
-                <h3 class="card-title">ב€ב¶בבב’ב“ב¾בבב»ב†ב•ב’בבב„ב—</h3>
-                <p class="card-desc">בב¶ב€ב‹בב†בב¾בבב»ב†ב…ב†ב–ב„ב‡ב€ב¶בב„ב¶בב•ב’בבב„ב—</p>
+                <h3 class="card-title">בב¶בבבבב¾בבב»בבבבבבב</h3>
+                <p class="card-desc">בב¶בבבבבב¾בבב»בבבבבבבב¶בבב¶בבבבבבב</p>
             </a>
-            <a href="index5.html" class="dashboard-card animate-card" style="animation-delay: 0.3s">
+            <a href="requests/material_request.php" class="dashboard-card animate-card" style="animation-delay: 0.3s">
                 <i class="fas fa-shopping-cart card-icon" style="color: #06b6d4;"></i>
-                <h3 class="card-title">בב’ב“ב¾בבב»ב†ב‘ב·ב‰בב˜ב’ב—ב¶בבˆ</h3>
-                <p class="card-desc">בב¶ב€ב‹בב†בב¾בבב»ב†ב‘ב·ב‰בב˜ב’ב—ב¶בבˆב•ב’בבב„ב—</p>
+                <h3 class="card-title">בבבב¾בבב»בבב·בבבבבב¶בב</h3>
+                <p class="card-desc">בב¶בבבבבב¾בבב»בבב·בבבבבב¶בבבבבבבב</p>
             </a>
-            <a href="index20.html" class="dashboard-card animate-card" style="animation-delay: 0.4s">
+            <a href="meetings/meeting_register.php" class="dashboard-card animate-card" style="animation-delay: 0.4s">
                 <i class="fas fa-users card-icon" style="color: #10b981;"></i>
-                <h3 class="card-title">ב…ב»ב‡בˆב’ב˜ב„ב‡ב”ב’בב‡ב»ב†</h3>
-                <p class="card-desc">ב…ב»ב‡בˆב’ב˜ב„ב‡ב…ב¼ב›בב½ב˜ב€ב¶בב”ב’בב‡ב»ב†</p>
+                <h3 class="card-title">בב»בבבבבבבבבבב»ב</h3>
+                <p class="card-desc">בב»בבבבבבבב¼בבב½בבב¶בבבבבב»ב</p>
             </a>
             <a href="meeting_page.php" class="dashboard-card animate-card" style="animation-delay: 0.5s">
                 <i class="fas fa-video card-icon" style="color: #8b5cf6;"></i>
-                <h3 class="card-title">בב’בב¶ב”ב‹ב€ב¶בב”ב’בב‡ב»ב†</h3>
-                <p class="card-desc">ב…ב¼ב›בב½ב˜בב’בב¶ב”ב‹ב€ב¶בב”ב’בב‡ב»ב†ב–ב¸ב…ב˜ב’ב„ב¶ב™</p>
+                <h3 class="card-title">בבבב¶בבבב¶בבבבבב»ב</h3>
+                <p class="card-desc">בב¼בבב½בבבבב¶בבבב¶בבבבבב»בבב¸בבבבב¶ב</p>
             </a>
             <a href="admin/employee_view.php" class="dashboard-card animate-card" style="animation-delay: 0.6s">
                 <i class="fas fa-address-card card-icon" style="color: #f59e0b;"></i>
-                <h3 class="card-title">ב–בבבב˜ב¶ב“ב”ב»ב‚ב’ב‚ב›ב·ב€</h3>
-                <p class="card-desc">ב˜ב¾ב›ב–בבבב˜ב¶ב“ב›ב˜ב’ב¢ב·בב¢ב†ב–ב¸ב”ב»ב‚ב’ב‚ב›ב·ב€</p>
+                <h3 class="card-title">בבבבבב¶בבב»בבבבב·ב</h3>
+                <p class="card-desc">בב¾בבבבבבב¶בבבבב¢ב·בב¢בבב¸בב»בבבבב·ב</p>
             </a>
             <a href="admin/print_content.php" class="dashboard-card animate-card" style="animation-delay: 0.7s">
                 <i class="fas fa-print card-icon" style="color: #64748b;"></i>
-                <h3 class="card-title">ב–ב’בב¸ב“ב¯ב€בב¶ב</h3>
-                <p class="card-desc">ב”ב„ב‡ב–ב»ב˜ב’ב–ב¯ב€בב¶בב•ב’בבב„ב—</p>
+                <h3 class="card-title">בבבב¸בב¯בבב¶ב</h3>
+                <p class="card-desc">בבבבב»בבבב¯בבב¶בבבבבבב</p>
             </a>
-            <a href="survey.php" class="dashboard-card animate-card" style="animation-delay: 0.8s">
+            <a href="surveys/survey.php" class="dashboard-card animate-card" style="animation-delay: 0.8s">
                 <i class="fas fa-poll card-icon" style="color: #ec4899;"></i>
-                <h3 class="card-title">ב€ב¶בבב’בב„ב‹ב˜בב·</h3>
-                <p class="card-desc">ב…ב¼ב›בב½ב˜ב€ב¶בבב’בב„ב‹ב˜בב·ב•ב’בבב„ב—</p>
+                <h3 class="card-title">בב¶בבבבבבבבב·</h3>
+                <p class="card-desc">בב¼בבב½בבב¶בבבבבבבבב·בבבבבב</p>
             </a>
         </div>
         
@@ -633,19 +633,19 @@ try {
     <nav class="bottom-nav d-lg-none">
         <a href="#" class="nav-item active">
             <i class="fas fa-home nav-icon"></i>
-            <span>ב‘ב†ב–בבבב¾ב˜</span>
+            <span>בבבבבבב¾ב</span>
         </a>
         <a href="#" class="nav-item">
             <i class="fas fa-calendar nav-icon"></i>
-            <span>ב€ב¶ב›בב·ב—ב¶ב‚</span>
+            <span>בב¶בבב·בב¶ב</span>
         </a>
         <a href="#" class="nav-item">
             <i class="fas fa-tasks nav-icon"></i>
-            <span>ב€ב¶בב„ב¶ב</span>
+            <span>בב¶בבב¶ב</span>
         </a>
         <a href="https://app.vvc.asia/admin/profile.php" class="nav-item">
             <i class="fas fa-user nav-icon"></i>
-            <span>ב‚בב“ב¸</span>
+            <span>בבבב¸</span>
         </a>
     </nav>
 

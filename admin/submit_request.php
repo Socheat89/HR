@@ -2,6 +2,30 @@
 // Start session for user tracking
 session_start();
 
+// Load Theme Config
+$themeConfigPath = __DIR__ . '/includes/theme_config.json';
+$currentTheme = 'default';
+$customImage = '';
+if (file_exists($themeConfigPath)) {
+    $configData = json_decode(file_get_contents($themeConfigPath), true);
+    $currentTheme = $configData['theme'] ?? 'default';
+    $customImage = $configData['custom_image'] ?? '';
+}
+
+// Default Background Images for each theme
+$themeBackgrounds = [   
+    'kny'  => 'https://i.ibb.co/RKMS4tb/khmer-new-year-bg-1770518313913.jpg',
+    'pb'   => 'https://i.ibb.co/S4dYb35p/khmer-new-year-bg-1770518389358.jpg',
+    'cny'  => 'https://i.ibb.co/4462998/khmer-new-year-bg-1770518448823.jpg',
+    'wf'   => 'https://i.ibb.co/2611144/khmer-new-year-bg-1770518505378.jpg',
+    'kb'   => 'https://images.unsplash.com/photo-1596701062351-be5f6a200a45?q=80&w=1600',
+    'indy' => 'https://images.unsplash.com/photo-1629813289069-7c8704204d60?q=80&w=1600'
+];
+
+// Determine which image to use
+$bgImage = !empty($customImage) ? $customImage : ($themeBackgrounds[$currentTheme] ?? '');
+
+
 // Include the telegram.php file
 require_once __DIR__ . '/includes/telegram.php'; // Ensure this path is correct
 
@@ -14,11 +38,12 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Database Connection Details (Define globally for both POST and GET)
-$host = 'localhost';
-$dbname = 'samann1_admin_panel';
-$user = 'samann1_admin_panel';
-$password = 'admin_panel@2025';
+// Include database configuration
+require_once __DIR__ . '/includes/db.php';
+// Map $conn to $pdo for use in the script
+if (isset($conn)) {
+    $pdo = $conn;
+}
 
 // =================================================================================
 // SECTION 1: HANDLE FORM SUBMISSION (POST REQUEST)
@@ -30,11 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo_post = null;
 
     try {
-        $pdo_post = new PDO("mysql:host=$host;dbname=$dbname", $user, $password, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ]);
+        $pdo_post = $conn;
         $pdo_post->exec("SET NAMES 'utf8mb4'");
 
         // If this is an AJAX request to create or fetch a department head, handle it and exit early.
@@ -150,6 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Get list of existing columns in requests table
         $colsStmt = $pdo_post->prepare("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'requests'");
+        // $dbname is defined in includes/db.php
         $colsStmt->execute([$dbname]);
         $existingCols = $colsStmt->fetchAll(PDO::FETCH_COLUMN);
 
@@ -267,10 +289,7 @@ $pdo = null;
 $dynamic_categories = []; // Array to hold dynamic options
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    $pdo = $conn;
     $pdo->exec("SET NAMES 'utf8mb4'");
 
     // Fetch dynamic options (Department, Position, Branch)
@@ -361,8 +380,98 @@ try {
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;700&display=swap');
         body { background: linear-gradient(120deg, #e0eafc, #cfdef3); font-family: 'Noto Sans Khmer', sans-serif; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .main-container { background: #fff; border-radius: 20px; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15); padding: 2.5rem; max-width: 700px; width: 100%; }
-        .main-title { color: #1a3c5e; font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 2rem; position: relative; }
+        .main-container { background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15); padding: 2.5rem; max-width: 700px; width: 100%; border: 1px solid rgba(255, 255, 255, 0.3); position: relative; overflow: hidden; }
+        .main-title { color: #1a3c5e; font-size: 1.8rem; font-weight: 700; text-align: center; margin-bottom: 2rem; position: relative; z-index: 1; }
+
+        @keyframes bgZoom {
+            from { background-size: 100% 100%; }
+            to { background-size: 110% 110%; }
+        }
+
+        /* Floating Animation for Theme Icons */
+        @keyframes floatUpDown {
+            0% { transform: translateY(0) rotate(-15deg); }
+            50% { transform: translateY(-15px) rotate(-10deg); }
+            100% { transform: translateY(0) rotate(-15deg); }
+        }
+
+        /* Season/Festival Theme Overrides */
+        <?php if ($currentTheme === 'kny'): ?>
+        :root { --primary-btn: #f59e0b; --primary-btn-hover: #d97706; }
+        .main-title { color: #d97706 !important; }
+        .btn-primary { background: linear-gradient(90deg, #f59e0b, #d97706) !important; }
+        .request-icon.active { background: #f59e0b !important; border-color: #f59e0b !important; }
+        .main-container::after { 
+            content: ""; position: absolute; bottom: -20px; right: -20px; width: 150px; height: 150px;
+            background-image: url('https://i.ibb.co/qFRZ8SCK/khmer-new-year.png');
+            background-size: contain; background-repeat: no-repeat;
+            opacity: 0.15; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.1));
+            animation: floatUpDown 6s ease-in-out infinite;
+        }
+        /* Fireworks Overlay for KNY */
+        body::after {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://media.tenor.com/XesYJjyNYgAAAAAi/fireworks-putukan.gif');
+            background-size: cover; background-repeat: no-repeat;
+            pointer-events: none; z-index: -1; opacity: 0.35; mix-blend-mode: screen;
+        }
+        
+        <?php elseif ($currentTheme === 'pb'): ?>
+        :root { --primary-btn: #ea580c; --primary-btn-hover: #c2410c; }
+        .main-title { color: #c2410c !important; }
+        .btn-primary { background: linear-gradient(90deg, #ea580c, #c2410c) !important; }
+        .request-icon.active { background: #ea580c !important; border-color: #ea580c !important; }
+        .main-container::after { 
+            content: "\f67f"; font-family: "Font Awesome 6 Free"; font-weight: 900; 
+            position: absolute; bottom: -10px; right: -10px; font-size: 100px;
+            opacity: 0.12; color: #ea580c; animation: floatUpDown 6s ease-in-out infinite;
+        }
+
+        <?php elseif ($currentTheme === 'cny'): ?>
+        :root { --primary-btn: #dc2626; --primary-btn-hover: #b91c1c; }
+        .main-title { color: #b91c1c !important; }
+        .btn-primary { background: linear-gradient(90deg, #dc2626, #b91c1c) !important; }
+        .request-icon.active { background: #dc2626 !important; border-color: #dc2626 !important; }
+        .main-container::after { 
+            content: ""; position: absolute; bottom: -20px; right: -20px; width: 160px; height: 160px;
+            background-image: url('https://i.ibb.co/G4K8Mv36/chinese-new-year.png');
+            background-size: contain; background-repeat: no-repeat;
+            opacity: 0.15; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.1));
+            animation: floatUpDown 6s ease-in-out infinite;
+        }
+
+        <?php elseif ($currentTheme === 'wf'): ?>
+        :root { --primary-btn: #0284c7; --primary-btn-hover: #0369a1; }
+        .main-title { color: #0369a1 !important; }
+        .btn-primary { background: linear-gradient(90deg, #0284c7, #0369a1) !important; }
+        .request-icon.active { background: #0284c7 !important; border-color: #0284c7 !important; }
+        .main-container::after { 
+            content: "\f773"; font-family: "Font Awesome 6 Free"; font-weight: 900; 
+            position: absolute; bottom: -10px; right: -10px; font-size: 120px;
+            opacity: 0.12; color: #0284c7; animation: floatUpDown 6s ease-in-out infinite;
+        }
+        <?php endif; ?>
+
+        /* Apply Theme Background Image */
+        <?php if (!empty($bgImage)): ?>
+        body {
+            background-image: url('<?php echo $bgImage; ?>') !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+            background-repeat: no-repeat !important;
+            animation: bgZoom 20s ease-in-out infinite alternate;
+        }
+
+        /* Overlay to ensure readability */
+        body::before {
+            content: "";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            z-index: -2;
+        }
+        <?php endif; ?>
         .user-list { list-style: none; padding: 0; margin: 0; max-height: 50vh; overflow-y: auto; }
         .user-item a { display: flex; align-items: center; padding: 15px; margin-bottom: 10px; background: #f8f9fa; border-radius: 12px; text-decoration: none; color: #495057; border: 1px solid #e9ecef; transition: all 0.3s ease; }
         .user-item a:hover { background-color: #e0eafc; border-color: #3498db; transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
@@ -729,7 +838,7 @@ try {
             <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-2"></i>បញ្ជូនសំណើរ</button>
         </form>
         <div class="text-center mt-4">
-            <button type="button" class="btn btn-secondary" onclick="window.location.href='https://app.vvc.asia/homes.php'">
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='../requests/requests_menu.php'">
                 <i class="fas fa-arrow-left me-2"></i>ត្រឡប់ក្រោយ
             </button>
         </div>

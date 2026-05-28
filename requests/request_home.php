@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home-Request</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="../system/style1.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://unpkg.com/scrollreveal"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=fact_check" />
+  <link rel="stylesheet" href="/node_modules/bootstrap-icons/icons/">
+  <link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    @media (max-width: 768px) {
+      .menu-card{
+        position: relative;
+        top: -5rem;
+      }
+      .main-menu{
+        position: relative;
+        top: -4rem;
+      }
+      .navbar-brand img{
+        text-align: center;
+        position: relative;
+        left: 40%;
+        align-items: center;
+      }
+
+      .mes{
+        width: 5%;
+        position: relative;
+        left: 0;
+        top: 5rem;
+      }
+    }
+    /* computer */
+    .main-menu{
+      top: 3rem;
+      position: relative;
+    }
+    .navbar-custom {
+      background-color: #050049;
+      position: fixed;
+    }
+
+    .menu-icon {
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      height: 80px;
+      bottom: 0;
+      width: 100%;
+    }
+    .navbar-brand img{
+      text-decoration: none;
+      width: 200px;
+      text-align: center;
+      align-items: center;
+      position: relative;
+    }
+    .navbar-toggler{
+      background: none;
+    }
+
+    .bottom-menu a {
+      color: #007bff;
+      text-decoration: none;
+      font-size: 1.5rem;
+    }
+    .btn{
+      color: white;
+    }
+    .main-cart{
+      position: relative;
+      align-items: center;
+      text-align: center;
+      top: 5rem;
+    }
+    .card-footer{
+      position: relative;
+      justify-content: center;
+      text-align: center;
+      align-items: center;
+    }
+    .sort-list{
+      position: relative;
+      top: -1rem;
+    }
+    .form-label{
+      position: relative;
+      justify-content: start;
+    }
+    .cart-box {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      background: #f9f9f9;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease-in-out;
+    }
+    .cart-box:hover {
+      transform: translateY(-5px);
+    }
+    .cart-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .cart-title{
+      font-size: 1.1rem;
+      margin: 12px 0;
+      color: blue;
+      font-family: Kh Muol;
+    }
+    .text-title{
+      font-family: Kh Muol;
+      color: blue;
+      font-size: 20px;
+      position: relative;
+    }
+    .text-h5 a{
+      text-decoration: none;
+    }
+    .main-content{
+      position: relative;
+      top: 3rem;
+    }
+    .check{
+      font-size: 100px;
+    }
+    .page{
+      display: none;
+    }
+    .main-form-request{
+      position: relative;
+      top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="main-header">
+  <nav class="navbar navbar-expand-lg navbar-custom shadow-lg mb-5">
+    <div class="container-fluid text-decoration-none">
+      <a href="../menu_main.php"><span class="navbar-brand text-white text-decoration-none"><img src="https://i.ibb.co/HTksMQd/Logo-Van-Van-2.png" alt=""></span></a>
+    </button>
+    <a href="../menu_main.php"><button id="logout"><i class="fa-solid fa-right-from-bracket"></i></button></a>
+    </div>
+  </nav>
+  <div class="container py-4 main-cart">
+    <!-- <div class="mb-3 mt-6 sort-list">
+      <label for="sortBy" class="form-label">Sort By</label>
+      <select class="form-select" id="sortBy" onchange="sortMeetings()">
+        <option value="date-asc">A-Z</option>
+        <option value="date-desc">Z-A</option>
+      </select>
+    </div> -->
+  </div>
+  <div class="container py-5 mt-6 main-content">
+    <h2 class="text-center mb-4 text-title" id="text">បញ្ជីតារាងស្នើរសុំផ្សេងៗ</h2>
+    
+      <!-- Box List -->
+      <div id="main" class="main-page">
+      <div class="row g-4 mt-3  justify-content-center">
+        <!-- Cart 1 -->
+        <div class="col-12 col-md-6 col-lg-4 text-h5 ani-1">
+          <a href="#" data-page="1"><div class="cart-box">
+          <img src="https://cdn-icons-png.flaticon.com/512/2558/2558430.png" alt="" width="100px">
+          <h5 class="cart-title mt-6">សំណើរស្នើរសុំផ្សេងៗ</h5>
+          </div></a>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4 text-h5 ani-2">
+          <a href="#" data-page="2"><div class="cart-box">
+            <img src="https://cdn-icons-png.flaticon.com/512/12477/12477062.png" alt="" width="100px">
+            <h5 class="cart-title mt-6">បញ្ជីតារាងឈ្មោះស្នើរសុំបុគ្គលិក</h5>
+          </div></a>
+        </div>
+      </div></div>
+    </div>
+    </div>
+    <div id="page-1" class="page">
+      <form id="form" onsubmit=" return sender()" class=" pl-0 main-form-request font-change" method="POST">
+        <div class="container">
+            <div class="f-boks card bg-white text-white shadow p-2 mb-2 main-form">
+              <div class="field">
+                <label class="label mt-4 text">ប្រភេទនៃការស្នើសុំ</label>
+                <div class="control">
+                  <select class="label mt-2 drop" name="ប្រភេទនៃការស្នើសុំ" id="typeofrequest" required>
+                    <option value="">សូមជ្រើសរើស</option>
+                    <option value="សម្រាកប្រចាំឆ្នាំ(Annual Leave)">សម្រាកប្រចាំឆ្នាំ(Annual Leave)</option>
+                    <option value="សម្រាកដោយជំងឺ(Sick Leave)">សម្រាកដោយជំងឺ(Sick Leave)</option>
+                    <option value="ភ្លេចស្កេនមេដៃ (Forgot​ FP )">ភ្លេចស្កេនមេដៃ (Forgot​ FP )</option>
+                    <option value="សម្រាកលំហែមាតុភាព(Maternity Leave)">សម្រាកលំហែមាតុភាព(Maternity Leave)</option>
+                    <option value="ថែមម៉ោង (OT)">ថែមម៉ោង (OT)</option>
+                    <option value="ចេញមុនម៉ោង (Early)">ចេញមុនម៉ោង (Early)</option>
+                    <option value="ប្តូរដេអូស (Changing day off)">ប្តូរដេអូស (Changing day off)</option>
+                    <option value="សម្រាកពិសេស (Special Leave)">សម្រាកពិសេស (Special Leave)</option>
+                    <option value="មកយឺត (Late)">មកយឺត (Late)</option>
+                  </select>
+                </div>
+              </div>
+              <!-- ឈ្មោះអ្នកសើ្នសុំ -->
+          <div class="field">
+            <label class="label mt-4 text">ឈ្មោះអ្នកសើ្នសុំ</label>
+            <div class="control">
+              <input
+                class="input drop"
+                type="text"
+                placeholder="ឈ្មោះរបស់អ្នក" name="ឈ្មោះអ្នកសើ្នសុំ" id="namerequest" required />
+            </div>
+          </div>
+          <!-- ចំនួនថ្ងៃ -->
+          <div class="field ani-3">
+            <label class="label mt-4 text">ចំនួនថ្ងៃ</label>
+            <select class="label mt-2 drop" name="ចំនួនថ្ងៃ" id="numberofdays">
+              <option value="" class="text-select">សូមជ្រើសរើស</option>
+              <option value="0.5 /ថ្ងៃ">0.5 /ថ្ងៃ</option>
+              <option value="1 /ថ្ងៃ">1 /ថ្ងៃ</option>
+              <option value="1.5 /ថ្ងៃ">1.5 /ថ្ងៃ</option>
+              <option value="2 /ថ្ងៃ">2 /ថ្ងៃ</option>
+              <option value="2.5 /ថ្ងៃ">2.5 /ថ្ងៃ</option>
+              <option value="3 /ថ្ងៃ">3 /ថ្ងៃ</option>
+              <option value="3.5 /ថ្ងៃ">3.5 /ថ្ងៃ</option>
+              <option value="4 /ថ្ងៃ">4 /ថ្ងៃ</option>
+              <option value="4.5 /ថ្ងៃ">4.5 /ថ្ងៃ</option>
+              <option value="5 /ថ្ងៃ">5 /ថ្ងៃ</option>
+              <option value="5.5 /ថ្ងៃ">5.5 /ថ្ងៃ</option>
+              <option value="6 /ថ្ងៃ">6 /ថ្ងៃ</option>
+              <option value="6.5 /ថ្ងៃ">6.5 /ថ្ងៃ</option>
+              <option value="7 /ថ្ងៃ">7 /ថ្ងៃ</option>
+              <option value="7.5 /ថ្ងៃ">7.5 /ថ្ងៃ</option>
+              <option value="8 /ថ្ងៃ">8 /ថ្ងៃ</option>
+              <option value="8.5 /ថ្ងៃ">8.5 /ថ្ងៃ</option>
+              <option value="9 /ថ្ងៃ">9 /ថ្ងៃ</option>
+            </select>
+          </div>
+          <!-- ចំនួនថ្ងៃនៅសល់ -->
+          <div class="field ani-4">
+            <label class=" label mt-4 text">ចំនួនថ្ងៃនៅសល់</label>
+            <select class="label mt-2 drop" name="ច្បាប់នៅសល់ " id="day">
+              <option value="">សូមជ្រើសរើស</option>
+              <option value="0.5 /ថ្ងៃ">0.5 /ថ្ងៃ</option>
+              <option value="1 /ថ្ងៃ">1 /ថ្ងៃ</option>
+              <option value="1.5 /ថ្ងៃ">1.5 /ថ្ងៃ</option>
+              <option value="2 /ថ្ងៃ">2 /ថ្ងៃ</option>
+              <option value="2.5 /ថ្ងៃ">2.5 /ថ្ងៃ</option>
+              <option value="3 /ថ្ងៃ">3 /ថ្ងៃ</option>
+              <option value="3.5 /ថ្ងៃ">3.5 /ថ្ងៃ</option>
+              <option value="4 /ថ្ងៃ">4 /ថ្ងៃ</option>
+              <option value="4.5 /ថ្ងៃ">4.5 /ថ្ងៃ</option>
+              <option value="5 /ថ្ងៃ">5 /ថ្ងៃ</option>
+              <option value="5.5 /ថ្ងៃ">5.5 /ថ្ងៃ</option>
+              <option value="6 /ថ្ងៃ">6 /ថ្ងៃ</option>
+              <option value="6.5 /ថ្ងៃ">6.5 /ថ្ងៃ</option>
+              <option value="7 /ថ្ងៃ">7 /ថ្ងៃ</option>
+              <option value="7.5 /ថ្ងៃ">7.5 /ថ្ងៃ</option>
+              <option value="8 /ថ្ងៃ">8 /ថ្ងៃ</option>
+              <option value="8.5 /ថ្ងៃ">8.5 /ថ្ងៃ</option>
+              <option value="9 /ថ្ងៃ">9 /ថ្ងៃ</option>
+            </select>
+          </div>
+          <!-- បុគ្គលិកផ្នែក -->
+          <div class="field ani-5">
+            <label class="label mt-4 text">បុគ្គលិកផ្នែក</label>
+            <div class="control">
+              <select class="label mt-2 drop" name="ផែ្នក" id="position1" >
+                <option value="">សូមជ្រើសរើស</option>
+                <option value="IT">IT</option>
+                <option value="Stock">Stock</option>
+                <option value="Accountant">Accountant</option>
+                <option value="Admin">Admin</option>
+                <option value="Sale">Sale</option>
+                <option value="Worker">Worker</option>
+              </select>
+            </div>
+          </div>
+          <!-- មុខដំណែង -->
+          <div class="field ani-6">
+            <label class="label mt-4 text">មុខដំណែង</label>
+            <div class="control">
+              <select class="label mt-2 drop" name="មុខតំណែង" id="Positions">
+                <option value="">សូមជ្រើសរើស</option>
+                <option value="ព័ត៌មានវិទ្យា">ព័ត៌មានវិទ្យា</option>
+                <option value="គិតលុយ">គិតលុយ</option>
+                <option value="រដ្ឋបាលទូទៅ">រដ្ឋបាលទូទៅ</option>
+                <option value="បុគ្គលិកផ្នែកលក់">បុគ្គលិកផ្នែកលក់</option>
+                <option value="បុគ្គលិកផ្នែកស្តុក318">បុគ្គលិកផ្នែកស្តុក318</option>
+                <option value="ប្រធានផ្នែកគ្រប់គ្រងស្តកទំនិញទូទៅ">ប្រធានផ្នែកគ្រប់គ្រងស្តកទំនិញទូទៅ</option>
+                <option value="ប្រធានឃ្លាំង៣១៨និងហាងទំនិញ">ប្រធានឃ្លាំង៣១៨និងហាងទំនិញ</option>
+                <option value="បុគ្គលិកផ្នែកគណនេយ្យ">បុគ្គលិកផ្នែកគណនេយ្យ</option>
+                <option value="ប្រមូលសាច់ប្រាក់">ប្រមូលសាច់ប្រាក់</option>
+                <option value="ប្រធានឃ្លាំង CH1">ប្រធានឃ្លាំង CH1</option>
+                <option value="ប្រធានរដ្ឋបាលឃ្លាំង CH1">រដ្ឋបាលឃ្លាំង CH1</option>
+                <option value="ជំនូយការប្រធានឃ្លាំង CH1">ជំនូយការប្រធានឃ្លាំង CH1</option>
+                <option value="ប្រធានឃ្លាំង CKD">ប្រធានឃ្លាំង CKD</option>
+                <option value="ជំនួយការប្រធានឃ្លាំង CKD">ជំនួយការប្រធានឃ្លាំង CKD</option>
+                <option value="ប្រធានរដ្ឋបាលឃ្លាំង CKD">រដ្ឋបាលឃ្លាំង CKD</option>
+                <option value="ប្រធានឃ្លាំង ST1">ប្រធានឃ្លាំង ST1</option>
+                <option value="ប្រធានឃ្លាំង PSP">ប្រធានឃ្លាំង PSP</option>
+                <option value="លើកទំនិញ">លើកទំនិញ</option>
+                <option value="បើកបរកង់បី">បើកបរកង់បី</option>
+                <option value="បើកបររថយន្ត">បើកបររថយន្ត</option>
+              </select>
+            </div>
+          </div>
+          <!-- សាខា -->
+          <div class="field ani-7">
+            <label class="label mt-4 text">សាខា</label>
+            <div class="control">
+              <select class="label mt-2 drop" name="សាខា" id="Branch" required>
+                <option value="">សូមជ្រើសរើស</option>
+                <option value="ហាងទំនិញ 318">ហាងទំនិញ 318</option>
+                <option value="ការិយាល័យកណ្តាល">ការិយាល័យកណ្តាល</option>
+                <option value="ឃ្លាំង CH1">ឃ្លាំង CH1</option>
+                <option value="ឃ្លាំង CKD">ឃ្លាំង CKD</option>
+                <option value="ឃ្លាំង ST1">ឃ្លាំង ST1</option>
+                <option value="ឃ្លាំង PSP">ឃ្លាំង PSP</option>
+              </select>
+            </div>
+          </div>
+          <!-- ថ្ងៃខែឆ្នាំឈប់/OT/មកយឺត/ភ្លេចស្កេន -->
+          <div class="field ani-8">
+            <label class="label text">ថ្ងៃខែឆ្នាំឈប់/OT/មកយឺត/ភ្លេចស្កេន</label>
+            <div class="control">
+              <input
+                class="input drop"
+                type="date"
+                placeholder=""
+                name="ថ្ងៃខែឆ្នាំឈប់" id="date"
+              />
+            </div>
+          </div>
+          <!-- ថៃ្ងចូលសងវិញ -->
+          <div class="field ani-9">
+            <label class="label text">ថៃ្ងចូលសងវិញ</label>
+            <div class="control">
+              <input
+                class="input drop" type="date"
+                placeholder="Your Date of Birth"
+                name="ថៃ្ងចូលសងវិញ"
+              />
+            </div>
+          </div>
+          <!-- ចំនួនម៉ោងយឺត -->
+          <div class="field ani-10">
+            <label class="label text">ចំនួនម៉ោងយឺត</label>
+            <div class="control">
+              <input
+                class="input drop" type="text" placeholder="បំពេញចំនួនម៉ោង" name="ចំនួនម៉ោងយឺត"
+              />
+            </div>
+          </div>
+          <!-- ភ្លេចចូល -->
+          <div class="field ani-11">
+            <label class="label mt-4 text">ភ្លេចស្កេនចូល</label>
+            <div class="control">
+              <select class="label mt-2 drop" name="ភ្លេចស្កេនមេដៃចូល " id="position1">
+                <option value="">សូមជ្រើសរើស</option>
+                <option value="ភ្លេចចូល 1ដង">ភ្លេចចូល 1ដង</option>
+                <option value="ភ្លេចចូល 2ដង">ភ្លេចចូល 2ដង</option>
+                <option value="ភ្លេចចូល 3ដង">ភ្លេចចូល 3ដង</option>
+                <option value="ភ្លេចចូល 4ដង">ភ្លេចចូល 4ដង</option>
+              </select>
+            </div>
+          </div>
+          <!-- ភ្លេចចេញ -->
+          <div class="field ani-12">
+            <label class="label mt-4 text">ភ្លេចស្កេនចេញ</label>
+            <div class="control">
+              <select class="label mt-2 drop" name="ភ្លេចស្កេនមេដៃចេញ" id="position1">
+                <option value="">សូមជ្រើសរើស</option>
+                <option value="ភ្លេចចេញ 1ដង">ភ្លេចចេញ 1ដង</option>
+                <option value="ភ្លេចចេញ 2ដង">ភ្លេចចេញ 2ដង</option>
+                <option value="ភ្លេចចេញ 3ដង">ភ្លេចចេញ 3ដង</option>
+                <option value="ភ្លេចចេញ 4ដង">ភ្លេចចេញ 4ដង</option>
+              </select>
+            </div>
+          </div>
+          <!-- ម៉ោងចូល -->
+          <div class="field ani-13">
+            <label class="label text">ម៉ោងចូល</label>
+            <div class="control">
+              <input
+                class="input drop" type="time"
+                placeholder=" Time In"
+                name="ម៉ោងចូល"
+              />
+            </div>
+          </div>
+          <!-- ម៉ោងចេញ -->
+          <div class="field ani-14">
+            <label class="label text">ម៉ោងចេញ</label>
+            <div class="control">
+              <input
+                class="input drop" type="time"
+                placeholder=" Time Out"
+                name="ម៉ោងចេញ"
+              />
+            </div>
+          </div>
+          <!-- ចំនួនម៉ោងសរុប -->
+          <div class="field ani-15">
+            <label class="label text">ចំនួនម៉ោងសរុប</label>
+            <div class="control">
+              <input
+                class="input drop" type="text"
+                placeholder="បំពេញចំនួនម៉ោងសរុប(8h30mn)"  name="ម៉ោងសរុប" />
+            </div>
+          </div>
+          <!-- ម៉ោងចូលសង -->
+          <div class="field ani-16">
+            <label class="label text">ម៉ោងចូលសង</label>
+            <div class="control">
+              <input
+                class="input drop" type="time"
+                placeholder="Time In"
+                name="ម៉ោងចូលសង"
+              />
+            </div>
+          </div>
+          <!-- ម៉ោងចេញសង -->
+          <div class="field ani-17">
+            <label class="label text">ម៉ោងចេញសង</label>
+            <div class="control">
+              <input
+                class="input drop" type="time"
+                placeholder="Time Out"
+                name="ម៉ោងចេញសង"
+              />
+            </div>
+          </div>
+          <!-- ចំនួនម៉ោងសរុប -->
+          <div class="field ani-18">
+            <label class="label text">ម៉ោងសងសរុប</label>
+            <div class="control">
+              <input
+                class="input drop" type="text"
+                placeholder="បំពេញចំនួនម៉ោងសរុប(8h30mn)"  name="ម៉ោងសងសរុប" />
+            </div>
+          </div>
+          <!-- មូលហេតុ -->
+          <div class="field ani-19">
+            <label class="label text">មូលហេតុ</label>
+            <div class="control">
+              <input
+                class="input drop" type="text"
+                placeholder="បំពេញមូលហេតុរបស់អ្នក"  name="មូលហេតុ" id="reason"/>
+            </div>
+          </div>
+          <!-- ប្រគល់ការងារឱ្យ -->
+          <div class="field ani-20">
+            <label class="label text">ប្រគល់ការងារឱ្យ</label>
+            <div class="control">
+              <input
+                class="input drop" type="text"
+                placeholder="បំពេញអ្នកប្រគល់ការងារឱ្យ"  name="ប្រគល់ការងារឱ្យ" />
+            </div>
+          </div>
+          <!-- ទីកន្លែង -->
+          <div class="field ani-21">
+            <label class="label text">ទីកន្លែង</label>
+            <div class="control">
+              <input
+                class="input drop" type="text"
+                placeholder="បំពេញទីកន្លែង"  name="ទីកន្លែង" />
+            </div>
+          </div>
+          <!-- លេខទំនាក់ទំនង -->
+          <div class="field ani-22">
+            <label class="label text">លេខទំនាក់ទំនង</label>
+            <div class="control">
+              <input
+                class="input drop" type="number"
+                placeholder="បំពេញលេខទំនាក់ទំនងផ្ទាល់ខ្លួនរបស់អ្នក"  name="លេខទំនាក់ទំនង" />
+            </div>
+          </div>
+          <div class="field is-grouped ani-23">
+            <div class="control">
+              <button class="button bg-primary btn" type="submit" id="submit-button">
+                បញ្ជូន</button>
+            </div>
+          </div>
+          <div class="container justify-content-end mt-5 text-center btn-home ani-24">
+            <!-- "Go to Home" Button -->
+            <a href="../menu_main.php" class="btn btn-primary">ទៅទំព័រដើមវិញ</a>
+          </div>
+          <div
+          id="message"
+          style="
+            display: none;
+            position: relative;
+            margin: 20px;
+            top: -3.7rem;
+            width: 60%;
+            left: 6rem;
+            font-weight: bold;
+            color: green;
+            padding: 8px;
+            background-color: beige;
+            border-radius: 4px;
+            border-color: aquamarine;
+          "
+        >
+      </div>
+    </div>
+            </div>
+    </form>
+    </div>
+    <style>
+      /* .main-iframe1{
+        position: absolute;
+        width: 15%;
+        top: 43rem;
+        height: 5%;
+        right: 1rem;
+        justify-content: end;
+        background-color: rgb(0, 0, 0);
+        z-index: 99;
+      } */
+      @media screen {
+        
+      }
+    </style>
+    <div id="page-2" class="page mt-6">
+      <div class="main-iframe1"></div>
+      <iframe width="100%" height="900px" src="https://lookerstudio.google.com/embed/reporting/5813b77b-c899-424b-a9e2-37bf5bc1831d/page/A" frameborder="0" style="border:0" allowfullscreen sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+    <div class="card main-iframe2">
+      <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vT5vI-IBn8CXumg2cORM7x1_t4p9sFTogb6I444vM6FxRCwVCcq2UTv5QPwDaIqafEJvr9489DeF63c/pubhtml?widget=true&amp;headers=false" width="100%" height="500px" class="mt-6"></iframe>
+    </div>
+    </div>
+
+
+  <script>
+        function showPage(pageId) {
+        document.getElementById('main').style.display = 'none'; // Hide main page
+        document.getElementById('text').style.display = 'none'; // Hide main page
+        document.getElementById('page-' + pageId).style.display = 'block'; // Show the selected page
+    }
+
+    // Function to go back to the main page
+    function goBack() {
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(page => page.style.display = 'none'); // Hide all pages
+        document.getElementById('main').style.display = 'block'; // Show the main page
+    }
+
+    // Add event listeners to page links
+    document.querySelectorAll('.main-page a').forEach(link => {
+        link.addEventListener('click', function (event) {
+            event.preventDefault(); // Prevent default link behavior
+            const pageId = this.getAttribute('data-page'); // Get the page ID
+            showPage(pageId); // Show the selected page
+        });
+    });
+
+
+    const scrollRevealOption = {
+  origin: "bottom",
+  distance: "10px",
+  duration: 1000,
+};
+
+ScrollReveal().reveal(".ani-1", {
+  ...scrollRevealOption,
+  origin: "bottom",
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-2", {
+  ...scrollRevealOption,
+  delay: 100,
+  distance:"200px",
+});
+// ScrollReveal().reveal(".ani-3", {
+//   ...scrollRevealOption,
+//   delay: 200,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-4", {
+//   ...scrollRevealOption,
+//   delay: 300,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-5", {
+//   ...scrollRevealOption,
+//   delay: 400,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-6", {
+//   ...scrollRevealOption,
+//   delay: 500,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-7", {
+//   ...scrollRevealOption,
+//   delay: 600,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-8", {
+//   ...scrollRevealOption,
+//   delay: 700,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-9", {
+//   ...scrollRevealOption,
+//   delay: 800,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-10", {
+//   ...scrollRevealOption,
+//   delay: 900,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-11", {
+//   ...scrollRevealOption,
+//   delay: 1000,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-12", {
+//   ...scrollRevealOption,
+//   delay: 1100,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-13", {
+//   ...scrollRevealOption,
+//   delay: 1200,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-14", {
+//   ...scrollRevealOption,
+//   delay: 1300,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-15", {
+//   ...scrollRevealOption,
+//   delay: 1400,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-16", {
+//   ...scrollRevealOption,
+//   delay: 1500,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-17", {
+//   ...scrollRevealOption,
+//   delay: 1600,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-18", {
+//   ...scrollRevealOption,
+//   delay: 1700,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-19", {
+//   ...scrollRevealOption,
+//   delay: 1800,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-20", {
+//   ...scrollRevealOption,
+//   delay: 1900,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-21", {
+//   ...scrollRevealOption,
+//   delay: 2000,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-22", {
+//   ...scrollRevealOption,
+//   delay: 2100,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-23", {
+//   ...scrollRevealOption,
+//   delay: 2200,
+//   distance:"200px",
+// });
+// ScrollReveal().reveal(".ani-24", {
+//   ...scrollRevealOption,
+//   delay: 2300,
+//   distance:"200px",
+// });
+const textareas = document.querySelectorAll('textarea');
+
+textareas.forEach((textarea) => {
+  textarea.addEventListener('input', () => {
+    textarea.style.height = 'auto'; // Reset height
+    textarea.style.height = textarea.scrollHeight + 'px'; // Adjust height
+  });
+});
+var telegram_bot_id = "7680707479:AAG38M8FpFbuVfqWCLwxUKo7l7iKJCXOEz8";
+//chat id
+var chat_id = -1002496391098;
+var numberofdays, date, namerequest,Positions,Branch,reason;
+var ready = function () {
+namerequest = document.getElementById("namerequest").value;
+date = document.getElementById("date").value;
+numberofdays = document.getElementById("numberofdays").value;
+typeofrequest = document.getElementById("typeofrequest").value;
+Positions = document.getElementById("Positions").value;
+Branch = document.getElementById("Branch").value;
+reason = document.getElementById("reason").value;
+  message = "\n- អ្នកស្នើរសុំ៖ " + namerequest + "\n- មុខដំណែង៖  " + Positions + "\n- សាខា៖  " + Branch + "\n- ថ្ងៃខែឆ្នាំ៖  " + date + "\n- ចំនួនថ្ងៃ៖  " + numberofdays + "\n- ប្រភេទនៃការស្នើរសុំ​៖  " + typeofrequest  + "\n- មូលហេតុ៖  " + reason;
+};
+var sender = function () {
+  ready();
+  var settings = {
+      "async": true,
+      "crossDomain": true,
+      "url": "https://api.telegram.org/bot" + telegram_bot_id + "/sendMessage",
+      "method": "POST",
+      "headers": {
+          "Content-Type": "application/json",
+          "cache-control": "no-cache"
+      },
+      "data": JSON.stringify({
+          "chat_id": chat_id,
+          "text": message
+      })
+  };
+  $.ajax(settings).done(function (response) {
+      console.log(response);
+  });
+  document.getElementById("name").value = "";
+  document.getElementById("date").value = "";
+  document.getElementById("message").value = "";
+  return false;
+};
+
+document.getElementById("form").addEventListener("submit", function (e) {
+      e.preventDefault(); // Prevent the default form submission
+      document.getElementById("message").textContent = "កំពុងបញ្ជូន";
+      document.getElementById("message").style.display = "block";
+      document.getElementById("submit-button").disabled = true;
+
+      // Collect the form data
+      var formData = new FormData(this);
+      var keyValuePairs = [];
+      for (var pair of formData.entries()) {
+        keyValuePairs.push(pair[0] + "=" + pair[1]);
+      }
+
+      var formDataString = keyValuePairs.join("&");
+
+      // Send a POST request to your Google Apps Script
+      fetch(
+        "https://script.google.com/macros/s/AKfycbzGaGmkgIpxi2c_2D3NMYgv5CNx0HdGgE3JuZhcvrwYADYAB8iENs_yCaIiVcbvHQ5-/exec",
+        
+        {
+          redirect: "follow",
+          method: "POST",
+          body: formDataString,
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8",
+          },
+        }
+      )
+        .then(function (response) {
+          // Check if the request was successful
+          if (response) {
+            return response; // Assuming your script returns JSON response
+          } else {
+            throw new Error("Failed to submit the form.");
+          }
+        })
+        .then(function (data) {
+          // Display a success message
+          document.getElementById("message").textContent =
+            "បានបញ្ជូនរួចរាល់";
+          document.getElementById("message").style.display = "block";
+          document.getElementById("message").style.backgroundColor = "green";
+          document.getElementById("message").style.color = "beige";
+          document.getElementById("submit-button").disabled = false;
+          document.getElementById("form").reset();
+
+          setTimeout(function () {
+            document.getElementById("message").textContent = "";
+            document.getElementById("message").style.display = "none";
+          }, 2600);
+        })
+        .catch(function (error) {
+          // Handle errors, you can display an error message here
+          console.error(error);
+          document.getElementById("message").textContent =
+            "An error occurred while submitting the form.";
+          document.getElementById("message").style.display = "block";
+        });
+    });
+
+
+  </script>
+</body>
+</html>

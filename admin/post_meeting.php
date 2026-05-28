@@ -1,7 +1,7 @@
 <?php
 include 'includes/auth.php';
 if (!isLoggedIn() || $_SESSION['role'] !== 'admin') {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <li><a href="post_meeting.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-calendar-plus"></i><span>Post Meeting</span></a></li>
             <li><a href="meetings.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-list"></i><span>Meetings List</span></a></li>
         <?php endif; ?>
-        <li><a href="logout.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
+        <li><a href="../auth/logout.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
     </ul>
 </aside>
 

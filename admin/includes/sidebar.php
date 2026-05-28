@@ -3,58 +3,23 @@
 
 // Ensure DB connection is available
 if (!isset($conn)) {
-    // This path might need adjustment based on your file structure
-    // Assuming db.php is in the 'includes' folder as well.
     $conn_path = __DIR__ . '/db.php'; 
     if (file_exists($conn_path)) {
         $conn = include $conn_path;
     } else {
-        // Fallback for when sidebar is included from root directory
         $conn = include 'includes/db.php';
     }
 }
 
-/**
- * Checks if a user's role has permission to view a menu item.
- * Caches the permissions on the first call to improve performance.
- */
-function can_view_menu($menu_key, $user_role, $conn) {
-    // --- START OF MODIFICATION ---
-    // The special check for 'admin' has been removed.
-    /* 
-    // OLD CODE:
-    if ($user_role === 'admin') {
-        return true;
+// Ensure auth functions are available
+if (!function_exists('can_view_menu')) {
+    // Attempt to include auth.php if functions missing
+    $auth_path = __DIR__ . '/auth.php';
+    if (file_exists($auth_path)) {
+        include_once $auth_path; 
+    } else {
+        include_once 'includes/auth.php';
     }
-    */
-    // --- END OF MODIFICATION ---
-
-    // Use a static variable to cache permissions to avoid multiple DB calls per page load.
-    static $permissions = null;
-    if ($permissions === null) {
-        $permissions = []; // Initialize as an empty array
-        try {
-            $stmt = $conn->prepare("SELECT menu_key, allowed_roles FROM menu_permissions");
-            $stmt->execute();
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($results as $row) {
-                // Store roles as an array for easy lookup
-                $permissions[$row['menu_key']] = !empty($row['allowed_roles']) ? explode(',', $row['allowed_roles']) : [];
-            }
-        } catch (Exception $e) {
-            // Log error if possible, and continue with empty permissions for security.
-            error_log('Failed to fetch menu permissions: ' . $e->getMessage());
-        }
-    }
-
-    // Check if the menu key exists and if the user's role is in the allowed list.
-    if (isset($permissions[$menu_key])) {
-        // Now this check applies to ALL roles, including 'admin'
-        return in_array($user_role, $permissions[$menu_key]);
-    }
-    
-    // Default to false if the menu key is not found in the permissions table.
-    return false;
 }
 
 // Get current page context
@@ -62,273 +27,238 @@ $current_page = basename($_SERVER['PHP_SELF']);
 $current_view = isset($_GET['view']) ? $_GET['view'] : '';
 $current_user_role = $_SESSION['role'] ?? 'employee';
 
-// Function to check if a navigation link should be marked as active
-function isActive($page, $view = '') {
+// --- DATA FETCHING ---
+$menu_items = [];
+try {
+    // Fetch all admin menus
+    // Ensure table exists implicitly (dashboard logic handles creation, but sidebar might run elsewhere)
+    $stmt = $conn->prepare("SELECT * FROM admin_menus ORDER BY menu_order ASC, id ASC");
+    $stmt->execute();
+    $all_menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Filter by Permission
+    foreach ($all_menus as $menu) {
+        $key = $menu['menu_key'];
+        // Default to TRUE if can_view_menu is not available (safety fallback? or FALSE?)
+        // Better FALSE for security.
+        $allowed = false;
+        if (function_exists('can_view_menu')) {
+            $allowed = can_view_menu($key, $current_user_role, $conn);
+        } elseif ($current_user_role === 'admin') {
+            $allowed = true;
+        }
+
+        if ($allowed) {
+            $menu_items[] = $menu;
+        }
+    }
+} catch (Exception $e) {
+    error_log("Sidebar menu fetch error: " . $e->getMessage());
+}
+
+// Build Tree
+// Note: admin_menus uses 'parent_key' which refers to 'menu_key' of parent.
+// Old logic used ID map. New logic map by menu_key.
+$sidebar_tree = [];
+$menu_map = [];
+
+// First pass: Index by menu_key
+foreach ($menu_items as $menu) {
+    $menu['children'] = [];
+    $menu_map[$menu['menu_key']] = $menu;
+}
+
+// Second pass: Build hierarchy
+foreach ($menu_items as $menu) {
+    if (!empty($menu['parent_key']) && isset($menu_map[$menu['parent_key']])) {
+        $menu_map[$menu['parent_key']]['children'][] = &$menu_map[$menu['menu_key']];
+    } else {
+        // Root item (or parent not found/visible)
+        // Only add to tree if it is a root item (parent_key is null/empty) OR if parent is missing
+        // If parent is missing but permissions say yes, maybe show at top level?
+        // Let's stick to strict hierarchy: only if parent_key is empty showing at root.
+        if (empty($menu['parent_key'])) {
+            $sidebar_tree[] = &$menu_map[$menu['menu_key']];
+        } else {
+            // Orphaned child (permission yes, parent no permission?)
+            // If parent is not visible, child should probably not be visible or moved to root.
+            // Current login logic filters parent out first.
+            // If we want to show it, we push to tree.
+            if (!isset($menu_map[$menu['parent_key']])) {
+                 $sidebar_tree[] = &$menu_map[$menu['menu_key']];
+            }
+        }
+    }
+}
+
+// --- HELPER FUNCTION FOR ACTIVE STATE ---
+function isMenuActive($menu) {
     global $current_page, $current_view;
-    if ($current_page === 'dashboard.php' && !empty($view)) {
-        return $current_view === $view;
+    $link = $menu['menu_link'] ?? '#';
+    
+    // Normalize link
+    if ($link === '#' || empty($link)) return false;
+
+    // Parse link to separate path and query
+    $parsed = parse_url($link);
+    $link_path = isset($parsed['path']) ? basename($parsed['path']) : '';
+    $link_query = isset($parsed['query']) ? $parsed['query'] : '';
+
+    // Check Path (Simple check)
+    // If the menu link is 'dashboard.php' and current page is 'dashboard.php'
+    if ($link_path !== $current_page && !empty($link_path)) {
+        return false;
     }
-    if ($current_page === 'dashboard.php' && empty($current_view) && $page === 'dashboard.php' && empty($view)) {
-        return true;
+
+    // Check Query Params if exist
+    if (!empty($link_query)) {
+        parse_str($link_query, $link_params);
+        if (isset($link_params['view'])) {
+            if ($link_params['view'] !== $current_view) return false;
+        }
+    } else {
+        // If menu link has no params (e.g. dashboard.php) but current url has ?view=xyz
+        // Then this menu (Dashboard Home) should generally NOT be active if we are in a Sub-View, 
+        // UNLESS the sub-view is not matched by any other menu?
+        // Let's stick to strict matching:
+        if ($current_page === 'dashboard.php' && !empty($current_view)) {
+             // Exception: if link is exactly dashboard.php, and we are in a view, it's not active.
+             return false;
+        }
     }
-    return $current_page === $page;
+    
+    return true;
 }
 
-// --- START: NEW LOGIC TO CORRECTLY CHECK PERMISSIONS ---
-
-// Define the keys for all payroll sub-menus
-$payroll_child_keys = [
-    'deductions_bonuses',
-    'payroll_calculation',
-    'payroll_approval',
-    'payroll_payslip'
-];
-
-// Check if the user can see AT LEAST ONE of the payroll sub-menus
-$can_view_any_payroll_child = false;
-foreach ($payroll_child_keys as $key) {
-    if (can_view_menu($key, $current_user_role, $conn)) {
-        $can_view_any_payroll_child = true;
-        break; // Stop checking once we find one permission
+// Function to check if any child is active (to open dropdown)
+function isChildActive($children) {
+    foreach ($children as $child) {
+        if (isMenuActive($child)) return true;
+        if (!empty($child['children'])) {
+            if (isChildActive($child['children'])) return true;
+        }
     }
+    return false;
 }
 
-// The main payroll dropdown should appear if the user has permission for the parent OR for any child menu
-$show_payroll_dropdown = can_view_menu('payroll', $current_user_role, $conn) || $can_view_any_payroll_child;
-
-// Determine if the current page is a payroll page to make the menu active
-$isPayrollPageActive = in_array($current_view, $payroll_child_keys);
-
-// --- END: NEW LOGIC ---
-
-// Standardized classes for sidebar links so all pages render the same
-$baseLinkClass = 'flex items-center p-3 rounded-lg transition-all duration-200 text-white hover:bg-white/10 hover:text-cyan-400 border-l-4 border-transparent hover:border-cyan-400';
-$activeLinkClass = 'bg-white/20 text-cyan-400 font-bold border-l-4 border-cyan-400';
-
-// Icon classes
-$baseIconClass = 'w-5 text-center';
-$activeIconClass = 'w-5 text-center';
-
-// Payroll submenu classes (show/hide based on active state)
-$payrollSubmenuClass = $isPayrollPageActive ? 'ml-4 mt-2 space-y-1' : 'hidden ml-4 mt-2 space-y-1';
-
+// --- STYLES (Light Theme) ---
+$baseLinkClass = 'group flex items-center p-3 rounded-xl transition-all duration-300 text-slate-600 hover:bg-amber-50 hover:text-amber-700 border border-transparent hover:border-amber-200 shadow-sm hover:shadow-amber-100 mb-1';
+$activeLinkClass = 'bg-amber-50 text-amber-700 font-bold border-amber-200 shadow-md shadow-amber-100';
+$iconClass = 'w-6 text-center text-lg transition-transform group-hover:scale-110';
+$activeIconClass = 'text-amber-600';
 
 ?>
 
-<aside class="w-64 bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-900 text-white p-4 hidden md:block transition-transform duration-300 ease-in-out h-screen custom-scrollbar overflow-y-auto shadow-2xl border-r border-slate-700">
-    <div class="flex flex-col items-center mb-6">
-        <img src="https://i.ibb.co/Q3LXcgyX/Logo-Van-Van-1.png" alt="Logo" class="w-20 h-20 mb-2 rounded-full shadow-lg bg-white object-contain border-2 border-cyan-400">
-        <h2 class="text-2xl font-bold text-yellow-400 text-center">HR System</h2>
+<aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white text-slate-800 hidden <?php echo ($current_view !== '' && $current_view !== 'dashboard') ? 'md:block' : 'md:hidden'; ?> transition-all duration-300 ease-in-out h-screen custom-scrollbar overflow-y-auto border-r border-gray-100 md:relative md:translate-x-0 shadow-xl">
+    
+    <!-- BRAND / LOGO -->
+    <div class="sticky top-0 z-10 bg-white/95 backdrop-blur-md pt-6 pb-6 px-4 border-b border-gray-100 flex flex-col items-center">
+        <div class="relative group cursor-pointer">
+            <div class="absolute -inset-1 bg-gradient-to-tr from-amber-400 via-yellow-200 to-amber-100 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+            <img src="https://i.ibb.co/Q3LXcgyX/Logo-Van-Van-1.png" alt="Logo" class="relative w-20 h-20 rounded-full shadow-lg bg-white object-contain border-2 border-gray-100 group-hover:border-amber-200 transition-all duration-300">
+        </div>
+        <div class="mt-4 text-center">
+            <h2 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-amber-500 to-amber-400 tracking-tight uppercase drop-shadow-sm font-sans">HR System</h2>
+            <p class="text-[10px] text-slate-400 uppercase tracking-[0.2em] mt-1 font-semibold">Management Panel</p>
+        </div>
     </div>
-    <nav>
-        <ul class="space-y-2">
-        <?php if (can_view_menu('dashboard', $current_user_role, $conn)): ?>
-        <li>
-            <a href="dashboard.php" class="<?php echo $baseLinkClass . (isActive('dashboard.php','') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-home <?php echo isActive('dashboard.php','') ? $activeIconClass : $baseIconClass; ?>"></i>
-                <span>ផ្ទាំងគ្រប់គ្រង</span>
-            </a>
-        </li>
-        <?php endif; ?>
 
-        <!-- START: NEW MENU ITEM FOR MANAGE EMPLOYEES -->
-        <?php if (can_view_menu('manage_employees', $current_user_role, $conn)): ?>
-        <li>
-            <a href="dashboard.php?view=manage_employees" class="<?php echo $baseLinkClass . (isActive('dashboard.php','manage_employees') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-users-cog <?php echo isActive('dashboard.php','manage_employees') ? $activeIconClass : $baseIconClass; ?>"></i>
-                <span>គ្រប់គ្រងបុគ្គលិក</span>
-            </a>
-        </li>
-        <?php endif; ?>
-        <!-- END: NEW MENU ITEM -->
-        
-        <?php if (can_view_menu('checklist', $current_user_role, $conn)): ?>
-        <li>
-            <a href="dashboard.php?view=checklist" class="<?php echo $baseLinkClass . (isActive('dashboard.php','checklist') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-tasks <?php echo $baseIconClass; ?>"></i>
-                <span>បញ្ជីការងារ</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if (can_view_menu('daily_reports', $current_user_role, $conn)): ?>
-        <li>
-            <a href="dashboard.php?view=reports" class="<?php echo $baseLinkClass . (isActive('dashboard.php','reports') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-file-alt <?php echo $baseIconClass; ?>"></i>
-                <span>របាយការណ៍ប្រចាំថ្ងៃ</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if (can_view_menu('request_reports', $current_user_role, $conn)): ?>
-        <li>
-            <a href="dashboard.php?view=request_reports" class="<?php echo $baseLinkClass . ' justify-between' . (isActive('dashboard.php','request_reports') ? ' ' . $activeLinkClass : ''); ?>">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-list-check w-5 text-center"></i>
-                    <span>របាយការណ៍សំណើ</span>
-                </div>
-                <?php if (isset($pendingRequestsCount) && $pendingRequestsCount > 0): ?>
-                    <span class="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 ml-auto"><?php echo $pendingRequestsCount; ?></span>
-                <?php endif; ?>
-            </a>
-        </li>
-        <?php endif; ?>
-        
-        <?php // --- CORRECTED PAYROLL SECTION --- ?>
-        <?php if ($show_payroll_dropdown): ?>
-        <li>
-            <button id="payroll-toggle" class="<?php echo $baseLinkClass . ' w-full justify-between' . ($isPayrollPageActive ? ' ' . $activeLinkClass : ''); ?>">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-money-bill-wave w-5 text-center"></i>
-                    <span>បើកប្រាក់បៀវត្ស</span>
-                </div>
-                <i id="payroll-arrow" class="fas fa-chevron-down transform transition-transform duration-200"></i>
-            </button>
-            <ul id="payroll-submenu" class="<?php echo $payrollSubmenuClass; ?>">
-                <?php if (can_view_menu('deductions_bonuses', $current_user_role, $conn)): ?>
-                <li>
-                    <a href="dashboard.php?view=deductions_bonuses" class="<?php echo $baseLinkClass . ' text-sm' . (isActive('dashboard.php','deductions_bonuses') ? ' ' . $activeLinkClass : ''); ?>">
-                        <i class="fas fa-cogs fa-xs mr-3 text-gray-300"></i>
-                        <span>គ្រប់គ្រងកាត់ប្រាក់ & OT</span>
-                    </a>
-                </li>
-                <?php endif; ?>
+    <!-- NAVIGATION -->
+    <nav class="px-4 py-6 space-y-1">
+        <?php foreach ($sidebar_tree as $menu): ?>
+            <?php 
+                $hasChildren = !empty($menu['children']);
+                $isActive = isMenuActive($menu);
+                $isChildOpen = $hasChildren && isChildActive($menu['children']); 
+                $isParentActive = $isActive || $isChildOpen;
                 
-                <?php if (can_view_menu('payroll_calculation', $current_user_role, $conn)): ?>
-                <li>
-                    <a href="dashboard.php?view=payroll_calculation" class="<?php echo $baseLinkClass . ' text-sm' . (isActive('dashboard.php','payroll_calculation') ? ' ' . $activeLinkClass : ''); ?>">
-                        <i class="fas fa-calculator fa-xs mr-3 text-gray-300"></i>
-                        <span>ការគណនាបៀវត្ស</span>
-                    </a>
-                </li>
-                <?php endif; ?>
+                $menuLink = $menu['menu_link'];
+                $toggleId = 'menu-' . ($menu['id'] ?? uniqid());
+            ?>
 
-                <?php if (can_view_menu('payroll_approval', $current_user_role, $conn)): ?>
-                <li>
-                    <a href="dashboard.php?view=payroll_approval" class="<?php echo $baseLinkClass . ' text-sm' . (isActive('dashboard.php','payroll_approval') ? ' ' . $activeLinkClass : ''); ?>">
-                        <i class="fas fa-check-double fa-xs mr-3 text-gray-300"></i>
-                        <span>ដំណើរការអនុម័ត</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-                
-                <?php if (can_view_menu('payroll_payslip', $current_user_role, $conn)): ?>
-                <li>
-                    <a href="dashboard.php?view=payroll_payslip" class="<?php echo $baseLinkClass . ' text-sm' . (isActive('dashboard.php','payroll_payslip') ? ' ' . $activeLinkClass : ''); ?>">
-                        <i class="fas fa-file-invoice-dollar fa-xs mr-3 text-gray-300"></i>
-                        <span>បង្កើត Payslip</span>
-                    </a>
-                </li>
-                <?php endif; ?>
-            </ul>
-        </li>
-        <?php endif; ?>
-        
-        <?php if (can_view_menu('post_announcements', $current_user_role, $conn)): ?>
-        <li>
-            <a href="post_announcements.php" class="<?php echo $baseLinkClass . (isActive('post_announcements.php') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-bullhorn w-5 text-center"></i>
-                <span>បង្ហោះការជូនដំណឹង</span>
-            </a>
-        </li>
-        <?php endif; ?>
+            <?php if ($hasChildren): ?>
+                <!-- Dropdown Menu -->
+                <div class="relative">
+                    <button type="button" 
+                            class="w-full justify-between <?php echo $baseLinkClass . ($isParentActive ? ' ' . $activeLinkClass : ''); ?>"
+                            onclick="toggleSubmenu('<?php echo $toggleId; ?>', this)">
+                        <div class="flex items-center gap-3">
+                            <i class="<?php echo $menu['menu_icon'] ?? 'fas fa-circle'; ?> <?php echo $iconClass; ?> <?php echo $isParentActive ? $activeIconClass : 'text-slate-400'; ?>"></i>
+                            <span class="font-medium tracking-wide"><?php echo htmlspecialchars($menu['menu_name']); ?></span>
+                        </div>
+                        <i class="fas fa-chevron-right text-xs transition-transform duration-300 <?php echo $isChildOpen ? 'rotate-90 text-amber-600' : 'text-slate-400'; ?>"></i>
+                    </button>
+                    
+                    <div id="<?php echo $toggleId; ?>" class="<?php echo $isChildOpen ? 'block' : 'hidden'; ?> ml-4 pl-4 border-l-2 border-slate-100 space-y-1 my-1 overflow-hidden transition-all duration-300">
+                        <?php foreach ($menu['children'] as $child): ?>
+                            <?php 
+                                $isChildActive = isMenuActive($child);
+                            ?>
+                            <a href="<?php echo htmlspecialchars($child['menu_link']); ?>" 
+                               class="flex items-center p-2.5 rounded-lg text-sm transition-all duration-200 <?php echo $isChildActive ? 'text-amber-700 bg-amber-50 font-medium translate-x-1' : 'text-slate-500 hover:text-slate-800 hover:bg-gray-50 hover:translate-x-1'; ?>">
+                                <i class="<?php echo $child['menu_icon'] ?? 'fas fa-circle'; ?> w-5 text-center mr-2 text-xs opacity-70"></i>
+                                <span><?php echo htmlspecialchars($child['menu_name']); ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php else: ?>
+                <!-- Single Link -->
+                <a href="<?php echo htmlspecialchars($menuLink); ?>" class="<?php echo $baseLinkClass . ($isActive ? ' ' . $activeLinkClass : ''); ?>">
+                    <div class="flex items-center gap-3">
+                        <i class="<?php echo $menu['menu_icon'] ?? 'fas fa-circle'; ?> <?php echo $iconClass; ?> <?php echo $isActive ? $activeIconClass : 'text-slate-400'; ?>"></i>
+                        <span class="font-medium tracking-wide"><?php echo htmlspecialchars($menu['menu_name']); ?></span>
+                    </div>
+                </a>
+            <?php endif; ?>
+        <?php endforeach; ?>
 
-        <?php if (can_view_menu('inactive_users', $current_user_role, $conn)): ?>
-        <li>
-            <a href="dashboard.php?view=inactive_users" class="<?php echo $baseLinkClass . (isActive('dashboard.php','inactive_users') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-user-slash w-5 text-center"></i>
-                <span>គណនីបានបិទ</span>
+        <!-- Logout Link -->
+        <div class="pt-6 mt-6 border-t border-gray-100">
+            <a href="../../auth/logout.php" class="<?php echo $baseLinkClass; ?> text-red-500 hover:text-red-700 hover:bg-red-50 hover:border-red-100">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-sign-out-alt <?php echo $iconClass; ?>"></i>
+                    <span class="font-medium">ចាកចេញ (Logout)</span>
+                </div>
             </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if (can_view_menu('post_meeting', $current_user_role, $conn)): ?>
-        <li>
-            <a href="post_meeting.php" class="<?php echo $baseLinkClass . (isActive('post_meeting.php') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-calendar-plus w-5 text-center"></i>
-                <span>បង្ហោះការប្រជុំ</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if (can_view_menu('post_lesson', $current_user_role, $conn)): ?>
-        <li>
-            <a href="post_lesson.php" class="<?php echo $baseLinkClass . (isActive('post_lesson.php') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-book w-5 text-center"></i>
-                <span>បង្ហោះមេរៀន</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if (can_view_menu('print_pdf', $current_user_role, $conn)): ?>
-        <li>
-            <a href="print_content.php" class="<?php echo $baseLinkClass . (isActive('print_content.php') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-print w-5 text-center"></i>
-                <span>បោះពុម្ព PDF</span>
-            </a>
-        </li>
-        <?php endif; ?>
-        
-        <?php if (can_view_menu('upload_pdf', $current_user_role, $conn)): ?>
-        <li>
-            <a href="store_print_pdf.php" class="<?php echo $baseLinkClass . (isActive('store_print_pdf.php') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-file-pdf w-5 text-center"></i>
-                <span>បង្ហោះ PDF</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if (can_view_menu('pending_requests', $current_user_role, $conn)): ?>
-        <li>
-            <a href="pending_requests.php" class="<?php echo $baseLinkClass . (isActive('pending_requests.php') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-clock w-5 text-center"></i>
-                <span>សំណើរង់ចាំ</span>
-            </a>
-        </li>
-        <?php endif; ?>
-        
-        <?php if (can_view_menu('processed_requests', $current_user_role, $conn)): ?>
-        <li>
-            <a href="view_processed_requests.php" class="<?php echo $baseLinkClass . (isActive('view_processed_requests.php') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-check-circle w-5 text-center"></i>
-                <span>សំណើបានដំណើរការ</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if (can_view_menu('view_lessons', $current_user_role, $conn)): ?>
-        <li>
-            <a href="lessons.php" class="<?php echo $baseLinkClass . (isActive('lessons.php') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-list w-5 text-center"></i>
-                <span>មើលមេរៀន</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <?php if (can_view_menu('upload_lesson_docs', $current_user_role, $conn)): ?>
-        <li>
-            <a href="post_lesson_documents.php" class="<?php echo $baseLinkClass . (isActive('post_lesson_documents.php') ? ' ' . $activeLinkClass : ''); ?>">
-                 <i class="fas fa-file-upload w-5 text-center"></i>
-                <span>បង្ហោះឯកសារមេរៀន</span>
-            </a>
-        </li>
-        <?php endif; ?>
-        
-        <?php if (can_view_menu('permissions', $current_user_role, $conn)): ?>
-         <li>
-            <a href="dashboard.php?view=permissions" class="<?php echo $baseLinkClass . (isActive('dashboard.php','permissions') ? ' ' . $activeLinkClass : ''); ?>">
-                <i class="fas fa-shield-alt w-5 text-center"></i>
-                <span>ការកំណត់សិទ្ធ</span>
-            </a>
-        </li>
-        <?php endif; ?>
-
-        <li class="pt-4">
-            <a href="logout.php" class="<?php echo $baseLinkClass; ?>">
-                <i class="fas fa-sign-out-alt w-5 text-center"></i>
-                <span>ចាកចេញ</span>
-            </a>
-        </li>
-        </ul>
+        </div>
     </nav>
 </aside>
+
+<script>
+function toggleSubmenu(elementId, btn) {
+    const submenu = document.getElementById(elementId);
+    const arrow = btn.querySelector('.fa-chevron-right');
+    
+    if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        submenu.classList.add('block');
+        arrow.classList.add('rotate-90', 'text-amber-600');
+        arrow.classList.remove('text-slate-400');
+    } else {
+        submenu.classList.add('hidden');
+        submenu.classList.remove('block');
+        arrow.classList.remove('rotate-90', 'text-amber-600');
+        arrow.classList.add('text-slate-400');
+    }
+}
+</script>
+
+<script>
+function toggleSubmenu(elementId, btn) {
+    const submenu = document.getElementById(elementId);
+    const arrow = btn.querySelector('.fa-chevron-right');
+    
+    if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        submenu.classList.add('block');
+        arrow.classList.add('rotate-90', 'text-amber-600');
+        arrow.classList.remove('text-slate-400');
+    } else {
+        submenu.classList.add('hidden');
+        submenu.classList.remove('block');
+        arrow.classList.remove('rotate-90', 'text-amber-600');
+        arrow.classList.add('text-slate-400');
+    }
+}
+</script>

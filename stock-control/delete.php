@@ -63,7 +63,7 @@ if (isset($_POST['confirm_delete']) && isset($_POST['id'])) {
             
             $pdo->commit();
             $success = "ទំនិញត្រូវបានលុបដោយជោគជ័យ!";
-            header("Location: index.php");
+            header("Location: ../index.php");
             exit;
         } catch (PDOException $e) {
             $pdo->rollBack();
@@ -278,7 +278,7 @@ if (isset($_POST['confirm_delete']) && isset($_POST['id'])) {
         <div class="sidebar">
             <h2>ផ្ទាំងគ្រប់គ្រងស្តុក</h2>
             <a href="dashboard.php" <?php echo $current_page === 'dashboard.php' ? 'class="active"' : ''; ?>>ផ្ទាំងគ្រប់គ្រង</a>
-            <a href="index.php" <?php echo $current_page === 'index.php' ? 'class="active"' : ''; ?>>ទំនិញស្តុក</a>
+            <a href="../index.php" <?php echo $current_page === '../index.php' ? 'class="active"' : ''; ?>>ទំនិញស្តុក</a>
             <a href="reports.php" <?php echo $current_page === 'reports.php' ? 'class="active"' : ''; ?>>របាយការណ៍</a>
             <a href="stock_counting.php" <?php echo $current_page === 'stock_counting.php' ? 'class="active"' : ''; ?>>ការរាប់ស្តុក</a>
         </div>
@@ -311,13 +311,13 @@ if (isset($_POST['confirm_delete']) && isset($_POST['id'])) {
                         <input type="hidden" name="id" value="<?php echo $id; ?>">
                         <div class="button-group">
                             <button type="submit" name="confirm_delete" class="btn btn-delete">លុបទំនិញ</button>
-                            <a href="index.php" class="btn btn-cancel">បោះបង់</a>
+                            <a href="../index.php" class="btn btn-cancel">បោះបង់</a>
                         </div>
                     </form>
                 <?php else: ?>
                     <p>គ្មានទំនិញត្រូវបានជ្រើសរើសសម្រាប់លុប។ សូមត្រឡប់ទៅទំព័រទំនិញស្តុក។</p>
                     <div class="button-group">
-                        <a href="index.php" class="btn btn-cancel">ត្រឡប់ទៅទំនិញស្តុក</a>
+                        <a href="../index.php" class="btn btn-cancel">ត្រឡប់ទៅទំនិញស្តុក</a>
                     </div>
                 <?php endif; ?>
             </div>

@@ -10,7 +10,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
 // Check login status
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); // Redirect to login page
+    header('Location: ../auth/login.php'); // Redirect to login page
     exit;
 }
 
@@ -18,7 +18,7 @@ if (!isset($_SESSION['user_id'])) {
 $dbHost = 'localhost';
 $dbName = 'samann1_admin_panel';
 $dbUser = 'samann1_admin_panel';
-$dbPass = 'admin_panel@2025';
+$dbPass = '';
 $telegramChatId = '-1002496391098';
 define('BASE_URL', $_SERVER['PHP_SELF']);
 
@@ -32,7 +32,7 @@ try {
     ]);
     $pdo->exec("SET NAMES 'utf8mb4'");
 } catch (Exception $e) {
-    die("ב€ב†ב ב»בב€ב’ב“ב»ב„ב€ב¶בבב—ב’ב‡ב¶ב”ב‹ב‘ב…ב”ב’בב–בב“ב’ב’ב˜ב¼ב›בב’ב‹ב¶ב“ב‘ב·ב“ב’ב“ב“בב™: " . $e->getMessage());
+    die("בבב ב»בבבבב»בבב¶בבבבבב¶בבבבבבבבבבבבבב¼בבבבב¶בבב·בבבבבב: " . $e->getMessage());
 }
 
 // Initialize variables
@@ -56,19 +56,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
         $request = $stmt->fetch();
 
         if ($request) {
-            $message = "בב†בב¾ב”ב¶ב“ב’ב’בב¾ב”ב…ב’ב…ב»ב”ב’ב”ב“ב’ב“ב—ב¶ב–:\n" .
-                       "- ב›בבבב˜ב’ב‚ב¶ב›ב‹: {$request['id']}\n" .
-                       "- ב”ב’בב—בב‘: {$request['request_type']}\n" .
-                       "- בˆב’ב˜ב„ב‡: {$request['requester_name']}\n" .
-                       "- בב’בב¶ב“ב—ב¶ב–: " . ($status === 'approved' ? 'ב”ב¶ב“ב¢ב“ב»ב˜בב' : 'ב”ב¶ב“ב”בב·בבב’') . "\n" .
-                       "- ב€ב¶ב›ב”בב·ב…ב’ב†בב‘: " . date('Y-m-d H:i:s');
+            $message = "בבבב¾בב¶בבבבב¾בבבבב»בבבבבבבב¶ב:\n" .
+                       "- בבבבבבבב¶בב: {$request['id']}\n" .
+                       "- בבבבבב: {$request['request_type']}\n" .
+                       "- בבבבב: {$request['requester_name']}\n" .
+                       "- בבבב¶בבב¶ב: " . ($status === 'approved' ? 'בב¶בב¢בב»בבב' : 'בב¶בבבב·בבב') . "\n" .
+                       "- בב¶בבבב·בבבבב: " . date('Y-m-d H:i:s');
             if (!sendTelegramMessage($telegramChatId, $message)) {
                 error_log("Failed to send Telegram message for request ID: $request_id");
             }
-            $success = "בב†בב¾ (ID: $request_id) בב’בב¼בב”ב¶ב“ב’ב’בב¾ב”ב…ב’ב…ב»ב”ב’ב”ב“ב’ב“ב—ב¶ב–ב‡ב„ב‚ב‡בב™!";
+            $success = "בבבב¾ (ID: $request_id) בבבב¼בבב¶בבבבב¾בבבבב»בבבבבבבב¶בבבבבבב!";
         }
     } catch (Exception $e) {
-        $errors[] = "ב€ב†ב ב»ב: " . $e->getMessage();
+        $errors[] = "בבב ב»ב: " . $e->getMessage();
         error_log("Error updating request: " . $e->getMessage());
     }
 }
@@ -83,7 +83,7 @@ $sort_order = isset($_GET['sort_order']) && in_array($_GET['sort_order'], ['ASC'
 // Validate sort_by to prevent SQL injection
 $valid_sort_columns = ['id', 'request_type', 'request_date', 'created_at', 'status'];
 if (!in_array($sort_by, $valid_sort_columns)) {
-־¿־½ֿ„־±ֿ‚: $sort_by = 'created_at';
+־¿־½ֿ־±ֿ: $sort_by = 'created_at';
 }
 
 // Build the SQL query with filters
@@ -117,7 +117,7 @@ $requests = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ב˜ב¾ב›בב”ב¶ב™ב€ב¶בבבבב†בב¾</title>
+    <title>בב¾בבבב¶בבב¶בבבבבבב¾</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
@@ -263,7 +263,7 @@ $requests = $stmt->fetchAll();
 </head>
 <body>
     <div class="report-container">
-        <h2 class="form-title">בב”ב¶ב™ב€ב¶בבבבב†בב¾</h2>
+        <h2 class="form-title">בבב¶בבב¶בבבבבבב¾</h2>
 
         <?php if ($success): ?>
             <p class="success"><?php echo htmlspecialchars($success); ?></p>
@@ -275,26 +275,26 @@ $requests = $stmt->fetchAll();
         <!-- Filter Form -->
         <form method="GET" class="filter-form">
             <select name="status">
-                <option value="">בב’בב¶ב“ב—ב¶ב–ב‘ב¶ב†ב„ב¢בב‹</option>
-                <option value="pending" <?php echo $filter_status === 'pending' ? 'selected' : ''; ?>>בב„ב‹ב…ב¶ב†</option>
-                <option value="approved" <?php echo $filter_status === 'approved' ? 'selected' : ''; ?>>ב”ב¶ב“ב¢ב“ב»ב˜בב</option>
-                <option value="rejected" <?php echo $filter_status === 'rejected' ? 'selected' : ''; ?>>ב”ב¶ב“ב”בב·בבב’</option>
+                <option value="">בבבב¶בבב¶בבב¶בבב¢בב</option>
+                <option value="pending" <?php echo $filter_status === 'pending' ? 'selected' : ''; ?>>בבבבב¶ב</option>
+                <option value="approved" <?php echo $filter_status === 'approved' ? 'selected' : ''; ?>>בב¶בב¢בב»בבב</option>
+                <option value="rejected" <?php echo $filter_status === 'rejected' ? 'selected' : ''; ?>>בב¶בבבב·בבב</option>
             </select>
             <input type="date" name="request_date" value="<?php echo htmlspecialchars($filter_date); ?>">
-            <input type="text" name="request_type" placeholder="ב”ב’בב—בב‘בב†בב¾" value="<?php echo htmlspecialchars($filter_type); ?>">
+            <input type="text" name="request_type" placeholder="בבבבבבבבבב¾" value="<?php echo htmlspecialchars($filter_type); ?>">
             <select name="sort_by">
-                <option value="id" <?php echo $sort_by === 'id' ? 'selected' : ''; ?>>ב›בבבב˜ב’ב‚ב¶ב›ב‹</option>
-                <option value="request_type" <?php echo $sort_by === 'request_type' ? 'selected' : ''; ?>>ב”ב’בב—בב‘</option>
-                <option value="request_date" <?php echo $sort_by === 'request_date' ? 'selected' : ''; ?>>בב’ב„בƒבב’ב“ב¾בב»ב†</option>
-                <option value="created_at" <?php echo $sort_by === 'created_at' ? 'selected' : ''; ?>>ב€ב¶ב›ב”בב·ב…ב’ב†בב‘ב”ב„ב’ב€ב¾ב</option>
-                <option value="status" <?php echo $sort_by === 'status' ? 'selected' : ''; ?>>בב’בב¶ב“ב—ב¶ב–</option>
+                <option value="id" <?php echo $sort_by === 'id' ? 'selected' : ''; ?>>בבבבבבבב¶בב</option>
+                <option value="request_type" <?php echo $sort_by === 'request_type' ? 'selected' : ''; ?>>בבבבבב</option>
+                <option value="request_date" <?php echo $sort_by === 'request_date' ? 'selected' : ''; ?>>בבבבבבבב¾בב»ב</option>
+                <option value="created_at" <?php echo $sort_by === 'created_at' ? 'selected' : ''; ?>>בב¶בבבב·בבבבבבבבבב¾ב</option>
+                <option value="status" <?php echo $sort_by === 'status' ? 'selected' : ''; ?>>בבבב¶בבב¶ב</option>
             </select>
             <select name="sort_order">
-                <option value="DESC" <?php echo $sort_order === 'DESC' ? 'selected' : ''; ?>>ב…ב»ב‡</option>
-                <option value="ASC" <?php echo $sort_order === 'ASC' ? 'selected' : ''; ?>>ב¡ב¾ב„</option>
+                <option value="DESC" <?php echo $sort_order === 'DESC' ? 'selected' : ''; ?>>בב»ב</option>
+                <option value="ASC" <?php echo $sort_order === 'ASC' ? 'selected' : ''; ?>>ב¡ב¾ב</option>
             </select>
-            <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-2"></i>בב˜ב’בב„</button>
-            <button type="button" class="btn btn-secondary" onclick="window.location.href='submit_request.php'"><i class="fas fa-plus me-2"></i>בב’ב“ב¾בב»ב†בב’ב˜ב¸</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-2"></i>בבבבב</button>
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='../requests/submit_request.php'"><i class="fas fa-plus me-2"></i>בבבב¾בב»בבבבב¸</button>
         </form>
 
         <!-- Requests Table -->
@@ -302,23 +302,23 @@ $requests = $stmt->fetchAll();
             <table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>ב›בבבב˜ב’ב‚ב¶ב›ב‹</th>
-                        <th>ב”ב’בב—בב‘</th>
-                        <th>בˆב’ב˜ב„ב‡ב¢ב’ב“ב€בב’ב“ב¾</th>
-                        <th>ב•ב’ב“ב‚ב€</th>
-                        <th>בב¶בב¶</th>
-                        <th>בב’ב„בƒבב’ב“ב¾בב»ב†</th>
-                        <th>ב…ב†ב“ב½ב“בב’ב„בƒ</th>
-                        <th>ב˜ב¼ב›ב בבב»</th>
-                        <th>בב’בב¶ב“ב—ב¶ב–</th>
-                        <th>ב€ב¶ב›ב”בב·ב…ב’ב†בב‘ב”ב„ב’ב€ב¾ב</th>
-                        <th>בב€ב˜ב’ב˜ב—ב¶ב–</th>
+                        <th>בבבבבבבב¶בב</th>
+                        <th>בבבבבב</th>
+                        <th>בבבבבב¢בבבבבבב¾</th>
+                        <th>בבבבב</th>
+                        <th>בב¶בב¶</th>
+                        <th>בבבבבבבב¾בב»ב</th>
+                        <th>בבבב½בבבבב</th>
+                        <th>בב¼בב בבב»</th>
+                        <th>בבבב¶בבב¶ב</th>
+                        <th>בב¶בבבב·בבבבבבבבבב¾ב</th>
+                        <th>בבבבבבב¶ב</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($requests)): ?>
                         <tr>
-                            <td colspan="11" class="text-center">ב˜ב·ב“ב˜ב¶ב“בב†בב¾בב¶ב˜ב½ב™בב’בב¼בב”ב¶ב“בב€בƒב¾ב‰ב‘בב”</td>
+                            <td colspan="11" class="text-center">בב·בבב¶בבבבב¾בב¶בב½בבבבב¼בבב¶בבבבב¾בבבב</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($requests as $request): ?>
@@ -334,7 +334,7 @@ $requests = $stmt->fetchAll();
                                 <td class="status-<?php echo htmlspecialchars($request['status']); ?>">
                                     <?php
                                     $status = htmlspecialchars($request['status']);
-                                    echo $status === 'pending' ? 'בב„ב‹ב…ב¶ב†' : ($status === 'approved' ? 'ב”ב¶ב“ב¢ב“ב»ב˜בב' : 'ב”ב¶ב“ב”בב·בבב’');
+                                    echo $status === 'pending' ? 'בבבבב¶ב' : ($status === 'approved' ? 'בב¶בב¢בב»בבב' : 'בב¶בבבב·בבב');
                                     ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($request['created_at']); ?></td>
@@ -343,15 +343,15 @@ $requests = $stmt->fetchAll();
                                         <form method="POST" style="display: inline;">
                                             <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
                                             <input type="hidden" name="action" value="approve">
-                                            <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check"></i> ב¢ב“ב»ב˜בב</button>
+                                            <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check"></i> ב¢בב»בבב</button>
                                         </form>
                                         <form method="POST" style="display: inline;">
                                             <input type="hidden" name="request_id" value="<?php echo $request['id']; ?>">
                                             <input type="hidden" name="action" value="reject">
-                                            <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-times"></i> ב”בב·בבב’</button>
+                                            <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-times"></i> בבב·בבב</button>
                                         </form>
                                     <?php endif; ?>
-                                    <a href="delete_request.php?id=<?php echo $request['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('בב¾ב¢ב’ב“ב€ב”ב’בב¶ב€בב‘בבב¶ב…ב„ב‹ב›ב»ב”בב†בב¾ב“בב‡?');"><i class="fas fa-trash"></i></a>
+                                    <a href="delete_request.php?id=<?php echo $request['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('בב¾ב¢בבבבבבב¶בבבבבב¶בבבבב»בבבבב¾בבב?');"><i class="fas fa-trash"></i></a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -362,7 +362,7 @@ $requests = $stmt->fetchAll();
 
         <div class="text-center mt-4">
             <button type="button" class="btn btn-secondary" onclick="window.location.href='https://app.vvc.asia/homes.php'">
-                <i class="fas fa-arrow-left me-2"></i>בב’בב¡ב”ב‹ב€ב’בב„ב™
+                <i class="fas fa-arrow-left me-2"></i>בבבב¡בבבבבבב
             </button>
         </div>
     </div>

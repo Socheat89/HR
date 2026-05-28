@@ -303,7 +303,7 @@ try {
 
     <div class="bottom-nav">
         <a href="dashboard.php" class="nav-item"><i class="fa-solid fa-house"></i> ផ្ទាំងគ្រប់គ្រង</a>
-        <a href="index.php" class="nav-item"><i class="fa-solid fa-box-archive"></i> ទំនិញ</a>
+        <a href="../index.php" class="nav-item"><i class="fa-solid fa-box-archive"></i> ទំនិញ</a>
         <a href="reports.php" class="nav-item"><i class="fa-solid fa-chart-simple"></i> របាយការណ៍</a>
         <a href="purchase_stock_in.php" class="nav-item <?php echo $current_page == 'purchase_stock_in.php' ? 'active' : ''; ?>"><i class="fa-solid fa-truck-fast"></i> ទិញចូល</a>
     </div>

@@ -1,7 +1,7 @@
 <?php
 include 'includes/auth.php';
 if (!isLoggedIn() || $_SESSION['role'] !== 'admin') {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 include 'includes/db.php';

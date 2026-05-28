@@ -299,7 +299,7 @@ try {
         <?php endif; ?>
 
         <div class="text-center">
-            <a href="submit_request.php" class="btn-back">Back to Submit Request</a>
+            <a href="../requests/submit_request.php" class="btn-back">Back to Submit Request</a>
         </div>
     </div>
 

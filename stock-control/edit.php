@@ -499,7 +499,7 @@ unset($_SESSION['success_message']);
         <!-- Sidebar Navigation for PC -->
         <nav class="sidebar">
             <a href="dashboard.php" class="nav-item"> <span>🏠</span> ផ្ទាំងគ្រប់គ្រង </a>
-            <a href="index.php" class="nav-item active"> <span>📦</span> ទំនិញ </a>
+            <a href="../index.php" class="nav-item active"> <span>📦</span> ទំនិញ </a>
             <a href="reports.php" class="nav-item"> <span>📊</span> របាយការណ៍ </a>
             <a href="stock_counting.php" class="nav-item"> <span>🔢</span> ការរាប់ស្តុក </a>
             <a href="review_requests.php" class="nav-item"> <span>🔍</span> ពិនិត្យសំណើរ </a>
@@ -558,7 +558,7 @@ unset($_SESSION['success_message']);
                             <input type="checkbox" name="compress_image" value="1" checked> បង្ហាប់រូបភាព (ទំហំតិចជាង 1MB)
                         </label>
                         <button type="submit" name="update">កែសម្រួលទំនិញ</button>
-                        <button type="button" class="btn-cancel" onclick="window.location.href='index.php'">បោះបង់</button>
+                        <button type="button" class="btn-cancel" onclick="window.location.href='../index.php'">បោះបង់</button>
                     </div>
                 </form>
             </div>
@@ -568,7 +568,7 @@ unset($_SESSION['success_message']);
     <!-- Bottom Navigation for Mobile -->
     <div class="bottom-nav">
         <a href="dashboard.php" class="nav-item"> <span>🏠</span> ផ្ទាំងគ្រប់គ្រង </a>
-        <a href="index.php" class="nav-item active"> <span>📦</span> ទំនិញ </a>
+        <a href="../index.php" class="nav-item active"> <span>📦</span> ទំនិញ </a>
         <a href="reports.php" class="nav-item"> <span>📊</span> របាយការណ៍ </a>
         <a href="stock_counting.php" class="nav-item"> <span>🔢</span> ការរាប់ស្តុក </a>
     </div>
@@ -582,7 +582,7 @@ unset($_SESSION['success_message']);
                 modal.classList.remove('show', 'hide');
                 modal.querySelector('.modal-content').classList.remove('show', 'hide');
                 modal.style.display = 'none';
-                window.location.href = 'index.php';
+                window.location.href = '../index.php';
             }, 300);
         }
 

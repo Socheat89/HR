@@ -1,5 +1,5 @@
 <?php
-// FILE: process_request.php
+// FILE: ../requests/process_request.php
 session_start();
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['user_id'] = 2;

@@ -3,7 +3,19 @@
 session_start();
 
 // Set JSON content type and UTF-8 encoding
+ob_start(); // Buffer output to avoid JSON corruption
 header('Content-Type: application/json; charset=UTF-8');
+
+// Increase limits for large audio uploads
+ini_set('upload_max_filesize', '100M');
+ini_set('post_max_size', '100M');
+ini_set('max_execution_time', '600'); // 10 minutes
+ini_set('max_input_time', '600');     // 10 minutes for data input
+ini_set('memory_limit', '256M');
+
+// Prevent PHP errors from polluting JSON output
+error_reporting(0);
+ini_set('display_errors', 0);
 
 // --- Includes (Ensure these paths are correct) ---
 include 'includes/auth.php';
@@ -52,6 +64,13 @@ error_log("API Request - POST params: " . json_encode($_POST));
 
 // Validate action
 if (empty($action)) {
+    // Check if the request likely exceeded post_max_size
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && $_SERVER['CONTENT_LENGTH'] > 0) {
+        $max_post = ini_get('post_max_size');
+        http_response_code(413); // Payload Too Large
+        echo json_encode(['status' => 'error', 'message' => "ឯកសារមានទំហំធំពេក! Server អនុញ្ញាតត្រឹម $max_post ប៉ុណ្ណោះ។"]);
+        exit();
+    }
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'សកម្មភាពមិនត្រឹមត្រូវ: គ្មានសកម្មភាពត្រូវបានបញ្ជាក់']);
     exit();
@@ -61,17 +80,19 @@ try {
     switch ($action) {
         case 'get_employees':
             // Alias the DB column to 'annual_leave_days' for front-end consistency
-            $stmt = $conn->query("SELECT id, username, full_name, email, role, position, department, gender, image_url, jd_pdf, workflow_pdf, base_salary, bank_name, bank_account_number, bank_qr_code_url, nssf_id, manager_id, annual_leave_balance AS annual_leave_days FROM users WHERE status = 'active' AND LOWER(full_name) NOT IN ('admin','adminbt') AND LOWER(username) NOT IN ('admin','adminbt') ORDER BY full_name");
+            $stmt = $conn->query("SELECT id, username, full_name, email, role, position, department, gender, image_url, jd_pdf, workflow_pdf, base_salary, bank_name, bank_account_number, bank_qr_code_url, nssf_id, manager_id, annual_leave_balance AS annual_leave_days, employee_id, latin_name, current_address, start_date, marital_status, number_of_children, contract_start, contract_end, contract_type FROM users WHERE status = 'active' AND LOWER(full_name) NOT IN ('admin','adminbt') AND LOWER(username) NOT IN ('admin','adminbt') ORDER BY full_name");
             $employees_flat = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             $employee_tree_data = $employees_flat; // Create a copy for tree building
             $employee_tree = buildTree($employee_tree_data);
 
+            ob_clean();
             echo json_encode(['status' => 'success', 'employees' => $employee_tree, 'employees_flat' => $employees_flat]);
+            exit();
             break;
 
         case 'add_user':
-            if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'administration'])) {
+            if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'administration', 'accounting'])) {
                 throw new Exception('អ្នកមិនមានសិទ្ធិធ្វើសកម្មភាពនេះទេ។');
             }
             
@@ -168,9 +189,19 @@ try {
             
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
+            $employee_id = trim(filter_input(INPUT_POST, 'employee_id', FILTER_SANITIZE_STRING));
+            $latin_name = trim(filter_input(INPUT_POST, 'latin_name', FILTER_SANITIZE_STRING));
+            $current_address = trim(filter_input(INPUT_POST, 'current_address', FILTER_SANITIZE_STRING));
+            $start_date = trim(filter_input(INPUT_POST, 'start_date', FILTER_SANITIZE_STRING));
+            $marital_status = trim(filter_input(INPUT_POST, 'marital_status', FILTER_SANITIZE_STRING));
+            $number_of_children = (int)filter_input(INPUT_POST, 'number_of_children', FILTER_SANITIZE_NUMBER_INT);
+            $contract_start = trim(filter_input(INPUT_POST, 'contract_start', FILTER_SANITIZE_STRING));
+            $contract_end = trim(filter_input(INPUT_POST, 'contract_end', FILTER_SANITIZE_STRING));
+            $contract_type = trim(filter_input(INPUT_POST, 'contract_type', FILTER_SANITIZE_STRING));
+
             $stmt = $conn->prepare(
-                "INSERT INTO users (username, password, email, role, position, department, gender, full_name, image_url, jd_pdf, workflow_pdf, base_salary, bank_name, bank_account_number, bank_qr_code_url, nssf_id, manager_id, annual_leave_balance) 
-                 VALUES (:username, :password, :email, :role, :position, :department, :gender, :full_name, :image_url, :jd_pdf, :workflow_pdf, :base_salary, :bank_name, :bank_account_number, :bank_qr_code_url, :nssf_id, :manager_id, :annual_leave_days)"
+                "INSERT INTO users (username, password, email, role, position, department, gender, full_name, image_url, jd_pdf, workflow_pdf, base_salary, bank_name, bank_account_number, bank_qr_code_url, nssf_id, manager_id, annual_leave_balance, employee_id, latin_name, current_address, start_date, marital_status, number_of_children, contract_start, contract_end, contract_type) 
+                 VALUES (:username, :password, :email, :role, :position, :department, :gender, :full_name, :image_url, :jd_pdf, :workflow_pdf, :base_salary, :bank_name, :bank_account_number, :bank_qr_code_url, :nssf_id, :manager_id, :annual_leave_days, :employee_id, :latin_name, :current_address, :start_date, :marital_status, :number_of_children, :contract_start, :contract_end, :contract_type)"
             );
 
             $stmt->execute([
@@ -191,10 +222,225 @@ try {
                 ':bank_qr_code_url' => $bankQrCodeUrl, 
                 ':nssf_id' => $nssf_id,
                 ':manager_id' => $manager_id,
-                ':annual_leave_days' => $annual_leave_days
+                ':annual_leave_days' => $annual_leave_days,
+                ':employee_id' => $employee_id,
+                ':latin_name' => $latin_name,
+                ':current_address' => $current_address,
+                ':start_date' => $start_date,
+                ':marital_status' => $marital_status,
+                ':number_of_children' => $number_of_children,
+                ':contract_start' => $contract_start,
+                ':contract_end' => $contract_end,
+                ':contract_type' => $contract_type
             ]);
 
+            ob_clean();
             echo json_encode(['status' => 'success', 'message' => 'អ្នកប្រើប្រាស់ថ្មីត្រូវបានបន្ថែមដោយជោគជ័យ!']);
+            exit();
+            break;
+
+        case 'add_meeting':
+            if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+                throw new Exception('អ្នកមិនមានសិទ្ធិធ្វើសកម្មភាពនេះទេ។');
+            }
+
+            $title = trim($_POST['title']);
+            $category = trim($_POST['category']);
+            $date = trim($_POST['date']);
+            $description = trim($_POST['description']);
+            $audio_url = isset($_POST['audio_url']) ? trim($_POST['audio_url']) : '';
+            $photo_urls = isset($_POST['photo_urls']) ? array_filter($_POST['photo_urls']) : [];
+
+            // Handle Audio File Upload
+            if (isset($_FILES['audio_file']) && $_FILES['audio_file']['error'] === UPLOAD_ERR_OK) {
+                $audioDir = 'uploads/meeting_audio/';
+                if (!is_dir($audioDir)) mkdir($audioDir, 0777, true);
+                
+                $file = $_FILES['audio_file'];
+                // Basic validation: allow common audio types and reasonable size (100MB before compression, but we hope it's smaller)
+                $allowed_audio_types = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/x-m4a'];
+                if (in_array($file['type'], $allowed_audio_types) || strpos($file['type'], 'audio/') === 0) {
+                    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+                    if (empty($ext)) {
+                        $ext = ($file['type'] === 'audio/mpeg') ? 'mp3' : (($file['type'] === 'audio/webm') ? 'webm' : 'ogg');
+                    }
+                    $new_audio_filename = uniqid('audio_', true) . '.' . $ext;
+                    $audio_destination = $audioDir . $new_audio_filename;
+                    if (move_uploaded_file($file['tmp_name'], $audio_destination)) {
+                        $audio_url = $audio_destination;
+                    }
+                }
+            }
+
+            if (empty($title) || empty($category) || empty($date) || empty($description)) {
+                throw new Exception("សូមបំពេញគ្រប់ប្រអប់ដែលចាំបាច់។");
+            }
+
+            $conn->beginTransaction();
+            try {
+                $stmt = $conn->prepare("
+                    INSERT INTO meetings (title, category, meeting_date, description, mp3_url) 
+                    VALUES (:title, :category, :meeting_date, :description, :mp3_url)
+                ");
+                $stmt->execute([
+                    ':title' => $title,
+                    ':category' => $category,
+                    ':meeting_date' => $date,
+                    ':description' => $description,
+                    ':mp3_url' => $audio_url
+                ]);
+
+                $meeting_id = $conn->lastInsertId();
+
+                // Handle Photo File Uploads
+                if (isset($_FILES['meeting_photos'])) {
+                    $photoDir = 'uploads/meeting_photos/';
+                    if (!is_dir($photoDir)) mkdir($photoDir, 0777, true);
+                    
+                    $photos = $_FILES['meeting_photos'];
+                    $stmt_photo = $conn->prepare("INSERT INTO meeting_photos (meeting_id, photo_url) VALUES (:mid, :purl)");
+                    
+                    for ($i = 0; $i < count($photos['name']); $i++) {
+                        if ($photos['error'][$i] === UPLOAD_ERR_OK) {
+                            $tmp_name = $photos['tmp_name'][$i];
+                            $filename = uniqid('img_', true) . '_' . basename($photos['name'][$i]);
+                            $destination = $photoDir . $filename;
+                            
+                            if (move_uploaded_file($tmp_name, $destination)) {
+                                $stmt_photo->execute([':mid' => $meeting_id, ':purl' => $destination]);
+                            }
+                        }
+                    }
+                }
+
+                // Keep support for legacy URL inputs if any
+                if (!empty($photo_urls)) {
+                    $stmt_photo = $conn->prepare("INSERT INTO meeting_photos (meeting_id, photo_url) VALUES (:mid, :purl)");
+                    foreach ($photo_urls as $purl) {
+                        if (!filter_var($purl, FILTER_VALIDATE_URL)) continue;
+                        $stmt_photo->execute([':mid' => $meeting_id, ':purl' => $purl]);
+                    }
+                }
+
+                $conn->commit();
+
+                // Notification (Optional)
+                if (is_callable('sendTelegramMessage')) {
+                    $tg_message = "📢 មានកិច្ចប្រជុំថ្មី៖\n" .
+                                  "📌 ប្រធានបទ៖ $title\n" .
+                                  "📁 ផ្នែក៖ $category\n" .
+                                  "📅 កាលបរិច្ឆេទ៖ $date";
+                    call_user_func('sendTelegramMessage', '-1002496391098', $tg_message);
+                }
+
+                ob_clean();
+                echo json_encode(['status' => 'success', 'message' => 'កិច្ចប្រជុំត្រូវបានបង្ហោះដោយជោគជ័យ!']);
+                exit();
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
+            break;
+
+        case 'update_meeting':
+            if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+                throw new Exception('អ្នកមិនមានសិទ្ធិធ្វើសកម្មភាពនេះទេ។');
+            }
+
+            $mid = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+            if (!$mid) throw new Exception('ID មិនត្រឹមត្រូវ។');
+
+            $title = trim($_POST['title']);
+            $category = trim($_POST['category']);
+            $date = trim($_POST['date']);
+            $description = trim($_POST['description']);
+            $audio_url = isset($_POST['audio_url']) ? trim($_POST['audio_url']) : '';
+
+            if (isset($_FILES['audio_file']) && $_FILES['audio_file']['error'] === UPLOAD_ERR_OK) {
+                $audioDir = 'uploads/meeting_audio/';
+                if (!is_dir($audioDir)) mkdir($audioDir, 0777, true);
+                $file = $_FILES['audio_file'];
+                $ext = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'wav';
+                $new_audio_filename = uniqid('audio_', true) . '.' . $ext;
+                if (move_uploaded_file($file['tmp_name'], $audioDir . $new_audio_filename)) {
+                    $audio_url = $audioDir . $new_audio_filename;
+                }
+            }
+
+            $conn->beginTransaction();
+            try {
+                $stmt = $conn->prepare("UPDATE meetings SET title = ?, category = ?, meeting_date = ?, description = ?, mp3_url = ? WHERE id = ?");
+                $stmt->execute([$title, $category, $date, $description, $audio_url, $mid]);
+
+                if (isset($_FILES['meeting_photos'])) {
+                    $photoDir = 'uploads/meeting_photos/';
+                    if (!is_dir($photoDir)) mkdir($photoDir, 0777, true);
+                    $photos = $_FILES['meeting_photos'];
+                    $stmt_photo = $conn->prepare("INSERT INTO meeting_photos (meeting_id, photo_url) VALUES (?, ?)");
+                    for ($i = 0; $i < count($photos['name']); $i++) {
+                        if ($photos['error'][$i] === UPLOAD_ERR_OK) {
+                            $dest = $photoDir . uniqid('img_', true) . '_' . basename($photos['name'][$i]);
+                            if (move_uploaded_file($photos['tmp_name'][$i], $dest)) {
+                                $stmt_photo->execute([$mid, $dest]);
+                            }
+                        }
+                    }
+                }
+
+                // Handle Photo Deletions
+                if (isset($_POST['removed_photos']) && is_array($_POST['removed_photos'])) {
+                    $stmt_del = $conn->prepare("DELETE FROM meeting_photos WHERE meeting_id = ? AND photo_url = ?");
+                    foreach ($_POST['removed_photos'] as $del_url) {
+                        // The URL in the DB is usually relative like 'uploads/meeting_photos/img_...'
+                        $stmt_del->execute([$mid, $del_url]);
+                        
+                        // Try with relative path if the URL is absolute
+                        $path = parse_url($del_url, PHP_URL_PATH);
+                        if ($path) {
+                            $relative_path = ltrim(str_replace('/HRM/admin/', '', $path), '/');
+                            if ($relative_path !== $del_url) {
+                                $stmt_del->execute([$mid, $relative_path]);
+                            }
+                        }
+                    }
+                }
+
+                $conn->commit();
+                ob_clean();
+                echo json_encode(['status' => 'success', 'message' => 'កិច្ចប្រជុំត្រូវបានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ!']);
+                exit();
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
+            break;
+
+        case 'delete_meeting':
+            if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+                throw new Exception('អ្នកមិនមានសិទ្ធិធ្វើសកម្មភាពនេះទេ។');
+            }
+
+            $meeting_id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+            if (!$meeting_id) {
+                throw new Exception('ID មិនត្រឹមត្រូវ។');
+            }
+
+            $conn->beginTransaction();
+            try {
+                // Delete photos first
+                $stmt = $conn->prepare("DELETE FROM meeting_photos WHERE meeting_id = ?");
+                $stmt->execute([$meeting_id]);
+
+                // Delete meeting
+                $stmt = $conn->prepare("DELETE FROM meetings WHERE id = ?");
+                $stmt->execute([$meeting_id]);
+
+                $conn->commit();
+                echo json_encode(['status' => 'success', 'message' => 'កិច្ចប្រជុំត្រូវបានលុបជោគជ័យ!']);
+            } catch (Exception $e) {
+                $conn->rollBack();
+                throw $e;
+            }
             break;
 
         case 'update_user':
@@ -365,12 +611,26 @@ try {
                 }
             }
 
+            $employee_id = trim(filter_input(INPUT_POST, 'employee_id', FILTER_SANITIZE_STRING));
+            $latin_name = trim(filter_input(INPUT_POST, 'latin_name', FILTER_SANITIZE_STRING));
+            $current_address = trim(filter_input(INPUT_POST, 'current_address', FILTER_SANITIZE_STRING));
+            $start_date = trim(filter_input(INPUT_POST, 'start_date', FILTER_SANITIZE_STRING));
+            $marital_status = trim(filter_input(INPUT_POST, 'marital_status', FILTER_SANITIZE_STRING));
+            $number_of_children = (int)filter_input(INPUT_POST, 'number_of_children', FILTER_SANITIZE_NUMBER_INT);
+            $contract_start = trim(filter_input(INPUT_POST, 'contract_start', FILTER_SANITIZE_STRING));
+            $contract_end = trim(filter_input(INPUT_POST, 'contract_end', FILTER_SANITIZE_STRING));
+            $contract_type = trim(filter_input(INPUT_POST, 'contract_type', FILTER_SANITIZE_STRING));
+
             $query = "UPDATE users SET 
                          full_name = ?, username = ?, email = ?, role = ?, position = ?, department = ?, gender = ?, image_url = ?, jd_pdf = ?, workflow_pdf = ?,
-                         base_salary = ?, bank_name = ?, bank_account_number = ?, bank_qr_code_url = ?, nssf_id = ?, manager_id = ?, annual_leave_balance = ?";
+                         base_salary = ?, bank_name = ?, bank_account_number = ?, bank_qr_code_url = ?, nssf_id = ?, manager_id = ?, annual_leave_balance = ?,
+                         employee_id = ?, latin_name = ?, current_address = ?, start_date = ?, marital_status = ?, number_of_children = ?,
+                         contract_start = ?, contract_end = ?, contract_type = ?";
             $params = [
                 $fullName, $username, $email, $role, $position, $department, $gender, $image_path_to_db, $jd_path_to_db, $workflow_path_to_db,
-                $base_salary, $bank_name, $bank_account_number, $bank_qr_path_to_db, $nssf_id, $manager_id, $annual_leave_days
+                $base_salary, $bank_name, $bank_account_number, $bank_qr_path_to_db, $nssf_id, $manager_id, $annual_leave_days,
+                $employee_id, $latin_name, $current_address, $start_date, $marital_status, $number_of_children,
+                $contract_start, $contract_end, $contract_type
             ];
 
             if (!empty($password)) {
@@ -396,8 +656,9 @@ try {
             break;
     }
 } catch (Exception $e) {
-    http_response_code(400); // Bad Request
+    ob_clean();
     echo json_encode(['status' => 'error', 'message' => "មានបញ្ហា៖ " . $e->getMessage()]);
+    exit();
 }
 
 exit();

@@ -1,7 +1,7 @@
 <?php
 include 'includes/auth.php'; // Include authentication logic
 if (!isLoggedIn()) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 include 'includes/db.php'; // Include database connection

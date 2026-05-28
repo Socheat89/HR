@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 /**
  * Checks if a user is currently logged in.
@@ -54,52 +56,47 @@ function logout() {
  * @param PDO $conn The database connection object.
  * @return bool True if the user has permission, false otherwise.
  */
+/**
+ * (កំណែដែលបានកែតម្រូវ) ពិនិត្យមើលថាតើអ្នកប្រើប្រាស់មានសិទ្ធិឬទេ
+ *
+ * @param string $menu_key The key of the menu/permission to check.
+ * @param PDO $conn The database connection object.
+ * @return bool True if the user has permission, false otherwise.
+ */
 function hasPermission($menu_key, $conn) {
     // 1. ពិនិត្យមើលថាតើបានឡុកអ៊ីន និងមាន role ឬទេ
     if (!isLoggedIn() || !isset($_SESSION['role'])) {
         return false;
     }
 
-    // 2. ប្រើ static variable ដើម្បី cache តម្លៃ permission, ការពារការ query ដដែលៗនៅក្នុងទំព័រតែមួយ
-    static $permissions = null;
-    if ($permissions === null) {
-        $permissions = [];
-        try {
-            $stmt = $conn->prepare("SELECT menu_key, allowed_roles FROM menu_permissions");
-            $stmt->execute();
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($results as $row) {
-                $permissions[$row['menu_key']] = !empty($row['allowed_roles']) ? explode(',', $row['allowed_roles']) : [];
-            }
-        } catch (Exception $e) {
-            error_log('Failed to fetch menu permissions: ' . $e->getMessage());
-        }
-    }
+    $role = $_SESSION['role'];
 
-    // 3. *** ច្បាប់ពិសេសសម្រាប់ទិន្នន័យ Payroll ***
+    // 2. *** ច្បាប់ពិសេសសម្រាប់ទិន្នន័យ Payroll ***
     // សម្រាប់ key នេះ នឹងមិនផ្តល់សិទ្ធិ admin ដោយស្វ័យប្រវត្តិទេ ត្រូវតែពិនិត្យពីមូលដ្ឋានទិន្នន័យតែប៉ុណ្ណោះ
     if ($menu_key === 'manage_payroll_data') {
-        // ពិនិត្យមើលថា key នេះមានពិតមែន ហើយ role របស់អ្នកប្រើប្រាស់មាននៅក្នុងបញ្ជីដែលបានអនុញ្ញាតឬទេ
-        if (isset($permissions[$menu_key])) {
-            return in_array($_SESSION['role'], $permissions[$menu_key]);
+        try {
+            $stmt = $conn->prepare("SELECT 1 FROM permissions WHERE role = ? AND permission_key = ? LIMIT 1");
+            $stmt->execute([$role, $menu_key]);
+            return (bool) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            return false;
         }
-        // ប្រសិនបើ key 'manage_payroll_data' មិនមាននៅក្នុងតារាងទាល់តែសោះ ត្រូវបដិសេធដើម្បីសុវត្ថិភាព
-        return false;
     }
 
-    // 4. *** ច្បាប់ទូទៅសម្រាប់សិទ្ធិផ្សេងទៀតទាំងអស់ ***
+    // 3. *** ច្បាប់ទូទៅសម្រាប់សិទ្ធិផ្សេងទៀតទាំងអស់ ***
     // សម្រាប់សិទ្ធិផ្សេងទៀតទាំងអស់, role 'admin' នឹងត្រូវបានអនុញ្ញាតជានិច្ច
-    if ($_SESSION['role'] === 'admin') {
+    if ($role === 'admin') {
         return true;
     }
 
-    // 5. សម្រាប់ role ផ្សេងទៀតដែលមិនមែនជា admin, ត្រូវពិនិត្យមើលតាមអ្វីដែលបានកំណត់នៅក្នុងមូលដ្ឋានទិន្នន័យ
-    if (isset($permissions[$menu_key])) {
-        return in_array($_SESSION['role'], $permissions[$menu_key]);
+    // 4. ពិនិត្យមើលនៅក្នុងមូលដ្ឋានទិន្នន័យ (Using new permissions table)
+    try {
+        $stmt = $conn->prepare("SELECT 1 FROM permissions WHERE role = ? AND permission_key = ? LIMIT 1");
+        $stmt->execute([$role, $menu_key]);
+        return (bool) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return false;
     }
-
-    // 6. ប្រសិនបើ key មិនត្រូវបានកំណត់នៅក្នុងមូលដ្ឋានទិន្នន័យ ហើយអ្នកប្រើប្រាស់មិនមែនជា admin, ត្រូវបដិសេធការចូលប្រើ
-    return false;
 }
 
 
@@ -114,6 +111,30 @@ function requirePermission($menu_key, $conn) {
         $_SESSION['error'] = 'អ្នកមិនមានសិទ្ធិចូលទំព័រនេះទេ!';
         header("Location: dashboard.php");
         exit();
+    }
+}
+
+/**
+ * Checks if a user's role has permission to view a menu item.
+ * Uses the new permissions table.
+ */
+function can_view_menu($menu_key, $user_role, $conn) {
+    // 1. If admin, always true
+    if ($user_role === 'admin') {
+        return true;
+    }
+
+    // 2. specialized check for payroll data not needed here as this is for MENU visibility, 
+    // but if the menu itself is 'manage_payroll_data' (unlikely for a menu item), we might want consistency.
+    // However, usually menu items are like 'payroll', 'settings', etc.
+    
+    // 3. Check DB
+    try {
+        $stmt = $conn->prepare("SELECT 1 FROM permissions WHERE role = ? AND permission_key = ? LIMIT 1");
+        $stmt->execute([$user_role, $menu_key]);
+        return (bool) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return false;
     }
 }
 ?>

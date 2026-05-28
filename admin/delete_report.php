@@ -11,7 +11,7 @@ session_set_cookie_params([
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php');
+    header('Location: ../index.php');
     exit;
 }
 
@@ -20,7 +20,7 @@ require_once __DIR__ . '/includes/telegram.php';
 $dbHost = 'localhost';
 $dbName = 'samann1_admin_panel';
 $dbUser = 'samann1_admin_panel';
-$dbPass = 'admin_panel@2025';
+$dbPass = '';
 $telegramChatId = '-1002496391098';
 
 try {
@@ -40,11 +40,11 @@ try {
             $stmt = $pdo->prepare("DELETE FROM daily_reports WHERE id = ?");
             $stmt->execute([$report_id]);
 
-            $message = "בב”ב¶ב™ב€ב¶בבבב”ב’בב…ב¶ב†בב’ב„בƒב”ב¶ב“ב›ב»ב”:\n" .
-                       "- ב›בבבב˜ב’ב‚ב¶ב›ב‹: {$report['id']}\n" .
-                       "- בˆב’ב˜ב„ב‡: {$report['name']}\n" .
-                       "- ב•ב’ב“ב‚ב€: {$report['position']}\n" .
-                       "- ב€ב¶ב›ב”בב·ב…ב’ב†בב‘: " . date('Y-m-d H:i:s');
+            $message = "בבב¶בבב¶בבבבבבבב¶בבבבבבב¶בבב»ב:\n" .
+                       "- בבבבבבבב¶בב: {$report['id']}\n" .
+                       "- בבבבב: {$report['name']}\n" .
+                       "- בבבבב: {$report['position']}\n" .
+                       "- בב¶בבבב·בבבבב: " . date('Y-m-d H:i:s');
             if (!sendTelegramMessage($telegramChatId, $message)) {
                 error_log("Failed to send Telegram message for deleted report ID: $report_id");
             }

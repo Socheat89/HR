@@ -1,0 +1,19 @@
+{
+    "date": "2026-02-09",
+    "name": "System Test",
+    "position": "IT SUPPORT",
+    "department": "IT",
+    "tasks": [
+        {
+            "task": "System Test Task",
+            "time": "08:00",
+            "status": "100%",
+            "dueDate": "2026-02-09",
+            "description": "Testing connection",
+            "problem": "",
+            "solution": ""
+        }
+    ],
+    "next_plan_date": "2026-02-10",
+    "next_plan_details": "- Continue testing"
+}

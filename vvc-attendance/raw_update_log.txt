@@ -1,9 +1,0 @@
-{"update_id":817302050,
-"message":{"message_id":236,"from":{"id":1374086722,"is_bot":false,"first_name":"Sao","last_name":"SomBath","username":"Sao_Som_Bath","language_code":"en"},"chat":{"id":-4779770715,"title":"MY BOT","type":"group","all_members_are_administrators":true,"accepted_gift_types":{"unlimited_gifts":false,"limited_gifts":false,"unique_gifts":false,"premium_subscription":false}},"date":1760422535,"text":"/summary@autosumpayment_bot","entities":[{"offset":0,"length":27,"type":"bot_command"}]}}
-
-{"update_id":817302051,
-"channel_post":{"message_id":13,"sender_chat":{"id":-1002722014866,"title":"Demo-Attendance","type":"channel"},"chat":{"id":-1002722014866,"title":"Demo-Attendance","type":"channel"},"date":1760423184,"text":"20$"}}
-
-{"update_id":817302052,
-"message":{"message_id":1136,"from":{"id":777000,"is_bot":false,"first_name":"Telegram"},"sender_chat":{"id":-1002722014866,"title":"Demo-Attendance","type":"channel"},"chat":{"id":-1002802610249,"title":"IT Developer","type":"supergroup"},"date":1760423187,"forward_origin":{"type":"channel","chat":{"id":-1002722014866,"title":"Demo-Attendance","type":"channel"},"message_id":13,"date":1760423184},"is_automatic_forward":true,"forward_from_chat":{"id":-1002722014866,"title":"Demo-Attendance","type":"channel"},"forward_from_message_id":13,"forward_date":1760423184,"text":"20$"}}
-

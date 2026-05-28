@@ -53,9 +53,9 @@ function handle_post_request(PDO $pdo, string $main_db_table, string $new_staff_
         }
 
         try {
-            $sql = "INSERT INTO {$main_db_table} (reports_date, {$column}) VALUES (:reports_date, :value) ON DUPLICATE KEY UPDATE {$column} = :value";
+            $sql = "INSERT INTO {$main_db_table} (reports_date, {$column}) VALUES (:reports_date, :value) ON DUPLICATE KEY UPDATE {$column} = :value_update";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute(['reports_date' => $date, 'value' => $value]);
+            $stmt->execute(['reports_date' => $date, 'value' => $value, 'value_update' => $value]);
             echo json_encode(['success' => true, 'message' => 'រក្សាទុកទិន្នន័យរួចរាល់!']);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);

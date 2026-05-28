@@ -19,7 +19,13 @@ $table_configs = [
         'label' => 'បុគ្គលិកការិយាល័យកណ្តាល',
         'db_table' => 'office_staff',
         'type' => 'office',
-        'columns' => ['it', 'admin', 'account', 'sale', 'staff_318', 'staff_skcm', 'staff_nr3', 'reports_date']
+        'columns' => ['it', 'admin', 'account', 'sale', 'staff_318', 'reports_date']
+    ],
+    'sk_store_staff' => [
+        'label' => 'បុគ្គលិកហាង អេស ខេ',
+        'db_table' => 'sk_store_staff',
+        'type' => 'store',
+        'columns' => ['gm', 'manager_store', 'manager_stock', 'reports_date']
     ],
     'warehouse_staff' => [
         'label' => 'បុគ្គលិកឃ្លាំង',
@@ -55,7 +61,31 @@ function handleDeletePost(PDO $pdo, string $db_table): string {
     return $success ? "កំណត់ត្រាត្រូវបានលុបជោគជ័យ!" : "បរាជ័យក្នុងការលុបកំណត់ត្រា!";
 }
 
+function tableHasTotal(array $config): bool {
+    return in_array($config['type'], ['office', 'store', 'warehouse'], true);
+}
+
+function calculateStaffTotal(array $record, array $config): int {
+    $total = 0;
+    foreach ($config['columns'] as $column) {
+        if ($column === 'reports_date') continue;
+        $total += (int)($record[$column] ?? 0);
+    }
+    return $total;
+}
+
 try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS sk_store_staff (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            gm INT NOT NULL DEFAULT 0,
+            manager_store INT NOT NULL DEFAULT 0,
+            manager_stock INT NOT NULL DEFAULT 0,
+            total INT NOT NULL DEFAULT 0,
+            reports_date DATE NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
     // =========================================================================
     // ការគ្រប់គ្រងការបញ្ជូនទិន្នន័យ (CRUD HANDLING)
     // =========================================================================
@@ -86,19 +116,14 @@ try {
             }
 
             try {
-                if (in_array($config['type'], ['office', 'warehouse'])) {
+                if (tableHasTotal($config)) {
                     $stmt = $pdo->prepare("SELECT * FROM {$config['db_table']} WHERE id = ?");
                     $stmt->execute([$id]);
                     $record = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     if ($record) {
                         $record[$column] = $value;
-                        $total = 0;
-                        if ($config['type'] === 'office') {
-                            $total = (int)$record['it'] + (int)$record['admin'] + (int)$record['account'] + (int)$record['sale'] + (int)$record['staff_318'] + (int)$record['staff_skcm'] + (int)$record['staff_nr3'];
-                        } elseif ($config['type'] === 'warehouse') {
-                            $total = (int)$record['ckd'] + (int)$record['psp'];
-                        }
+                        $total = calculateStaffTotal($record, $config);
                         $sql = "UPDATE {$config['db_table']} SET {$column} = :value, total = :total WHERE id = :id";
                         $stmt = $pdo->prepare($sql);
                         $stmt->execute(['value' => $value, 'total' => $total, 'id' => $id]);
@@ -135,11 +160,20 @@ try {
                                 $it = (int)($record['it'] ?? 0); $admin = (int)($record['admin'] ?? 0);
                                 $account = (int)($record['account'] ?? 0); $sale = (int)($record['sale'] ?? 0);
                                 $staff_318 = (int)($record['staff_318'] ?? 0);
-                                $staff_skcm = (int)($record['staff_skcm'] ?? 0);
-                                $staff_nr3 = (int)($record['staff_nr3'] ?? 0);
-                                $total = $it + $admin + $account + $sale + $staff_318 + $staff_skcm + $staff_nr3;
+                                $staff_skcm = 0;
+                                $staff_nr3 = 0;
+                                $total = $it + $admin + $account + $sale + $staff_318;
                                 $stmt = $pdo->prepare("INSERT INTO {$db_table} (it, admin, account, sale, staff_318, staff_skcm, staff_nr3, total, reports_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                                 $stmt->execute([$it, $admin, $account, $sale, $staff_318, $staff_skcm, $staff_nr3, $total, $record['reports_date']]);
+                                break;
+
+                            case 'store':
+                                $gm = (int)($record['gm'] ?? 0);
+                                $manager_store = (int)($record['manager_store'] ?? 0);
+                                $manager_stock = (int)($record['manager_stock'] ?? 0);
+                                $total = $gm + $manager_store + $manager_stock;
+                                $stmt = $pdo->prepare("INSERT INTO {$db_table} (gm, manager_store, manager_stock, total, reports_date) VALUES (?, ?, ?, ?, ?)");
+                                $stmt->execute([$gm, $manager_store, $manager_stock, $total, $record['reports_date']]);
                                 break;
                             
                             case 'warehouse':
@@ -186,8 +220,12 @@ try {
         $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $all_records[$key] = $records ?: [];
         
-        if (in_array($config['type'], ['office', 'warehouse']) && !empty($records)) {
-            $all_totals[$key] = array_sum(array_column($records, 'total'));
+        if (tableHasTotal($config) && !empty($records)) {
+            $section_total = 0;
+            foreach ($records as $record) {
+                $section_total += calculateStaffTotal($record, $config);
+            }
+            $all_totals[$key] = $section_total;
         } else {
             $all_totals[$key] = count($records);
         }
@@ -208,32 +246,48 @@ function renderTable(string $key, array $config, array $records) {
     echo "<table><thead>";
 
     if ($type === 'office') {
-        echo "<tr><th colspan='10' class='section-header text-h2'>{$label}</th></tr>";
-        echo "<tr><th>IT</th><th>Admin</th><th>Account</th><th>Sale</th><th>318</th><th>SKCM</th><th>NR3</th><th>សរុប</th><th>ថ្ងៃរាយការណ៍</th><th class='actions-column'>សកម្មភាព</th></tr></thead><tbody>";
+        echo "<tr><th colspan='8' class='section-header text-h2'>{$label}</th></tr>";
+        echo "<tr><th>IT</th><th>Admin</th><th>Account</th><th>Sale</th><th>318</th><th>សរុប</th><th>ថ្ងៃរាយការណ៍</th><th class='actions-column'>សកម្មភាព</th></tr></thead><tbody>";
         foreach ($records as $record) {
+            $total = calculateStaffTotal($record, $config);
             echo "<tr data-id='{$record['id']}' data-key='{$key}'>
                         <td class='editable' data-column='it'>" . htmlspecialchars($record['it'] ?? '0') . "</td>
                         <td class='editable' data-column='admin'>" . htmlspecialchars($record['admin'] ?? '0') . "</td>
                         <td class='editable' data-column='account'>" . htmlspecialchars($record['account'] ?? '0') . "</td>
                         <td class='editable' data-column='sale'>" . htmlspecialchars($record['sale'] ?? '0') . "</td>
                         <td class='editable' data-column='staff_318'>" . htmlspecialchars($record['staff_318'] ?? '0') . "</td>
-                        <td class='editable' data-column='staff_skcm'>" . htmlspecialchars($record['staff_skcm'] ?? '0') . "</td>
-                        <td class='editable' data-column='staff_nr3'>" . htmlspecialchars($record['staff_nr3'] ?? '0') . "</td>
-                        <td data-column='total'><b>" . htmlspecialchars($record['total'] ?? '0') . " នាក់</b></td>
+                        <td data-column='total'><b>" . htmlspecialchars((string)$total) . " នាក់</b></td>
                         <td class='editable' data-column='reports_date'>" . htmlspecialchars($record['reports_date'] ?? '') . "</td>
                         <td class='actions-column'><button class='action-btn delete-btn' onclick=\"deleteRecord({$record['id']}, '{$key}_delete', 'តើអ្នកប្រាកដជាចង់លុប?')\">លុប</button></td>
                     </tr>";
         }
-        if (empty($records)) echo "<tr><td colspan='10'>មិនមានទិន្នន័យសម្រាប់ថ្ងៃនេះទេ។</td></tr>";
+        if (empty($records)) echo "<tr><td colspan='8'>មិនមានទិន្នន័យសម្រាប់ថ្ងៃនេះទេ។</td></tr>";
+
+    } elseif ($type === 'store') {
+        echo "<tr><th colspan='6' class='section-header text-h2'>{$label}</th></tr>";
+        echo "<tr><th>GM</th><th>Manager store</th><th>Manager stock</th><th>សរុប</th><th>ថ្ងៃរាយការណ៍</th><th class='actions-column'>សកម្មភាព</th></tr></thead><tbody>";
+        foreach ($records as $record) {
+            $total = calculateStaffTotal($record, $config);
+            echo "<tr data-id='{$record['id']}' data-key='{$key}'>
+                        <td class='editable' data-column='gm'>" . htmlspecialchars($record['gm'] ?? '0') . "</td>
+                        <td class='editable' data-column='manager_store'>" . htmlspecialchars($record['manager_store'] ?? '0') . "</td>
+                        <td class='editable' data-column='manager_stock'>" . htmlspecialchars($record['manager_stock'] ?? '0') . "</td>
+                        <td data-column='total'><b>" . htmlspecialchars((string)$total) . " នាក់</b></td>
+                        <td class='editable' data-column='reports_date'>" . htmlspecialchars($record['reports_date'] ?? '') . "</td>
+                        <td class='actions-column'><button class='action-btn delete-btn' onclick=\"deleteRecord({$record['id']}, '{$key}_delete', 'តើអ្នកប្រាកដជាចង់លុប?')\">លុប</button></td>
+                    </tr>";
+        }
+        if (empty($records)) echo "<tr><td colspan='6'>មិនមានទិន្នន័យសម្រាប់ថ្ងៃនេះទេ។</td></tr>";
 
     } elseif ($type === 'warehouse') {
         echo "<tr><th colspan='5' class='section-header text-h2'>{$label}</th></tr>";
         echo "<tr><th>CKD</th><th>PSP</th><th>សរុប</th><th>ថ្ងៃរាយការណ៍</th><th class='actions-column'>សកម្មភាព</th></tr></thead><tbody>";
         foreach ($records as $record) {
+            $total = calculateStaffTotal($record, $config);
             echo "<tr data-id='{$record['id']}' data-key='{$key}'>
                         <td class='editable' data-column='ckd'>" . htmlspecialchars($record['ckd'] ?? '') . "</td>
                         <td class='editable' data-column='psp'>" . htmlspecialchars($record['psp'] ?? '') . "</td>
-                        <td data-column='total'><b>" . htmlspecialchars($record['total'] ?? '0') . " នាក់</b></td>
+                        <td data-column='total'><b>" . htmlspecialchars((string)$total) . " នាក់</b></td>
                         <td class='editable' data-column='reports_date'>" . htmlspecialchars($record['reports_date'] ?? '') . "</td>
                         <td class='actions-column'><button class='action-btn delete-btn' onclick=\"deleteRecord({$record['id']}, '{$key}_delete', 'តើអ្នកប្រាកដជាចង់លុប?')\">លុប</button></td>
                     </tr>";
@@ -561,7 +615,7 @@ function renderTable(string $key, array $config, array $records) {
         if (!key) return;
 
         const config = tableConfigs[key];
-        if (['office', 'warehouse'].includes(config.type)) {
+        if (['office', 'store', 'warehouse'].includes(config.type)) {
             let newRowTotal = 0;
             const numberCells = row.querySelectorAll('.editable[data-column]');
             numberCells.forEach(cell => {
@@ -579,7 +633,7 @@ function renderTable(string $key, array $config, array $records) {
         let sectionTotal = 0;
         const allRowsForKey = document.querySelectorAll(`tr[data-key="${key}"]`);
         
-        if (['office', 'warehouse'].includes(config.type)) {
+        if (['office', 'store', 'warehouse'].includes(config.type)) {
             allRowsForKey.forEach(r => {
                 const totalCell = r.querySelector('td[data-column="total"]');
                 if (totalCell) {
@@ -731,8 +785,12 @@ function renderTable(string $key, array $config, array $records) {
                          <label>Account:</label><input type="number" name="account" min="0" value="${val('account') || '0'}">
                          <label>Sale:</label><input type="number" name="sale" min="0" value="${val('sale') || '0'}">
                          <label>318:</label><input type="number" name="staff_318" min="0" value="${val('staff_318') || '0'}">
-                         <label>SK Chhuk Meas:</label><input type="number" name="staff_skcm" min="0" value="${val('staff_skcm') || '0'}">
-                         <label>NR3:</label><input type="number" name="staff_nr3" min="0" value="${val('staff_nr3') || '0'}">
+                         <label>ថ្ងៃរាយការណ៍:</label><input type="date" name="reports_date" value="${record ? val('reports_date') : selectedDate}" required>`;
+                break;
+            case 'store':
+                html += `<label>GM:</label><input type="number" name="gm" min="0" value="${val('gm') || '0'}">
+                         <label>Manager store:</label><input type="number" name="manager_store" min="0" value="${val('manager_store') || '0'}">
+                         <label>Manager stock:</label><input type="number" name="manager_stock" min="0" value="${val('manager_stock') || '0'}">
                          <label>ថ្ងៃរាយការណ៍:</label><input type="date" name="reports_date" value="${record ? val('reports_date') : selectedDate}" required>`;
                 break;
             case 'warehouse':
@@ -783,7 +841,9 @@ function renderTable(string $key, array $config, array $records) {
         pendingRecords.forEach((record, index) => {
             let description = `<b>${tableConfigs[record._key].label}:</b> `;
             if (record._key === 'office_staff') {
-                description += `IT: ${record.it || 0}, Admin: ${record.admin || 0}, Sale: ${record.sale || 0}, ...`;
+                description += `IT: ${record.it || 0}, Admin: ${record.admin || 0}, Sale: ${record.sale || 0}, 318: ${record.staff_318 || 0}`;
+            } else if (tableConfigs[record._key].type === 'store') {
+                description += `GM: ${record.gm || 0}, Manager store: ${record.manager_store || 0}, Manager stock: ${record.manager_stock || 0}`;
             } else if (record._key === 'warehouse_staff') {
                 description += `CKD: ${record.ckd || 0}, PSP: ${record.psp || 0}`;
             } else if (record._key === 'new_staff') {

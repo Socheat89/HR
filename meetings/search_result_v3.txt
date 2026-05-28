@@ -1,0 +1,3 @@
+samann1_admin_panel.meetings -> id
+samann1_admin_panel.meeting_photos -> id
+samann1_admin_panel.meeting_photos -> meeting_id

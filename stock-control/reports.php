@@ -649,7 +649,7 @@ $get_hist_sort_link = get_sort_link_builder('history', $active_tab);
     <div id="imageModal" class="modal image-modal"><img class="image-modal-content" id="modalImage"></div>
     <div class="bottom-nav">
         <a href="dashboard.php" class="nav-item"><i class="fa-solid fa-house"></i> ផ្ទាំងគ្រប់គ្រង</a>
-        <a href="index.php" class="nav-item"><i class="fa-solid fa-box-archive"></i> ទំនិញ</a>
+        <a href="../index.php" class="nav-item"><i class="fa-solid fa-box-archive"></i> ទំនិញ</a>
         <a href="reports.php" class="nav-item active"><i class="fa-solid fa-chart-simple"></i> របាយការណ៍</a>
         <a href="stock_counting.php" class="nav-item"><i class="fa-solid fa-clipboard-list"></i> ការរាប់ស្តុក</a>
         <a href="review_requests.php" class="nav-item"><i class="fa-solid fa-magnifying-glass-chart"></i> ពិនិត្យសំណើរ</a>

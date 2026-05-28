@@ -971,7 +971,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
             <i class="fa-solid fa-house"></i> ផ្ទាំងគ្រប់គ្រង
         </a>
-        <a href="index.php" class="nav-item <?php echo $current_page == 'index.php' ? 'active' : ''; ?>">
+        <a href="../index.php" class="nav-item <?php echo $current_page == '../index.php' ? 'active' : ''; ?>">
             <i class="fa-solid fa-box-archive"></i> ទំនិញ
         </a>
         <a href="reports.php" class="nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>">

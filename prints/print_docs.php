@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doc_printer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" integrity="sha512-5Hs3dF2AEPkpNAR7UiOHba+lRSJNeM2ECkwxUIxC1Q/FLycGTbNapWXB4tP889k5T5Ju8fs4b1P5z/iB4nMfSQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<!--   <link rel="stylesheet" href="../system/style1.css"> -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"/>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="/node_modules/bootstrap-icons/icons/">
+  <script src="https://unpkg.com/scrollreveal"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    @media (max-width: 768px) {
+      .menu-card{
+        position: relative;
+        top: -5rem;
+      }
+      .main-menu{
+        position: relative;
+        top: -4rem;
+      }
+      .navbar-brand img{
+        text-align: center;
+        position: relative;
+        left: 40%;
+        align-items: center;
+      }
+
+      .mes{
+        width: 5%;
+        position: relative;
+        left: 0;
+        top: 5rem;
+      }
+    }
+    /* computer */
+    .main-menu{
+      top: 3rem;
+      position: relative;
+    }
+    .navbar-custom {
+      background-color: #050049;
+      position: fixed;
+    }
+
+    .menu-icon {
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      background-color: #ffffff;
+      border: 1px solid #ddd;
+      height: 80px;
+      bottom: 0;
+      width: 100%;
+    }
+    .navbar-brand img{
+      text-decoration: none;
+      width: 200px;
+      text-align: center;
+      align-items: center;
+      position: relative;
+    }
+    .navbar-toggler{
+      background: none;
+    }
+
+    .bottom-menu a {
+      color: #007bff;
+      text-decoration: none;
+      font-size: 1.5rem;
+    }
+    .btn{
+      color: white;
+    }
+    .main-cart{
+      position: relative;
+      align-items: center;
+      text-align: center;
+      top: 5rem;
+    }
+    .card-footer{
+      position: relative;
+      justify-content: center;
+      text-align: center;
+      align-items: center;
+    }
+    .sort-list{
+      position: relative;
+      top: -1rem;
+    }
+    .form-label{
+      position: relative;
+      justify-content: start;
+    }
+    .cart-box {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      background: #f9f9f9;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease-in-out;
+    }
+    .cart-box:hover {
+      transform: translateY(-5px);
+    }
+    .cart-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .cart-title{
+      font-size: 1.1rem;
+      margin: 12px 0;
+      color: blue;
+      font-family: Kh Muol;
+    }
+    .text-title{
+      font-family: Kh Muol;
+      color: blue;
+      font-size: 20px;
+      position: relative;
+    }
+    .text-h5 a{
+      text-decoration: none;
+    }
+    .main-content{
+      position: relative;
+      top: 3rem;
+    }
+    .check{
+      font-size: 100px;
+    }
+     .bottom-menu {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background-color: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      left: 0;
+      justify-content: space-around;
+      padding: 25px 0;
+    }
+
+    .bottom-menu a {
+      color: #007bff;
+      text-decoration: none;
+      font-size: 1.5rem;
+    }
+
+    .bottom-menu a:hover {
+      color: #0056b3;
+    }
+    .swiper-slide{
+      border-radius: 5px;
+    }
+    .main-header{
+      position: relative;
+      top: 6rem;
+    }
+    .f-boks{
+      position: relative;
+      top: 13rem;
+    }
+    .btn-home{
+      position: relative;
+      top: -4.2rem;
+      left: 30%;
+    }
+    .btn-home:hover{
+      transform: scale(1.01);
+      transition: all 0.5s linear;
+    }
+    .navbar-custom{
+      width: 100%;
+      top: 0;
+      z-index: 99;
+    }
+    a #logout{
+  outline: none;
+  background: none;
+  color: white;
+  font-size: 25px;
+  border: none;
+  justify-content: end;
+  padding: 20px 20px;
+  left: 85%;
+  z-index: 99;
+  top: 1rem;
+  position: absolute;
+  border-radius: 10px;
+  align-items: center;
+  text-align: center;
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  -ms-border-radius: 10px;
+  -o-border-radius: 10px;
+}
+            .card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Print-specific styles */
+        @media print {
+            #searchBox, #printButton {
+                display: none;
+            }
+            .card {
+                box-shadow: none;
+            }
+            .container {
+                margin: 0;
+                padding: 0;
+            }
+        }
+        .icon-seacrh i{
+            position: relative;
+            top: 0.6rem;
+            right: 2rem;
+            cursor: pointer;
+        }
+        input:hover{
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            transition: box-shadow 0.3s ease;
+        }
+        .link-btn{
+            padding: 10px 40px;
+            position: relative;
+            left: 0.5rem;
+            font-family: Krasar;
+        }
+        .main-btn i{
+            position: relative;
+            color: rgb(255, 255, 255);
+            top: 0.8rem;
+            right: 2rem;
+            cursor: pointer;
+        }
+        .card-title{
+            text-decoration: underline;
+            color: blue;
+            font-family: Krasar;
+        }
+        .link-btn:hover{
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            transition: box-shadow 0.3s ease;
+            text-decoration: underline;
+            transform: scale(0.88);
+            transition: all 0.5s ease;
+        }
+        .btn-print{
+        position: sticky;
+        outline: none;
+        cursor: pointer;
+        border: 5px solid gold;
+        top: 0;
+        /* background: none; */
+        background-color: rgba(255, 255, 255, 0.253);
+        box-shadow: 0 8px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease-in-out;
+        display: block;
+        margin: auto;
+        padding: 10px 200px;
+        border-radius: 8px;
+    }
+    .btn-print:hover{
+        transform: scale(0.98);
+        transition: all 0.3s ease;
+    }
+    .fa-print{
+        color: black;
+        font-size: 30px;
+    }
+    input::placeholder{
+        font-style: italic;
+        color: blue;
+    }
+    .page{
+        display: none;
+    }
+    @media print {
+       .print-area {
+           visibility: visible;
+           width: 100%;
+           position: absolute;
+           left: 0;
+           top: 0;
+           overflow: hidden;
+           display: none;
+       }
+       .overflow-view{
+        overflow-x: hidden;
+       }
+       .btn-print{
+        display: none;
+       }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="main-header">
+  <nav class="navbar navbar-expand-lg navbar-custom shadow-lg mb-5">
+    <div class="container-fluid text-decoration-none">
+      <a href="../menu_main.php"><span class="navbar-brand text-white text-decoration-none"><img src="https://i.ibb.co/HTksMQd/Logo-Van-Van-2.png" alt=""></span></a>
+    </button>
+    <a href="../menu_main.php"><button id="logout"><i class="fa-solid fa-right-from-bracket"></i></button></a>
+    </div>
+  </nav>
+   <div class="container mt-6">
+        <h1 class="mb-4" style="font-family: Kh Muol; color: #050049; font-size: 30px; text-align: center;">ឯកសារផ្សេងៗ</h1>
+        <div class="mb-3 d-flex icon-seacrh">
+            <input type="text" id="searchBox" class="form-control" placeholder="ស្វែងរកឯកសាររបស់អ្នក">
+            <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <div class="row" id="cardContainer">
+            <!-- Card 1 -->
+            <a href="../prints/print_format1.php"
+            <div class="col-md-4 mb-4 card-item ani-1">
+                <div class="card align-items-center">
+                    <img src="https://res.cloudinary.com/glide/image/fetch/f_auto,w_500,c_limit/https%3A%2F%2Fimg.freepik.com%2Fpremium-vector%2Fopen-folder-folder-with-documents-document-protection-concept_183665-104.jpg" class="card-img-top w-50" alt="Card Image 1">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-center">ប្រវត្តរូបសង្ខេបថ្មី</h5>
+                        <div class="d-flex  main-btn mt-4">
+                            <div class="btn btn-primary link-btn">ទៅកាន់ឯកសារ</div>
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </div>
+                    </div>
+                </div></a>
+                <div class="col-md-4 mb-4 card-item ani-2">
+                    <a href="../prints/print_format2.php">
+                    <div class="card align-items-center">
+                        <img src="https://res.cloudinary.com/glide/image/fetch/f_auto,w_500,c_limit/https%3A%2F%2Fpng.pngtree.com%2Fpng-vector%2F20220518%2Fourmid%2Fpngtree-send-mail-request-icon-png-image_4696372.png" class="card-img-top w-50" alt="Card Image 1">
+                        <div class="card-body text-center">
+                        <h5 class="card-title text-center">លិខិតស្នើសុំទិញសម្ភារៈ</h5>
+                        <div class="d-flex  main-btn mt-4">
+                            <div class="btn btn-primary link-btn">ទៅកាន់ឯកសារ</div> 
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </div>
+            </div></a>
+            <div class="col-md-4 mb-4 card-item ani-3">
+                <a href="../prints/print_format3.php">
+                <div class="card align-items-center">
+                    <img src="https://res.cloudinary.com/glide/image/fetch/f_auto,w_500,c_limit/https%3A%2F%2Fupload.wikimedia.org%2Fwikipedia%2Fcommons%2Fthumb%2F8%2F8d%2FPaper-notes.svg%2F512px-Paper-notes.svg.png%3F20160229155458" class="card-img-top w-50" alt="Card Image 1">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-center">កំណត់ហេតុ</h5>
+                        <div class="d-flex  main-btn mt-4">
+                        <div class="btn btn-primary link-btn">ទៅកាន់ឯកសារ</div>
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </div></a>
+            </div>
+            <div class="col-md-4 mb-4 card-item ani-4">
+                <div class="card align-items-center">
+                    <img src="https://res.cloudinary.com/glide/image/fetch/f_auto,w_500,c_limit/https%3A%2F%2Fencrypted-tbn0.gstatic.com%2Fimages%3Fq%3Dtbn%3AANd9GcTAm0s9zXJJopvchenIGSbeVXD_P3S9mxTWwg%26s" class="card-img-top w-50" alt="Card Image 1">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-center">កិច្ចសន្យាតម្កល់ឯកសារ</h5>
+                        <div class="d-flex  main-btn mt-4">
+                        <a href="../prints/print_format4.php" class="btn btn-primary link-btn">ទៅកាន់ឯកសារ</a>
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4 card-item ani-5">
+                <div class="card align-items-center">
+                    <img src="https://res.cloudinary.com/glide/image/fetch/f_auto,w_500,c_limit/https%3A%2F%2Ffreeiconshop.com%2Fwp-content%2Fuploads%2Fedd%2Fdocuments-flat.png" class="card-img-top w-50" alt="Card Image 1">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-center">កិច្ចសន្យាលាឈប់ពីការងារ</h5>
+                        <div class="d-flex  main-btn mt-4">
+                        <a href="../prints/print_format5.php" class="btn btn-primary link-btn">ទៅកាន់ឯកសារ</a>
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4 card-item ani-6">
+                <div class="card align-items-center">
+                    <img src="https://res.cloudinary.com/glide/image/fetch/f_auto,w_500,c_limit/https%3A%2F%2Fcdn-icons-png.freepik.com%2F512%2F4136%2F4136043.png" class="card-img-top w-50" alt="Card Image 1">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-center">កិច្ចសន្យាចូលបម្រើការងារ</h5>
+                        <div class="d-flex  main-btn mt-4">
+                        <a href="../prints/print_format6.php" class="btn btn-primary link-btn">ទៅកាន់ឯកសារ</a>
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+            </div>
+            <script>
+      function printTest() {
+        window.print();
+    }
+
+const scrollRevealOption = {
+    origin: "bottom",
+    distance: "10px",
+    duration: 1000,
+};
+
+ScrollReveal().reveal(".ani-1", {
+  ...scrollRevealOption,
+  origin: "bottom",
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-2", {
+    ...scrollRevealOption,
+    delay: 100,
+    distance:"200px",
+});
+ScrollReveal().reveal(".ani-3", {
+    ...scrollRevealOption,
+    delay: 200,
+    distance:"200px",
+});
+ScrollReveal().reveal(".ani-4", {
+    ...scrollRevealOption,
+    delay: 300,
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-5", {
+  ...scrollRevealOption,
+  delay: 400,
+  distance:"200px",
+});
+ScrollReveal().reveal(".ani-6", {
+  ...scrollRevealOption,
+  delay: 500,
+  distance:"200px",
+});
+        document.getElementById('searchBox').addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const cards = document.querySelectorAll('.card-item');
+            cards.forEach(card => {
+                const title = card.querySelector('.card-title').textContent.toLowerCase();
+                if (title.includes(query)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        </script>
+</body>
+</html>

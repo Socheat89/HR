@@ -2,7 +2,7 @@
 include 'includes/auth.php';
 if (!isLoggedIn() || $_SESSION['role'] !== 'admin') {
     $_SESSION['error'] = 'អ្នកមិនមានសិទ្ធិចូលទំព័រនេះទេ!';
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 

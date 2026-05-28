@@ -44,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
 
         // បញ្ជូនបន្តទៅទំព័រចូល បន្ទាប់ពីការចុះឈ្មោះបានជោគជ័យ
-        // យើងសន្មត់ថាទំព័រចូលរបស់អ្នកមានឈ្មោះថា 'index.php' ឬ 'login.php'
-        header("Location: login.php?registered=true");
+        // យើងសន្មត់ថាទំព័រចូលរបស់អ្នកមានឈ្មោះថា '../index.php' ឬ '../auth/login.php'
+        header("Location: ../auth/login.php?registered=true");
         exit();
     } catch (Exception $e) {
         // រក្សាទុកសារកំហុសដើម្បីបង្ហាញក្នុង HTML
@@ -211,7 +211,7 @@ button:hover {
             <?php endif; ?>
 
             <!-- ទម្រង់ចុះឈ្មោះ -->
-            <form method="POST" action="register.php">
+            <form method="POST" action="../auth/register.php">
                 <div class="input-group">
                     <label for="username">ឈ្មោះ​អ្នកប្រើប្រាស់</label>
                     <input type="text" id="username" name="username" required>
@@ -228,7 +228,7 @@ button:hover {
             </form>
 
             <!-- តំណទៅទំព័រចូល -->
-            <p class="register-link">មានគណនីរួចហើយ? <a href="login.php">ចូលនៅទីនេះ</a></p>
+            <p class="register-link">មានគណនីរួចហើយ? <a href="../auth/login.php">ចូលនៅទីនេះ</a></p>
         </div>
     </div>
 </body>

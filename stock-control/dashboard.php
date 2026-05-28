@@ -206,7 +206,7 @@ try {
             <?php endif; ?>
             
             <div class="menu-grid">
-                <a href="index.php" class="menu-card"><i class="fa-solid fa-box-archive"></i><span class="label">ទំនិញ</span></a>
+                <a href="../index.php" class="menu-card"><i class="fa-solid fa-box-archive"></i><span class="label">ទំនិញ</span></a>
                 <a href="reports.php" class="menu-card"><i class="fa-solid fa-chart-simple"></i><span class="label">របាយការណ៍</span></a>
                 <a href="stock_counting.php" class="menu-card"><i class="fa-solid fa-clipboard-list"></i><span class="label">រាប់ស្តុក</span></a>
                 <a href="review_requests.php" class="menu-card"><i class="fa-solid fa-magnifying-glass-chart"></i><span class="label">ពិនិត្យសំណើរ</span></a>

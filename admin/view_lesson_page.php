@@ -1,7 +1,7 @@
 <?php
 include 'includes/auth.php';
 if (!isLoggedIn()) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 include 'includes/db.php';
@@ -55,10 +55,10 @@ $lessons = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php if ($_SESSION['role'] === 'admin'): ?>
                 <li><a href="add_user.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-user-plus"></i><span>Add User</span></a></li>
                 <li><a href="post_meeting.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-calendar-plus"></i><span>Post Meeting</span></a></li>
-                <li><a href="post_lesson.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-book"></i><span>Post Lesson</span></a></li>
+                <li><a href="../posts/post_lesson.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-book"></i><span>Post Lesson</span></a></li>
                 <li><a href="lessons.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-list"></i><span>View Lessons</span></a></li>
             <?php endif; ?>
-            <li><a href="logout.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
+            <li><a href="../auth/logout.php" class="flex items-center space-x-2 hover:text-indigo-300"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></li>
         </ul>
     </aside>
 

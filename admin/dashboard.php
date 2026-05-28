@@ -140,6 +140,13 @@ function displayEmployees($employees, $level = 0, $parentId = null) {
             . ' data-email="' . htmlspecialchars($employee['email']) . '"'
             . ' data-position="' . htmlspecialchars($employee['position']) . '"'
             . ' data-department="' . htmlspecialchars($employee['department'] ?? '') . '"'
+            . ' data-gender="' . htmlspecialchars($employee['gender'] ?? '') . '"'
+            . ' data-employee-id="' . htmlspecialchars($employee['employee_id'] ?? '') . '"'
+            . ' data-latin-name="' . htmlspecialchars($employee['latin_name'] ?? '') . '"'
+            . ' data-start-date="' . htmlspecialchars($employee['start_date'] ?? '') . '"'
+            . ' data-marital-status="' . htmlspecialchars($employee['marital_status'] ?? '') . '"'
+            . ' data-number-of-children="' . htmlspecialchars($employee['number_of_children'] ?? '') . '"'
+            . ' data-current-address="' . htmlspecialchars($employee['current_address'] ?? '') . '"'
             . ' data-has-children="' . ($hasChildren ? '1' : '0') . '"'
             . ' data-collapsed="0"'
             . '>';
@@ -372,6 +379,86 @@ if ($view === 'request_reports') {
     }
 }
 
+// +++ NEW: Meetings Logic +++
+if ($view === 'meetings') {
+    try {
+        // Pagination setup
+        $items_per_page = 9;
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        if ($page < 1) $page = 1;
+        $offset = ($page - 1) * $items_per_page;
+
+        // Get total count
+        $total_stmt = $conn->query("SELECT COUNT(*) FROM meetings");
+        $total_items = $total_stmt->fetchColumn();
+        $total_pages = ceil($total_items / $items_per_page);
+
+        // Fetch paginated slice
+        $stmt = $conn->prepare("
+            SELECT m.*, GROUP_CONCAT(mp.photo_url) AS photo_urls
+            FROM meetings m
+            LEFT JOIN meeting_photos mp ON m.id = mp.meeting_id
+            GROUP BY m.id
+            ORDER BY m.meeting_date DESC
+            LIMIT :limit OFFSET :offset
+        ");
+        $stmt->bindValue(':limit', $items_per_page, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $meetings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Database error: " . $e->getMessage());
+        $meetings = [];
+        $total_pages = 0;
+    }
+}
+
+if ($view === 'post_meeting' || $view === 'edit_meeting') {
+    $existing_categories = [];
+    $editing_meeting = null;
+    $editing_photos = [];
+
+    if ($view === 'edit_meeting' && isset($_GET['id'])) {
+        $mid = (int)$_GET['id'];
+        try {
+            $stmt = $conn->prepare("SELECT * FROM meetings WHERE id = ?");
+            $stmt->execute([$mid]);
+            $editing_meeting = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($editing_meeting) {
+                $ps = $conn->prepare("SELECT photo_url FROM meeting_photos WHERE meeting_id = ?");
+                $ps->execute([$mid]);
+                $editing_photos = $ps->fetchAll(PDO::FETCH_COLUMN);
+            }
+        } catch (Exception $e) { error_log($e->getMessage()); }
+    }
+
+    try {
+        $stmt = $conn->query("SELECT DISTINCT category FROM meetings WHERE category IS NOT NULL AND category != '' ORDER BY category ASC");
+        $existing_categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (Exception $e) {
+        error_log("Could not fetch categories: " . $e->getMessage());
+    }
+}
+
+if ($view === 'view_meeting') {
+    $meeting_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    try {
+        $stmt = $conn->prepare("SELECT * FROM meetings WHERE id = ?");
+        $stmt->execute([$meeting_id]);
+        $meeting = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($meeting) {
+            $stmt_photos = $conn->prepare("SELECT photo_url FROM meeting_photos WHERE meeting_id = ?");
+            $stmt_photos->execute([$meeting_id]);
+            $meeting_photos = $stmt_photos->fetchAll(PDO::FETCH_COLUMN);
+        }
+    } catch (PDOException $e) {
+        error_log("Meeting view error: " . $e->getMessage());
+    }
+}
+// +++ END NEW +++
+
 // ... (KEEP ALL YOUR OTHER VIEW LOGIC for 'reports', 'checklist', 'payroll', etc. They are not affected by this change)
 // ...
 // ... [Your existing code for other views remains here] ...
@@ -440,6 +527,401 @@ if ($view === 'reports') {
         $reports = [];
         $structuredReports = [];
         $_SESSION['error'] = "កំហុសក្នុងការទាញរបាយការណ៍: " . $e->getMessage();
+    }
+}
+
+
+if ($view === 'settings') {
+    // Check permissions
+    if (function_exists('requirePermission')) {
+        // Use a generic permission check or allow admin
+        if ($_SESSION['role'] !== 'admin') {
+             // You might want to define a specific permission like 'manage_settings'
+             // For now, let's restrict to admin or 'administration'
+             if (!in_array($_SESSION['role'], ['admin', 'administration'])) {
+                 $_SESSION['error'] = 'គ្មានសិទ្ធិមើលទំព័រនេះទេ';
+                 header("Location: dashboard.php");
+                 exit();
+             }
+        }
+    } else if ($_SESSION['role'] !== 'admin') {
+         $_SESSION['error'] = 'គ្មានសិទ្ធិមើលទំព័រនេះទេ';
+         header("Location: dashboard.php");
+         exit();
+    }
+
+    // --- Ensure Tables Exist (Auto-Migration) ---
+    try {
+        $conn->exec("CREATE TABLE IF NOT EXISTS system_settings (
+            setting_key VARCHAR(50) PRIMARY KEY,
+            setting_value TEXT
+        )");
+        $conn->exec("CREATE TABLE IF NOT EXISTS telegram_groups (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100),
+            chat_id VARCHAR(50),
+            report_format VARCHAR(50) DEFAULT 'text'
+        )");
+        $conn->exec("CREATE TABLE IF NOT EXISTS telegram_group_threads (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            group_id INT,
+            thread_id VARCHAR(50),
+            category VARCHAR(100),
+            position VARCHAR(100),
+            FOREIGN KEY (group_id) REFERENCES telegram_groups(id) ON DELETE CASCADE
+        )");
+        $conn->exec("CREATE TABLE IF NOT EXISTS system_categories (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            type VARCHAR(50),
+            name VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch (PDOException $e) {
+        // Log error but proceed
+        error_log("Table creation error: " . $e->getMessage());
+    }
+
+    $category_types = ['department', 'position', 'branch'];
+    $khmer_names = [
+        'department' => 'ដេប៉ាតឺម៉ង់ (Departments)',
+        'position' => 'តួនាទី (Positions)',
+        'branch' => 'សាខា (Branches)'
+    ];
+
+    // --- Handle POST Actions ---
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['settings_action'])) {
+        $action = $_POST['settings_action'];
+        
+        try {
+            if ($action === 'update_bot_token') {
+                $token = trim($_POST['bot_token']);
+                $stmt = $conn->prepare("REPLACE INTO system_settings (setting_key, setting_value) VALUES ('telegram_bot_token', ?)");
+                $stmt->execute([$token]);
+                $_SESSION['success'] = "Telegram Bot Token ត្រូវបានរក្សាទុក!";
+            }
+            elseif ($action === 'add_group') {
+                $stmt = $conn->prepare("INSERT INTO telegram_groups (name, chat_id, report_format) VALUES (?, ?, ?)");
+                $stmt->execute([trim($_POST['group_name']), trim($_POST['chat_id']), $_POST['report_format']]);
+                $_SESSION['success'] = "ក្រុមថ្មីត្រូវបានបន្ថែម!";
+            }
+            elseif ($action === 'update_group') {
+                 $stmt = $conn->prepare("UPDATE telegram_groups SET name = ?, chat_id = ?, report_format = ? WHERE id = ?");
+                 $stmt->execute([trim($_POST['group_name']), trim($_POST['chat_id']), $_POST['report_format'], $_POST['group_id']]);
+                 $_SESSION['success'] = "ក្រុមត្រូវបានកែប្រែ!";
+            }
+            elseif ($action === 'delete_group') {
+                $stmt = $conn->prepare("DELETE FROM telegram_groups WHERE id = ?");
+                $stmt->execute([$_POST['group_id']]);
+                $_SESSION['success'] = "ក្រុមត្រូវបានលុប!";
+            }
+            elseif ($action === 'add_thread') {
+                $stmt = $conn->prepare("INSERT INTO telegram_group_threads (group_id, thread_id, category, position) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$_POST['group_id'], trim($_POST['thread_id']), $_POST['category_filter'], $_POST['position_filter']]);
+                $_SESSION['success'] = "Thread ថ្មីត្រូវបានបន្ថែម!";
+            }
+            elseif ($action === 'update_thread') {
+                 $stmt = $conn->prepare("UPDATE telegram_group_threads SET thread_id = ?, category = ?, position = ? WHERE id = ?");
+                 $stmt->execute([trim($_POST['thread_id']), $_POST['category_filter'], $_POST['position_filter'], $_POST['thread_map_id']]);
+                 $_SESSION['success'] = "Thread ត្រូវបានកែប្រែ!";
+            }
+            elseif ($action === 'delete_thread') {
+                $stmt = $conn->prepare("DELETE FROM telegram_group_threads WHERE id = ?");
+                $stmt->execute([$_POST['thread_map_id']]);
+                $_SESSION['success'] = "Thread ត្រូវបានលុប!";
+            }
+            elseif ($action === 'add_category') {
+                $stmt = $conn->prepare("INSERT INTO system_categories (type, name) VALUES (?, ?)");
+                $stmt->execute([$_POST['category_type'], trim($_POST['category_name'])]);
+                $_SESSION['success'] = "ប្រភេទថ្មីត្រូវបានបន្ថែម!";
+            }
+            elseif ($action === 'update_category') {
+                $stmt = $conn->prepare("UPDATE system_categories SET name = ? WHERE id = ?");
+                $stmt->execute([trim($_POST['category_name']), $_POST['category_id']]);
+                $_SESSION['success'] = "ប្រភេទត្រូវបានកែប្រែ!";
+            }
+            elseif ($action === 'delete_category') {
+                $stmt = $conn->prepare("DELETE FROM system_categories WHERE id = ?");
+                $stmt->execute([$_POST['category_id']]);
+                $_SESSION['success'] = "ប្រភេទត្រូវបានលុប!";
+            }
+
+            header("Location: dashboard.php?view=settings");
+            exit();
+
+        } catch (PDOException $e) {
+            $_SESSION['error'] = "កំហុស: " . $e->getMessage();
+        }
+    }
+
+    // --- Fetch Data ---
+    $telegramBotToken = '';
+    try {
+        $stmt = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'telegram_bot_token'");
+        if ($row = $stmt->fetch()) {
+            $telegramBotToken = $row['setting_value'];
+        }
+    } catch (PDOException $e) { error_log($e->getMessage()); }
+
+    $telegramGroups = [];
+    try {
+        $stmt = $conn->query("SELECT * FROM telegram_groups ORDER BY id DESC");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $groupId = $row['id'];
+            $row['group_id'] = $groupId; // Match UI variable
+            
+            $tStmt = $conn->prepare("SELECT id as thread_map_id, thread_id, category, position FROM telegram_group_threads WHERE group_id = ?");
+            $tStmt->execute([$groupId]);
+            $row['thread_ids'] = $tStmt->fetchAll(PDO::FETCH_ASSOC);
+            $telegramGroups[] = $row;
+        }
+    } catch (PDOException $e) { error_log($e->getMessage()); }
+
+    $dynamic_categories = [];
+    foreach ($category_types as $type) {
+        $dynamic_categories[$type] = [];
+        try {
+            $stmt = $conn->prepare("SELECT * FROM system_categories WHERE type = ? ORDER BY name");
+            $stmt->execute([$type]);
+            $dynamic_categories[$type] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) { error_log($e->getMessage()); }
+    }
+}
+
+
+if ($view === 'permissions') {
+    if ($_SESSION['role'] !== 'admin') {
+         $_SESSION['error'] = 'គ្មានសិទ្ធិមើលទំព័រនេះទេ';
+         header('Location: dashboard.php');
+         exit();
+    }
+    
+    // --- Auto-Migration for Permissions ---
+    // --- Auto-Migration for Permissions ---
+    try {
+        $conn->exec("CREATE TABLE IF NOT EXISTS admin_menus (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            menu_key VARCHAR(50) UNIQUE,
+            menu_name VARCHAR(100),
+            menu_link VARCHAR(255) DEFAULT '#',
+            menu_icon VARCHAR(50) DEFAULT 'fas fa-circle',
+            parent_key VARCHAR(50) DEFAULT NULL,
+            menu_order INT DEFAULT 0
+        )");
+        
+        // Ensure columns exist (for migration)
+        try { $conn->exec("ALTER TABLE admin_menus ADD COLUMN menu_link VARCHAR(255) DEFAULT '#'"); } catch(Exception $e){}
+        try { $conn->exec("ALTER TABLE admin_menus ADD COLUMN menu_icon VARCHAR(50) DEFAULT 'fas fa-circle'"); } catch(Exception $e){}
+        
+        // Comprehensive Default Menus
+        $default_menus = [
+            // Core
+            ['dashboard', 'ផ្ទាំងគ្រប់គ្រង', 'dashboard.php', 'fas fa-home', NULL, 1],
+            ['manage_employees', 'គ្រប់គ្រងបុគ្គលិក', 'dashboard.php?view=manage_employees', 'fas fa-users-cog', NULL, 2],
+            ['settings', 'ការកំណត់ប្រព័ន្ធ', 'dashboard.php?view=settings', 'fas fa-cogs', NULL, 99],
+            ['permissions', 'ការកំណត់សិទ្ធ', 'dashboard.php?view=permissions', 'fas fa-shield-alt', 'settings', 1],
+            
+            // Works
+            ['checklist', 'បញ្ជីការងារ', 'dashboard.php?view=checklist', 'fas fa-tasks', NULL, 3],
+            ['daily_reports', 'របាយការណ៍ប្រចាំថ្ងៃ', 'dashboard.php?view=reports', 'fas fa-file-alt', NULL, 4],
+            ['request_reports', 'របាយការណ៍សំណើ', 'dashboard.php?view=request_reports', 'fas fa-list-check', NULL, 5],
+            ['pending_requests', 'សំណើរង់ចាំ', 'pending_requests.php', 'fas fa-clock', NULL, 6],
+            ['processed_requests', 'សំណើបានដំណើរការ', 'view_processed_requests.php', 'fas fa-check-circle', NULL, 7],
+            
+            // Payroll & Finance
+            ['payroll_calculation', 'ការគណនាបៀវត្ស', 'dashboard.php?view=payroll_calculation', 'fas fa-calculator', NULL, 10],
+            ['payroll_approval', 'អនុម័តបៀវត្ស', 'dashboard.php?view=payroll_approval', 'fas fa-file-signature', NULL, 11],
+            ['payroll_payslip', 'ប័ណ្ណបើកប្រាក់', 'dashboard.php?view=payroll_payslip', 'fas fa-file-invoice-dollar', NULL, 12],
+            ['deductions_bonuses', 'កាត់ប្រាក់ & OT', 'dashboard.php?view=deductions_bonuses', 'fas fa-money-bill-transfer', NULL, 13],
+            
+            // Others
+            ['meetings', 'បញ្ជីកិច្ចប្រជុំ', 'dashboard.php?view=meetings', 'fas fa-calendar-check', NULL, 20],
+            ['post_announcements', 'បង្ហោះការជូនដំណឹង', '../../posts/post_announcements.php', 'fas fa-bullhorn', NULL, 21],
+            ['view_lessons', 'មើលមេរៀន', 'lessons.php', 'fas fa-graduation-cap', NULL, 22],
+            ['upload_lesson_docs', 'បង្ហោះឯកសារមេរៀន', 'post_lesson_documents.php', 'fas fa-file-upload', NULL, 23],
+            ['inactive_users', 'គណនីបានបិទ', 'dashboard.php?view=inactive_users', 'fas fa-user-slash', NULL, 24],
+            ['print_pdf', 'បោះពុម្ព PDF', 'print_content.php', 'fas fa-print', NULL, 25],
+            ['upload_pdf', 'បង្ហោះ PDF', 'store_print_pdf.php', 'fas fa-file-pdf', NULL, 26],
+        ];
+
+        // We use REPLACE INTO or ON DUPLICATE KEY UPDATE to ensure links/icons are updated
+        $stmt = $conn->prepare("INSERT INTO admin_menus (menu_key, menu_name, menu_link, menu_icon, parent_key, menu_order) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE menu_link=VALUES(menu_link), menu_icon=VALUES(menu_icon), menu_name=VALUES(menu_name)");
+        foreach ($default_menus as $m) { $stmt->execute($m); }
+        
+        $conn->exec("CREATE TABLE IF NOT EXISTS permissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            role VARCHAR(50),
+            permission_key VARCHAR(50),
+            UNIQUE KEY unique_perm (role, permission_key)
+        )");
+
+        // Insert Default Permissions if table is empty
+        $chk_perm = $conn->query("SELECT COUNT(*) FROM permissions")->fetchColumn();
+        if ($chk_perm == 0) {
+            // Define standard roles and their allowed keys
+            $role_permissions = [
+                'administration' => [
+                    'dashboard', 'manage_employees', 'checklist', 'daily_reports', 'request_reports', 
+                    'pending_requests', 'processed_requests', 'meetings', 'post_announcements', 
+                    'view_lessons', 'upload_lesson_docs', 'inactive_users', 'print_pdf', 'upload_pdf', 'settings'
+                ],
+                'accounting' => [
+                    'dashboard', 'manage_employees', 'payroll_calculation', 'payroll_approval', 
+                    'payroll_payslip', 'deductions_bonuses', 'reports'
+                ],
+                'hr' => [
+                    'dashboard', 'manage_employees', 'checklist', 'daily_reports', 'request_reports',
+                    'pending_requests', 'processed_requests', 'meetings', 'inactive_users'
+                ],
+                'manager' => [
+                    'dashboard', 'checklist', 'daily_reports', 'request_reports', 'meetings'
+                ],
+                'staff' => [
+                    'dashboard', 'checklist', 'daily_reports'
+                ]
+            ];
+
+            $stmt_perm = $conn->prepare("INSERT INTO permissions (role, permission_key) VALUES (?, ?)");
+            foreach ($role_permissions as $role => $keys) {
+                foreach ($keys as $k) {
+                    $stmt_perm->execute([$role, $k]);
+                }
+            }
+        }
+    } catch (PDOException $e) {}
+
+    // --- Helper Function ---
+    if (!function_exists('render_menu_rows')) {
+        function render_menu_rows($menus, $roles, $level = 0) {
+            global $conn;
+            static $role_perms = null;
+            if ($role_perms === null) {
+                // Fetch all permissions
+                $stmt = $conn->query("SELECT role, permission_key FROM permissions");
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $role_perms = [];
+                foreach ($rows as $r) {
+                    $role_perms[$r['role']][] = $r['permission_key'];
+                }
+            }
+
+            foreach ($menus as $menu) {
+                $padding = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $level);
+                $icon = $level > 0 ? '<i class="fas fa-angle-right text-xs mr-2"></i>' : '<i class="fas fa-folder text-accent-color mr-2"></i>';
+                echo '<tr>';
+                echo '<td class="text-white">' . $padding . $icon . htmlspecialchars($menu['menu_name']) . ' <small class="text-muted">('.$menu['menu_key'].')</small></td>';
+                
+                foreach ($roles as $role) {
+                    $checked = '';
+                    if (isset($role_perms[$role]) && in_array($menu['menu_key'], $role_perms[$role])) {
+                        $checked = 'checked';
+                    }
+                    if ($role === 'admin') {
+                        $checked = 'checked disabled';
+                    }
+                    
+                    echo '<td class="text-center">';
+                    echo '<input type="checkbox" name="perms['.$role.'][]" value="'.$menu['menu_key'].'" class="form-check-input" '.$checked.'>';
+                    echo '</td>';
+                }
+                
+                echo '<td class="text-end">';
+                echo '<button type="button" class="btn-sm btn-outline-warning" onclick=\'openMenuModal('.json_encode($menu).')\'><i class="fas fa-edit"></i></button> ';
+                echo '<button type="button" class="btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteMenuModal" data-menu-id="'.$menu['id'].'" data-menu-name="'.$menu['menu_name'].'"><i class="fas fa-trash"></i></button>';
+                echo '</td>';
+                echo '</tr>';
+                
+                if (!empty($menu['children'])) {
+                    render_menu_rows($menu['children'], $roles, $level + 1);
+                }
+            }
+        }
+    }
+
+    // --- Handle POST ---
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+        if ($_POST['action'] === 'save_permissions') {
+            try {
+                $conn->beginTransaction();
+                $conn->exec("DELETE FROM permissions"); // Simple reset approach
+                
+                if (isset($_POST['perms'])) {
+                    $stmt = $conn->prepare("INSERT INTO permissions (role, permission_key) VALUES (?, ?)");
+                    foreach ($_POST['perms'] as $role => $keys) {
+                        if ($role === 'admin') continue;
+                        foreach ($keys as $key) {
+                            $stmt->execute([$role, $key]);
+                        }
+                    }
+                }
+                $conn->commit();
+                $_SESSION['success'] = "សិទ្ធិត្រូវបានកែប្រែ!";
+            } catch (Exception $e) {
+                $conn->rollBack();
+                $_SESSION['error'] = "កំហុស: " . $e->getMessage();
+            }
+        } 
+        elseif ($_POST['action'] === 'save_menu') {
+            try {
+                $name = trim($_POST['menu_name']);
+                $key = trim($_POST['menu_key']);
+                $parent = !empty($_POST['parent_key']) ? $_POST['parent_key'] : NULL;
+                $order = (int)$_POST['menu_order'];
+                $id = !empty($_POST['menu_id']) ? (int)$_POST['menu_id'] : null;
+
+                if ($id) {
+                    $stmt = $conn->prepare("UPDATE admin_menus SET menu_name=?, menu_key=?, parent_key=?, menu_order=? WHERE id=?");
+                    $stmt->execute([$name, $key, $parent, $order, $id]);
+                     $_SESSION['success'] = "ម៉ឺនុយត្រូវបានកែប្រែ!";
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO admin_menus (menu_name, menu_key, parent_key, menu_order) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$name, $key, $parent, $order]);
+                     $_SESSION['success'] = "ម៉ឺនុយថ្មីត្រូវបានបន្ថែម!";
+                }
+            } catch (Exception $e) {
+                $_SESSION['error'] = "កំហុស: " . $e->getMessage();
+            }
+        }
+        elseif ($_POST['action'] === 'delete_menu') {
+             $id = (int)$_POST['menu_id'];
+             $stmt = $conn->prepare("DELETE FROM admin_menus WHERE id = ?");
+             $stmt->execute([$id]);
+             $_SESSION['success'] = "ម៉ឺនុយត្រូវបានលុប!";
+        }
+        
+        header('Location: dashboard.php?view=permissions');
+        exit();
+    }
+
+    // --- Fetch Data ---
+    $all_roles = ['admin', 'administration', 'accounting', 'hr', 'manager', 'staff'];
+    
+    // Fetch Menus
+    $stmt = $conn->query("SELECT * FROM admin_menus ORDER BY menu_order ASC");
+    $all_menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Build Menu Tree
+    $grouped_menus = [];
+    $menu_map = [];
+    foreach ($all_menus as $m) {
+        $m['children'] = [];
+        $menu_map[$m['menu_key']] = $m;
+    }
+    // Second pass to link children
+    // Need to use references carefully or reconstruct
+    // Simpler approach:
+    $grouped_menus = []; 
+    // Re-index by key for easy parent lookup
+    $refs = [];
+    foreach ($all_menus as $m) {
+        $refs[$m['menu_key']] = $m;
+        $refs[$m['menu_key']]['children'] = [];
+    }
+    foreach ($all_menus as $m) {
+        if ($m['parent_key'] && isset($refs[$m['parent_key']])) {
+            $refs[$m['parent_key']]['children'][] = &$refs[$m['menu_key']];
+        } else {
+            $grouped_menus[] = &$refs[$m['menu_key']];
+        }
     }
 }
 
@@ -1812,6 +2294,119 @@ if (isset($_SESSION['success'])) {
 
 
 // =========================================================================
+// --- NEW: SETTINGS VIEW LOGIC ---
+// =========================================================================
+if ($view === 'settings') {
+    requirePermission('permissions', $conn); // Using 'permissions' as the proxy for settings access
+
+    // --- Settings Helper Functions ---
+    if (!function_exists('loadBotToken')) {
+        function loadBotToken($db): string {
+            try {
+                $stmt = $db->query("SELECT bot_token FROM telegram_settings WHERE id = 1");
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                return $result['bot_token'] ?? '';
+            } catch (PDOException $e) { return ''; }
+        }
+    }
+
+    if (!function_exists('loadTelegramGroups')) {
+        function loadTelegramGroups($db): array {
+            $groups = [];
+            try {
+                $stmt = $db->query("SELECT group_id, name, chat_id, report_format FROM telegram_groups ORDER BY group_id ASC");
+                while ($group = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $threadStmt = $db->prepare("SELECT thread_map_id, position, category, thread_id FROM telegram_group_threads WHERE group_id = :group_id ORDER BY category ASC, position ASC");
+                    $threadStmt->execute(['group_id' => $group['group_id']]);
+                    $group['thread_ids'] = $threadStmt->fetchAll(PDO::FETCH_ASSOC);
+                    $groups[] = $group;
+                }
+            } catch (PDOException $e) { }
+            return $groups;
+        }
+    }
+
+    $category_types = ['department', 'position', 'branch'];
+    $khmer_names = ['department' => 'ដេប៉ាតឺម៉ង់', 'position' => 'តួនាទី បុគ្គលិក', 'branch' => 'សាខា'];
+    $telegramAllCategories = ['ដេប៉ាតឺម៉ង់/ផ្នែក', 'ផ្នែក ឃ្លាំងទំនិញ (318)', 'ផ្នែក SK Cosmetics(ភ្នំពេញ)', 'ផ្នែក SK Cosmetics(តាមបណ្តាខេត្ត និង សាខា)', 'រោងចក្រផលិត និង វេចខ្ចប់', 'ផ្សេងៗ'];
+
+    // --- Handle POST Actions for Settings ---
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['settings_action'])) {
+        $action = $_POST['settings_action'];
+        try {
+            switch ($action) {
+                case 'update_bot_token':
+                    $new_token = filter_var($_POST['bot_token'] ?? '', FILTER_SANITIZE_STRING);
+                    if (empty($new_token)) throw new Exception("Bot Token មិនអាចទទេបានទេ!");
+                    $stmt = $conn->prepare("INSERT INTO telegram_settings (id, bot_token) VALUES (1, :bot_token) ON DUPLICATE KEY UPDATE bot_token = :bot_token");
+                    $stmt->execute(['bot_token' => $new_token]);
+                    $_SESSION['success'] = "ធ្វើបច្ចុប្បន្នភាព Bot Token ជោគជ័យ!";
+                    break;
+                case 'add_group':
+                    $stmt = $conn->prepare("INSERT INTO telegram_groups (name, chat_id, report_format) VALUES (?, ?, ?)");
+                    $stmt->execute([$_POST['group_name'], $_POST['chat_id'], $_POST['report_format']]);
+                    $_SESSION['success'] = "បន្ថែមក្រុមថ្មីជោគជ័យ!";
+                    break;
+                case 'update_group':
+                    $stmt = $conn->prepare("UPDATE telegram_groups SET name = ?, chat_id = ?, report_format = ? WHERE group_id = ?");
+                    $stmt->execute([$_POST['group_name'], $_POST['chat_id'], $_POST['report_format'], $_POST['group_id']]);
+                    $_SESSION['success'] = "កែប្រែព័ត៌មានក្រុមជោគជ័យ!";
+                    break;
+                case 'delete_group':
+                    $stmt = $conn->prepare("DELETE FROM telegram_groups WHERE group_id = ?");
+                    $stmt->execute([$_POST['group_id']]);
+                    $_SESSION['success'] = "លុបក្រុមជោគជ័យ!";
+                    break;
+                case 'add_thread':
+                    $stmt = $conn->prepare("INSERT INTO telegram_group_threads (group_id, position, category, thread_id) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$_POST['group_id'], $_POST['thread_name'], $_POST['thread_category'], $_POST['thread_id']]);
+                    $_SESSION['success'] = "បន្ថែម Thread ជោគជ័យ!";
+                    break;
+                case 'update_thread':
+                    $stmt = $conn->prepare("UPDATE telegram_group_threads SET position = ?, category = ?, thread_id = ? WHERE thread_map_id = ?");
+                    $stmt->execute([$_POST['thread_name'], $_POST['thread_category'], $_POST['thread_id'], $_POST['thread_map_id']]);
+                    $_SESSION['success'] = "កែប្រែ Thread ជោគជ័យ!";
+                    break;
+                case 'delete_thread':
+                    $stmt = $conn->prepare("DELETE FROM telegram_group_threads WHERE thread_map_id = ?");
+                    $stmt->execute([$_POST['thread_map_id']]);
+                    $_SESSION['success'] = "លុប Thread ជោគជ័យ!";
+                    break;
+                case 'add_category':
+                    $stmt = $conn->prepare("INSERT INTO categories (type, name) VALUES (?, ?)");
+                    $stmt->execute([$_POST['category_type'], $_POST['category_name']]);
+                    $_SESSION['success'] = "បន្ថែម " . $khmer_names[$_POST['category_type']] . " ជោគជ័យ!";
+                    break;
+                case 'edit_category':
+                    $stmt = $conn->prepare("UPDATE categories SET name = ?, type = ? WHERE id = ?");
+                    $stmt->execute([$_POST['category_name'], $_POST['category_type'], $_POST['category_id']]);
+                    $_SESSION['success'] = "កែប្រែប្រភេទ ជោគជ័យ!";
+                    break;
+                case 'delete_category':
+                    $stmt = $conn->prepare("DELETE FROM categories WHERE id = ?");
+                    $stmt->execute([$_POST['category_id']]);
+                    $_SESSION['success'] = "លុបប្រភេទ ជោគជ័យ!";
+                    break;
+            }
+        } catch (Exception $e) {
+            $_SESSION['error'] = "កំហុស៖ " . $e->getMessage();
+        }
+        header("Location: dashboard.php?view=settings");
+        exit();
+    }
+
+    // --- Load Data for Display ---
+    $telegramBotToken = loadBotToken($conn);
+    $telegramGroups = loadTelegramGroups($conn);
+    $stmt_cats = $conn->query("SELECT id, type, name FROM categories ORDER BY type, name");
+    $dynamic_categories = [];
+    foreach ($stmt_cats->fetchAll(PDO::FETCH_ASSOC) as $cat) {
+        $dynamic_categories[$cat['type']][] = $cat;
+    }
+}
+
+
+// =========================================================================
 // --- HTML RENDERING ---
 // =========================================================================
 $page_title = match($view) {
@@ -1823,8 +2418,11 @@ $page_title = match($view) {
     'payroll_approval' => 'ដំណើរការអនុម័តបៀវត្ស',
     'payroll_payslip' => 'បង្កើត និងមើល Payslip',
     'permissions' => 'គ្រប់គ្រង Sidebar និងការកំណត់សិទ្ធ',
+    'settings' => 'ការកំណត់ប្រព័ន្ធ',
     'deductions_bonuses' => 'គ្រប់គ្រងការកាត់ប្រាក់ & ប្រាក់ OT',
-    'manage_employees' => 'គ្រប់គ្រងបុគ្គលិក', // <-- ADDED THIS LINE
+    'manage_employees' => 'គ្រប់គ្រងបុគ្គលិក',
+    'meetings' => 'បញ្ជីកិច្ចប្រជុំ (Meetings)',
+    'post_meeting' => 'បង្ហោះកិច្ចប្រជុំ (Post Meeting)',
     default => 'ផ្ទាំងគ្រប់គ្រង'
 };
 
@@ -1836,6 +2434,20 @@ $page_title = match($view) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ប្រព័ន្ធគ្រប់គ្រងធនធានមនុស្ស (HRM) - <?php echo $page_title; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        'primary-light': '#8b5cf6',
+                        'primary-dark': '#4f46e5',
+                        accent: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;600;700&family=Kantumruy+Pro:wght@400;500;700&family=Moul&display=swap" rel="stylesheet">
     <!-- Preconnects to speed up third-party resources -->
@@ -1846,7 +2458,7 @@ $page_title = match($view) {
     <!-- Load Bootstrap CSS using preload to reduce render-blocking -->
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"></noscript>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="../manifest.json">
     <link rel="icon" type="image/x-icon" href="https://i.ibb.co/k6ysLFZd/Logo-Van-Van-1.png">
     
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -1856,191 +2468,228 @@ $page_title = match($view) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
 
     <style>
-        /* Loading screen styles */
-        #loading-screen {
-            position: fixed;
-            inset: 0;
-            /* classic overlay: semi-opaque dark background */
-            background: rgba(0,0,0,0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 99999;
-            color: var(--text-primary);
-            flex-direction: column;
-            gap: 1rem;
-        }
-        #loading-screen .spinner {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            border: 6px solid rgba(255,255,255,0.12);
-            border-top-color: var(--accent-color);
-            animation: spin 1s linear infinite;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.6);
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #loading-screen .message { font-size: 1.05rem; opacity: 0.95; }
+    <style>
         :root {
-            --primary-bg: #f8f9fa;
-            --secondary-bg: #ffffff;
-            --card-bg: #ffffff;
-            --border-color: #e9ecef;
-            --accent-color: #007bff;
-            --accent-hover: #0056b3;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --success: #28a745;
-            --danger: #dc3545;
-            --warning: #ffc107;
-            --info: #17a2b8;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #06b6d4;
+            --bg-main: #f1f5f9;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --border-glass: rgba(255, 255, 255, 0.4);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-    /* Body: clearer, readable Khmer-first font stack and slightly larger base size */
-    body { background-color: var(--primary-bg); font-family: 'Noto Sans Khmer', 'Kantumruy Pro', 'Segoe UI', Roboto, 'Noto Sans', Arial, sans-serif; color: var(--text-primary); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
-        /* Sidebar */
-        aside {
-            background: linear-gradient(135deg, #010038ff 0%, #1a1a4a 100%);
-            border-right: 1px solid var(--border-color);
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            animation: slideIn 0.45s ease-out;
-            width: 260px;
-            padding: 1.5rem;
-            border-radius: 0 12px 12px 0;
-            margin-right: 1rem;
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
+        
+        body { 
+            background-color: var(--bg-main); 
+            font-family: 'Kantumruy Pro', 'Noto Sans Khmer', sans-serif; 
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        .premium-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .premium-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-premium);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glass);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .nav-item-card {
             position: relative;
-            transition: transform 200ms ease, box-shadow 200ms ease;
+            overflow: hidden;
+            border-radius: 20px;
+            transition: all 0.4s ease;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
-        /* Sidebar header */
-        aside h2 {
-            color: var(--accent-hover);
-            text-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
-            font-size: 2rem;
+        .nav-item-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-item-card:hover::before { opacity: 1; }
+
+        .btn-premium {
+            background: var(--btn-gradient);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 14px;
             font-weight: 700;
-            margin-bottom: 2rem;
-            text-align: center;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 14px 0 rgba(0,0,0,0.1);
         }
 
-        /* Sidebar links */
-        aside a, aside button {
-            color: var(--text-secondary);
-            transition: all 0.3s ease;
-            border-left: 4px solid transparent;
-            padding: 14px 16px;
-            font-size: 1.05rem;
+        .btn-premium:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            filter: brightness(1.1);
+        }
+
+        .table-premium {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .table-premium tr {
+            background: white;
+            box-shadow: var(--shadow-sm);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .table-premium tr:hover {
+            transform: scale(1.005);
+            box-shadow: var(--shadow-md);
+            background: var(--bg-main);
+        }
+
+        .table-premium td, .table-premium th {
+            padding: 16px 20px;
+        }
+
+        .table-premium th {
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .table-premium td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+        .table-premium td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+        .status-pill {
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .status-pill.pending { background: #fef3c7; color: #92400e; }
+        .status-pill.approved { background: #dcfce7; color: #166534; }
+        .status-pill.rejected { background: #fee2e2; color: #991b1b; }
+
+        .avatar-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 2px solid white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-item {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            text-decoration: none;
-            width: 100%;
-            justify-content: flex-start;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
-        aside a:hover, aside button:hover {
-            color: var(--accent-hover);
-            background-color: var(--primary-bg);
-            border-left-color: var(--accent-hover);
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        .sidebar-item:hover, .sidebar-item.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
         }
 
-        aside a.active, aside button.active {
-            color: var(--accent-hover);
-            font-weight: 700;
-            background-color: var(--primary-bg);
-            border-left-color: var(--accent-hover);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        /* Loading Screen Redesign */
+        #loading-screen {
+            background: rgba(241, 245, 249, 0.9);
+            backdrop-filter: blur(10px);
         }
 
-        aside i {
-            min-width: 24px;
-            text-align: center;
-            color: var(--accent-color);
+        .loader-glow {
+            width: 80px;
+            height: 80px;
+            position: relative;
         }
 
-        /* Payroll submenu */
-        aside ul ul {
-            margin-left: 1rem;
-        }
-
-        aside ul ul a, aside ul ul button {
-            font-size: 0.95rem;
-            padding: 10px 12px;
-        }
-
-        /* Notification badge */
-        .notification-badge {
-            background-color: var(--danger);
-            color: white;
+        .loader-glow::after {
+            content: '';
+            position: absolute;
+            inset: 0;
             border-radius: 50%;
-            padding: 2px 6px;
+            border: 4px solid var(--primary);
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .breadcrumb-item {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 700;
             font-size: 0.75rem;
-            font-weight: bold;
-            min-width: 18px;
-            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-        main { animation: fadeIn 0.6s ease-out; }
-    .card-base { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08); transition: transform 0.3s ease, box-shadow 0.3s ease; color: #000000; }
-        .card-base:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
-        .table-container { border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; background: var(--card-bg); }
-        .table-container table { border-collapse: separate; border-spacing: 0; width: 100%; }
-    .table-container thead { background-color: var(--accent-color); color: #ffffff; }
-        .table-container th { font-weight: 700; font-size: 1.0rem; padding: 1rem 1.25rem; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
-        .table-container td { font-size: 1.0rem; border-bottom: 1px solid var(--border-color); padding: 1rem 1.25rem; vertical-align: middle; }
-        .table-container tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.02); }
-        .table-container tbody tr:hover { background-color: rgba(255, 215, 0, 0.1); }
-        .table-container tbody tr:last-child td { border-bottom: none; }
-        .toggle-children { background: transparent; border: none; cursor: pointer; padding: 2px 4px; line-height: 1; }
-        .form-label { font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; display: inline-block; }
-        .form-input, .form-select, .form-textarea { background: var(--secondary-bg); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 10px; transition: border-color 0.2s, box-shadow 0.2s; padding: 10px 14px; font-size: 1rem; width: 100%; }
-        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent-hover); box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.4); }
-        .btn-base { padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; transition: all 0.2s ease; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); }
-        .btn-base:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); filter: brightness(1.15); }
-    .btn-primary { background-color: var(--accent-color); color: #ffffff; }
-        .btn-success { background-color: var(--success); color: white; }
-        .btn-danger { background-color: var(--danger); color: white; }
-        .btn-secondary { background-color: var(--text-secondary); color: var(--secondary-bg); }
-        .btn-action-link { color: var(--accent-color); font-weight: 600; transition: color 0.2s; background: none; border: none; padding: 0; cursor: pointer; font-size: 1rem; }
-        .btn-action-link:hover { color: var(--accent-hover); text-decoration: underline; }
-        .status-badge { padding: 4px 10px; border-radius: 15px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
-        .status-pending, .status-calculated { background-color: rgba(255, 215, 0, 0.2); color: var(--warning); border: 1px solid var(--warning); }
-        .status-approved, .status-paid { background-color: rgba(46, 160, 67, 0.2); color: var(--success); border: 1px solid var(--success); }
-        .status-rejected { background-color: rgba(218, 54, 51, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        /* Loan-specific status badges */
-        .status-active { background-color: rgba(46, 160, 67, 0.2); color: var(--success); border: 1px solid var(--success); }
-        .status-paused { background-color: rgba(255, 215, 0, 0.2); color: var(--warning); border: 1px solid var(--warning); }
-        .status-closed { background-color: rgba(218, 54, 51, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        /* Input group theming to match app */
-        .input-group { display: flex; align-items: stretch; }
-        .input-group .input-group-text {
-            background-color: var(--secondary-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            border-top-left-radius: 10px;
-            border-bottom-left-radius: 10px;
-            padding: 10px 12px;
+
+        .breadcrumb-item i { color: var(--accent); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        
+        @media (max-width: 768px) { 
+            aside { position: absolute; z-index: 50; transform: translateX(-100%); } 
+            aside.is-open { transform: translateX(0); } 
+            .btn-base { padding: 8px 16px; font-size: 0.875rem; }
         }
-        .input-group .form-input {
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
-        }
-        /* Loan row subtle status styling */
-        tr.loan-row.paused { background-color: rgba(255, 215, 0, 0.06); }
-        tr.loan-row.closed { background-color: rgba(218, 54, 51, 0.06); opacity: 0.95; }
-        .alert-message { text-align: center; padding: 1rem; border-radius: 10px; margin-bottom: 20px; font-weight: 500; font-size: 1.05rem; animation: slideDown 0.5s ease-out forwards; }
-        .alert-success { background-color: rgba(46, 160, 67, 0.2); color: var(--success); border: 1px solid var(--success); }
-        .alert-error { background-color: rgba(218, 54, 51, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-        .persistent-alert { background-color: rgba(255, 215, 0, 0.2); color: var(--warning); border: 1px solid var(--warning); padding: 1.25rem; margin-bottom: 1.5rem; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; animation: slideDown 0.5s ease-out forwards; font-size: 1.1rem; }
-        .modal-content { background-color: var(--secondary-bg); border: 1px solid var(--accent-color); border-radius: 16px; font-size: 1.05rem; }
-        .modal-header, .modal-footer { border-color: var(--border-color); padding: 1.5rem; }
-        .modal-header .btn-close { filter: invert(1) grayscale(100%) brightness(150%); }
-        @media (max-width: 768px) { aside { position: absolute; z-index: 40; transform: translateX(-100%); } aside.is-open { transform: translateX(0); } body { font-size: 1rem; } .table-container th, .table-container td { padding: 0.75rem 1rem; } }
         .tree, .tree ul { list-style-type: none; padding-left: 0; margin-left: 0; }
         .tree ul { margin-left: 20px; padding-left: 25px; border-left: 1px solid rgba(255, 215, 0, 0.2); position: relative; }
         .tree li { margin: 10px 0; position: relative; }
@@ -2135,46 +2784,183 @@ $page_title = match($view) {
         .border-accent-color { border-color: var(--accent-color); }
         .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
         
+        /* Settings View Enhanced Styles */
+        .settings-header {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: #fff;
+            padding: 1.5rem;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .settings-header::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05));
+            pointer-events: none;
+        }
+        .settings-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .settings-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.1), 0 15px 15px -5px rgba(0, 0, 0, 0.04);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+        .group-card { border-left: 8px solid #fbbf24; }
+        .thread-item {
+            background: rgba(248, 250, 252, 0.6);
+            border: 1px solid rgba(241, 245, 249, 0.8);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .thread-item:hover {
+            background: #ffffff;
+            border-color: #fbbf24;
+            transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .cat-list-container {
+            max-height: 450px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(255,255,255,0.3);
+        }
+        .cat-list-container::-webkit-scrollbar { width: 4px; }
+        .cat-list-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .cat-item {
+            padding: 12px 14px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 10px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .cat-item:hover { 
+            background: #ffffff; 
+            border-color: #f1f5f9;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .token-input-wrapper { position: relative; width: 100%; }
+        .token-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        .token-toggle:hover { color: #1e293b; transform: translateY(-50%) scale(1.1); }
+        
+        /* Glass Loading Effect */
+        .glass-loader {
+            background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+            background-size: 200% 100%;
+            animation: shine 1.5s linear infinite;
+        }
+        @keyframes shine { to { background-position-x: -200%; } }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .animate-slide-up {
+            animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
     </style>
 </head>
 <body class="flex h-screen <?php if($view === 'payroll_payslip' && isset($_GET['run_id'])) echo 'bg-gray-200'; ?>">
-    <!-- Loading screen: visible immediately to mask slow data/network work -->
-    <div id="loading-screen" aria-hidden="false">
-        <div class="spinner" role="status" aria-label="loading"></div>
-        <div class="message">សូមរង់ចាំបន្ថិចណា...</div>
-    </div>
-    <?php if(!($view === 'payroll_payslip' && isset($_GET['run_id']))): ?>
-        <?php include 'includes/sidebar.php'; ?>
-    <?php endif; ?>
+    <?php // Sidebar removed as per request ?>
 
     <main class="flex-1 p-6 lg:p-8 overflow-y-auto <?php if($view === 'payroll_payslip' && isset($_GET['run_id'])) echo '!p-0'; ?>">
         <?php if(!($view === 'payroll_payslip' && isset($_GET['run_id']))): ?>
-        <header class="mb-8">
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center gap-5">
-                    <button id="menu-toggle" class="md:hidden text-accent-hover text-3xl focus:outline-none hover:text-accent-color transition-colors">
-                        <i class="fas fa-bars"></i>
-                    </button>
+        <header class="mb-10">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="flex items-center gap-6">
                     <div>
-                        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-accent-hover drop-shadow-sm">
-                            ស្វាគមន៍, <span class="font-bold text-accent-color underline underline-offset-4 decoration-accent-color decoration-2"><?php echo htmlspecialchars($_SESSION['username']); ?></span>!
+                        <h1 class="text-3xl md:text-5xl font-black text-slate-800 tracking-tight">
+                            សួស្តី, <span class="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent"><?php echo htmlspecialchars($_SESSION['username']); ?></span>!
                         </h1>
-                        <p class="text-text-secondary mt-2 text-lg font-medium italic">
-                            <?php echo $page_title; ?>
-                        </p>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <p class="text-slate-600 font-bold uppercase tracking-wider text-sm">
+                                <?php echo $page_title; ?>
+                            </p>
+                        </div>
                     </div>
                 </div>
-                <div class="hidden md:flex items-center gap-4">
+                
+                <div class="flex items-center gap-4">
+                    <!-- Notification Bell Redesigned -->
                     <div class="relative">
-                        <button id="notification-bell" type="button" class="text-accent-hover focus:outline-none text-2xl relative">
-                            <i class="fas fa-bell"></i>
-                            <?php if (!empty($announcements)): ?><span id="notification-badge" class="absolute -top-2 -right-2 bg-danger text-white rounded-full px-2 py-0.5 text-xs font-bold animate-bounce"><?php echo count($announcements); ?></span><?php endif; ?>
+                        <button id="notification-bell" class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white shadow-sm border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-300 transition-all focus:outline-none group">
+                            <i class="fas fa-bell text-xl group-hover:animate-swing"></i>
+                            <?php if (!empty($announcements)): ?>
+                                <span class="absolute top-0 right-0 w-5 h-5 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[10px] font-bold text-white"><?php echo count($announcements); ?></span>
+                            <?php endif; ?>
                         </button>
-                        <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-secondary-bg border border-accent-color rounded-lg shadow-lg z-50">
-                            <div class="p-4 border-b border-accent-color flex items-center gap-2" style="background: var(--accent-color); border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem;"><i class="fas fa-bullhorn text-white"></i><span class="font-bold text-white">ការជូនដំណឹងថ្មីៗ</span></div>
-                            <div class="max-h-80 overflow-y-auto custom-scrollbar">
-                                <?php if (!empty($announcements)): foreach ($announcements as $a): ?><div class="p-4 border-b border-border-color last:border-b-0" style="background-color: #003163;"><div class="font-semibold text-accent-color"><?php echo htmlspecialchars($a['title']); ?></div><div class="text-text-secondary text-sm mb-1"><?php echo htmlspecialchars($a['date']); ?></div><div class="text-text-primary"><?php echo nl2br(htmlspecialchars($a['text'])); ?></div></div><?php endforeach; else: ?><div class="p-4 text-text-secondary text-center">មិនមានការជូនដំណឹងថ្មី</div><?php endif; ?>
+                        <!-- Dropdown hidden logic remains same but needs class updates if styled -->
+                        <div id="notification-dropdown" class="hidden absolute right-0 mt-4 w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden">
+                            <div class="p-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                                <span class="font-black text-slate-800 uppercase tracking-tighter">ការជូនដំណឹងថ្មីៗ</span>
+                                <i class="fas fa-bullhorn text-amber-500"></i>
                             </div>
+                            <div class="max-h-96 overflow-y-auto custom-scrollbar">
+                                <?php if (!empty($announcements)): foreach ($announcements as $a): ?>
+                                    <div class="p-5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0 space-y-1">
+                                        <div class="font-bold text-slate-900"><?php echo htmlspecialchars($a['title']); ?></div>
+                                        <div class="text-[11px] font-bold text-slate-500"><?php echo htmlspecialchars($a['date']); ?></div>
+                                        <div class="text-sm text-slate-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($a['text'])); ?></div>
+                                    </div>
+                                <?php endforeach; else: ?>
+                                    <div class="p-10 text-center space-y-3">
+                                        <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                                            <i class="fas fa-bell-slash text-2xl"></i>
+                                        </div>
+                                        <p class="text-slate-600 font-medium">មិនមានការជូនដំណឹងថ្មី</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Profile Quick View -->
+                    <div class="hidden sm:flex items-center gap-3 p-1.5 pr-5 bg-white rounded-2xl shadow-sm border border-slate-200">
+                        <img src="<?php echo htmlspecialchars(thumb_url($_SESSION['image_url'] ?? '', 40, 40)); ?>" class="w-10 h-10 rounded-xl object-cover" alt="User">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-black text-slate-800 leading-none"><?php echo htmlspecialchars($_SESSION['full_name'] ?? $_SESSION['username']); ?></span>
+                            <span class="text-[10px] font-black text-slate-500 uppercase mt-1 tracking-wider"><?php echo htmlspecialchars($_SESSION['role']); ?></span>
                         </div>
                     </div>
                 </div>
@@ -2182,54 +2968,230 @@ $page_title = match($view) {
         </header>
         <?php endif; ?>
 
-        <div id="notification-container" class="fixed top-20 right-8 z-[1060]"></div>
+        <?php if ($view !== 'dashboard' && !empty($view)): ?>
+            <nav class="flex mb-8 items-center gap-4 animate-fade-in" aria-label="Breadcrumb">
+                <a href="dashboard.php" class="breadcrumb-item hover:text-primary transition-all">
+                    <i class="fas fa-home"></i>
+                    <span>ផ្ទាំងគ្រប់គ្រង</span>
+                </a>
+                <i class="fas fa-chevron-right text-slate-300 text-[10px]"></i>
+                <div class="breadcrumb-item active border-primary/20 text-primary bg-primary/5">
+                    <?php echo $page_title; ?>
+                </div>
+            </nav>
+        <?php endif; ?>
+
+        <div id="notification-container" class="fixed top-24 right-8 z-[1060]"></div>
 
         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin' && isset($pendingRequestsCount) && $pendingRequestsCount > 0): ?>
-            <div class="persistent-alert" role="alert"><div class="flex items-center gap-3"><i class="fas fa-bell text-2xl animate-pulse"></i><div><strong class="font-bold">ការជូនដំណឹង!</strong><span class="block sm:inline ml-2">អ្នកមានសំណើរចំនួន **<?php echo $pendingRequestsCount; ?>** ដែលកំពុងរង់ចាំការអនុម័ត។</span></div></div><a href="dashboard.php?view=request_reports" class="btn-base btn-primary text-sm shrink-0"><i class="fas fa-eye"></i><span>មើលសំណើ</span></a></div>
+            <div class="persistent-alert group" role="alert">
+                <div class="flex items-center gap-5">
+                    <div class="w-14 h-14 bg-amber-400/20 rounded-2xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-shield-alt text-2xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-amber-900 uppercase tracking-tight">សកម្មភាពរង់ចាំការអនុម័ត</h4>
+                        <p class="text-amber-800 font-bold italic mt-0.5">អ្នកមានសំណើរចំនួន <strong><?php echo $pendingRequestsCount; ?></strong> ដែលកំពុងរង់ចាំការពិនិត្យ។</p>
+                    </div>
+                </div>
+                <a href="dashboard.php?view=request_reports" class="btn-base bg-amber-500 text-white hover:bg-amber-600 px-6 py-3 rounded-xl shadow-lg shadow-amber-500/30">
+                    <i class="fas fa-long-arrow-alt-right"></i><span>មើលសំណើទាំងអស់</span>
+                </a>
+            </div>
         <?php endif; ?>
         
         <?php if ($success): ?><div class="alert-message alert-success"><?php echo htmlspecialchars($success); ?></div><?php endif; ?>
         <?php if ($error): ?><div class="alert-message alert-error"><?php echo $error; ?></div><?php endif; ?>
-        <?php if ($view === 'request_reports' && !empty($success_request)): ?><div class="alert-message alert-success"><?php echo htmlspecialchars($success_request); ?></div><?php endif; ?>
-        <?php if ($view === 'request_reports' && !empty($errors_request)): foreach ($errors_request as $error_request): ?><div class="alert-message alert-error"><?php echo htmlspecialchars($error_request); ?></div><?php endforeach; endif; ?>
-        <?php if ($view === 'checklist' && !empty($checklist_success)): ?><div class="alert-message alert-success"><?php echo htmlspecialchars($checklist_success); ?></div><?php endif; ?>
-        <?php if ($view === 'checklist' && !empty($checklist_errors)): foreach ($checklist_errors as $checklist_error): ?><div class="alert-message alert-error"><?php echo htmlspecialchars($checklist_error); ?></div><?php endforeach; endif; ?>
 
         <?php if ($view === 'dashboard'): ?>
-            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="card-base p-6 flex items-center gap-6"><i class="fas fa-users text-5xl text-accent-color"></i><div><h3 class="text-text-secondary uppercase font-semibold text-lg">បុគ្គលិកសរុប</h3><p class="text-5xl font-bold"><?php echo htmlspecialchars($totalEmployees); ?></p></div></div>
-                <div class="card-base p-6 flex items-center gap-6"><i class="fas fa-user-check text-5xl text-accent-color"></i><div><h3 class="text-text-secondary uppercase font-semibold text-lg">អ្នកប្រើប្រាស់សកម្ម</h3><p class="text-5xl font-bold"><?php echo htmlspecialchars($activeUsers); ?></p></div></div>
-                <div class="card-base p-6 flex items-center gap-6"><i class="fas fa-clock text-5xl text-accent-color"></i><div><h3 class="text-text-secondary uppercase font-semibold text-lg">សំណើរង់ចាំ</h3><p class="text-5xl font-bold"><?php echo htmlspecialchars($pendingRequestsCount); ?></p></div></div>
-            </section>
-            
             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-            <section class="mb-8 card-base p-0">
-                <div class="p-6"><h2 class="text-2xl font-bold text-accent-hover mb-4">សំណើរង់ចាំ</h2></div>
-                <?php if (empty($pendingRequests)): ?><p class="text-center text-text-secondary py-8 text-lg">គ្មានសំណើរង់ចាំ។</p><?php else: ?>
-                    <div class="table-container overflow-x-auto"><table class="min-w-full"><thead><tr><th class="py-3 px-4 text-left">ប្រភេទសំណើ</th><th class="py-3 px-4 text-left">ឈ្មោះអ្នកស្នើ</th><th class="py-3 px-4 text-left">ហេតុផល</th><th class="py-3 px-4 text-center">សកម្មភាព</th></tr></thead><tbody>
-                    <?php foreach (array_slice($pendingRequests, 0, 5) as $request): ?><tr><td class="py-3 px-4"><?php echo htmlspecialchars($request['request_type']); ?></td><td class="py-3 px-4"><?php echo htmlspecialchars($request['requester_name']); ?></td><td class="py-3 px-4 truncate max-w-xs text-text-secondary"><?php echo htmlspecialchars($request['reason']); ?></td><td class="py-3 px-4 text-center space-x-2"><a href="approve_request.php?id=<?php echo htmlspecialchars($request['id']); ?>" class="btn-base btn-success text-xs">អនុម័ត</a><a href="reject_request.php?id=<?php echo htmlspecialchars($request['id']); ?>" class="btn-base btn-danger text-xs">បដិសេធ</a></td></tr><?php endforeach; ?>
-                    </tbody></table></div>
+            <section class="mb-10 card-base overflow-hidden border-none shadow-xl bg-white animate-slide-up">
+                <div class="p-8 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
+                            <i class="fas fa-clock-rotate-left text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black text-white tracking-tight m-0">សំណើរង់ចាំ (Pending Requests)</h2>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">ត្រូវការការត្រួតពិនិត្យ និងអនុម័ត</p>
+                        </div>
+                    </div>
+                </div>
+                <?php if (empty($pendingRequests)): ?>
+                    <div class="p-20 text-center space-y-4">
+                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                            <i class="fas fa-check-double text-3xl"></i>
+                        </div>
+                        <p class="text-slate-400 font-medium">គ្មានសំណើរង់ចាំអនុម័តទេ</p>
+                    </div>
+                <?php else: ?>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100">
+                                    <th class="py-4 px-8 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">ប្រភេទសំណើ</th>
+                                    <th class="py-4 px-8 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">ឈ្មោះអ្នកស្នើ</th>
+                                    <th class="py-4 px-8 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">មូលហេតុ</th>
+                                    <th class="py-4 px-8 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">សកម្មភាព</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <?php foreach (array_slice($pendingRequests, 0, 5) as $request): ?>
+                                    <tr class="hover:bg-slate-50/50 transition-colors group">
+                                        <td class="py-4 px-8">
+                                            <span class="px-3 py-1 bg-amber-100 text-amber-600 rounded-lg text-[10px] font-black uppercase tracking-tight"><?php echo htmlspecialchars($request['request_type']); ?></span>
+                                        </td>
+                                        <td class="py-4 px-8">
+                                            <div class="font-black text-slate-800"><?php echo htmlspecialchars($request['requester_name']); ?></div>
+                                        </td>
+                                        <td class="py-4 px-8">
+                                            <div class="text-sm text-slate-500 truncate max-w-xs font-medium"><?php echo htmlspecialchars($request['reason']); ?></div>
+                                        </td>
+                                        <td class="py-4 px-8">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <a href="approve_request.php?id=<?php echo htmlspecialchars($request['id']); ?>" class="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-sm shadow-emerald-500/10" title="អនុម័ត">
+                                                    <i class="fas fa-check text-xs"></i>
+                                                </a>
+                                                <a href="reject_request.php?id=<?php echo htmlspecialchars($request['id']); ?>" class="w-9 h-9 flex items-center justify-center rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm shadow-rose-500/10" title="បដិសេធ">
+                                                    <i class="fas fa-times text-xs"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php endif; ?>
             </section>
             <?php endif; ?>
-            <section class="card-base p-0">
-                <?php $departments = []; if (!empty($employees_flat_for_dropdowns)) { foreach ($employees_flat_for_dropdowns as $ef) { $dep = isset($ef['department']) ? trim($ef['department']) : ''; if ($dep !== '' && !in_array($dep, $departments, true)) { $departments[] = $dep; } } sort($departments); } ?>
-                <div class="p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <h2 class="text-2xl font-bold text-accent-hover">បញ្ជីបុគ្គលិក</h2>
-                    <div class="flex flex-col sm:flex-row gap-2 items-stretch w-full md:w-auto">
-                        <input id="employee-search" type="text" class="form-input w-full sm:w-64" placeholder="ស្វែងរកឈ្មោះ/អ៊ីមែល/តួនាទី..."><select id="department-filter" class="form-select w-full sm:w-56"><option value="">ដេប៉ាតឺម៉ង់ទាំងអស់</option><?php foreach ($departments as $dep): ?><option value="<?php echo htmlspecialchars($dep); ?>"><?php echo htmlspecialchars($dep); ?></option><?php endforeach; ?></select>
-                        <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'administration','accounting'])): ?>
-                            <button type="button" class="btn-base btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal"><i class="fas fa-plus"></i><span>បន្ថែមបុគ្គលិក</span></button>
-                        <?php endif; ?>
+
+            <!-- Quick Stats Overview -->
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div class="premium-card p-8 flex items-center gap-6 group">
+                    <div class="w-20 h-20 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                        <i class="fas fa-users text-3xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">បុគ្គលិកសរុប</p>
+                        <h3 class="text-4xl font-black text-slate-800 drop-shadow-sm"><?php echo htmlspecialchars($totalEmployees); ?></h3>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">បច្ចុប្បន្នភាព</span>
+                        </div>
                     </div>
                 </div>
-                <div class="overflow-x-auto table-container"><table class="min-w-full"><thead><tr><th class="py-3 px-4 text-left">#</th><th class="py-3 px-4 text-left">ឈ្មោះ</th><th class="py-3 px-4 text-left hidden md:table-cell">អ៊ីមែល</th><th class="py-3 px-4 text-left hidden sm:table-cell">តួនាទី</th><th class="py-3 px-4 text-left hidden sm:table-cell">ដេប៉ាតឺម៉ង់</th><th class="py-3 px-4 text-center">សកម្មភាព</th></tr></thead>
-                <tbody id="employee-table-body">
-                    <!-- JavaScript will populate this area -->
-                    <tr><td colspan="6" class="text-center py-8 text-text-secondary text-lg"><i class="fas fa-spinner fa-spin mr-2"></i> កំពុងទាញទិន្នន័យ...</td></tr>
-                </tbody>
-                </table></div>
+                <div class="premium-card p-8 flex items-center gap-6 group">
+                    <div class="w-20 h-20 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                        <i class="fas fa-user-check text-3xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">អ្នកប្រើប្រាស់សកម្ម</p>
+                        <h3 class="text-4xl font-black text-slate-800 drop-shadow-sm"><?php echo htmlspecialchars($activeUsers); ?></h3>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">នៅក្នុងប្រព័ន្ធ</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="premium-card p-8 flex items-center gap-6 group">
+                    <div class="w-20 h-20 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                        <i class="fas fa-clock text-3xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">សំណើរង់ចាំ</p>
+                        <h3 class="text-4xl font-black text-slate-800 drop-shadow-sm"><?php echo htmlspecialchars($pendingRequestsCount ?? 0); ?></h3>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">ត្រូវការពិនិត្យ</span>
+                        </div>
+                    </div>
+                </div>
             </section>
+
+            <!-- Navigation Hub -->
+            <div class="mb-10">
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3 mb-8">
+                    <span class="w-1.5 h-8 bg-amber-500 rounded-full"></span>
+                ផ្ទាំងគ្រប់គ្រងប្រព័ន្ធ
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <?php
+                    $nav_items = [
+                        ['key' => 'manage_employees', 'label' => 'គ្រប់គ្រងបុគ្គលិក', 'icon' => 'fas fa-users-cog', 'url' => 'dashboard.php?view=manage_employees', 'desc' => 'គ្រប់គ្រងព័ត៌មានបុគ្គលិក', 'color' => 'amber'],
+                        ['key' => 'checklist', 'label' => 'បញ្ជីការងារ', 'icon' => 'fas fa-tasks', 'url' => 'dashboard.php?view=checklist', 'desc' => 'តាមដានភារកិច្ចប្រចាំថ្ងៃ', 'color' => 'indigo'],
+                        ['key' => 'daily_reports', 'label' => 'របាយការណ៍ប្រចាំថ្ងៃ', 'icon' => 'fas fa-file-alt', 'url' => 'dashboard.php?view=reports', 'desc' => 'មើលសកម្មភាពការងារ', 'color' => 'emerald'],
+                        ['key' => 'request_reports', 'label' => 'របាយការណ៍សំណើ', 'icon' => 'fas fa-list-check', 'url' => 'dashboard.php?view=request_reports', 'desc' => 'គ្រប់គ្រងសំណើរសុំផ្សេងៗ', 'color' => 'rose'],
+                        
+                        ['key' => 'deductions_bonuses', 'label' => 'កាត់ប្រាក់ & OT', 'icon' => 'fas fa-money-bill-transfer', 'url' => 'dashboard.php?view=deductions_bonuses', 'desc' => 'គ្រប់គ្រងប្រាក់បន្ថែម និងកាត់', 'color' => 'orange'],
+                        ['key' => 'payroll_calculation', 'label' => 'ការគណនាបៀវត្ស', 'icon' => 'fas fa-calculator', 'url' => 'dashboard.php?view=payroll_calculation', 'desc' => 'គណនាប្រាក់បៀវត្សប្រចាំខែ', 'color' => 'violet'],
+                        ['key' => 'payroll_approval', 'label' => 'អនុម័តបៀវត្ស', 'icon' => 'fas fa-file-signature', 'url' => 'dashboard.php?view=payroll_approval', 'desc' => 'ពិនិត្យ និងអនុម័តបញ្ជីបៀវត្ស', 'color' => 'cyan'],
+                        ['key' => 'payroll_payslip', 'label' => 'ប័ណ្ណបើកប្រាក់', 'icon' => 'fas fa-file-invoice-dollar', 'url' => 'dashboard.php?view=payroll_payslip', 'desc' => 'បង្កើត និងមើល Payslip', 'color' => 'teal'],
+
+                        ['key' => 'pending_requests', 'label' => 'សំណើរង់ចាំ', 'icon' => 'fas fa-clock', 'url' => 'pending_requests.php', 'desc' => 'ពិនិត្យសំណើបុគ្គលិក', 'color' => 'yellow'],
+                        ['key' => 'processed_requests', 'label' => 'សំណើបានដំណើរការ', 'icon' => 'fas fa-check-circle', 'url' => 'view_processed_requests.php', 'desc' => 'ប្រវត្តិសំណើដែលបានសម្រេច', 'color' => 'green'],
+                        ['key' => 'meetings', 'label' => 'បញ្ជីកិច្ចប្រជុំ', 'icon' => 'fas fa-calendar-check', 'url' => 'dashboard.php?view=meetings', 'desc' => 'កំណត់ត្រា និងកាលវិភាគ', 'color' => 'sky'],
+                        ['key' => 'post_announcements', 'label' => 'បង្ហោះការជូនដំណឹង', 'icon' => 'fas fa-bullhorn', 'url' => '../../posts/post_announcements.php', 'desc' => 'ផ្សព្វផ្សាយដំណឹងថ្មីៗ', 'color' => 'pink'],
+                        
+                        ['key' => 'view_lessons', 'label' => 'មើលមេរៀន', 'icon' => 'fas fa-graduation-cap', 'url' => 'lessons.php', 'desc' => 'ឯកសារបណ្តុះបណ្តាល', 'color' => 'lime'],
+                        ['key' => 'upload_lesson_docs', 'label' => 'បង្ហោះឯកសារមេរៀន', 'icon' => 'fas fa-file-upload', 'url' => 'post_lesson_documents.php', 'desc' => 'គ្រប់គ្រងឯកសារសិក្សា', 'color' => 'fuchsia'],
+                        ['key' => 'inactive_users', 'label' => 'គណនីបានបិទ', 'icon' => 'fas fa-user-slash', 'url' => 'dashboard.php?view=inactive_users', 'desc' => 'គ្រប់គ្រងគណនីអសកម្ម', 'color' => 'slate'],
+                        ['key' => 'print_pdf', 'label' => 'បោះពុម្ព PDF', 'icon' => 'fas fa-print', 'url' => 'print_content.php', 'desc' => 'ទាញយកឯកសារ PDF', 'color' => 'gray'],
+                        
+                        ['key' => 'upload_pdf', 'label' => 'បង្ហោះ PDF', 'icon' => 'fas fa-file-pdf', 'url' => 'store_print_pdf.php', 'desc' => 'រក្សាទុកឯកសារ PDF', 'color' => 'red'],
+                        ['key' => 'permissions', 'label' => 'ការកំណត់សិទ្ធ', 'icon' => 'fas fa-shield-alt', 'url' => 'permissions.php', 'desc' => 'គ្រប់គ្រងសិទ្ធិប្រើប្រាស់', 'color' => 'zinc'],
+                        ['key' => 'settings', 'label' => 'ការកំណត់ប្រព័ន្ធ', 'icon' => 'fas fa-cog', 'url' => 'dashboard.php?view=settings', 'desc' => 'ការកំណត់ទូទៅ', 'color' => 'slate'],
+                    ];
+
+                    foreach ($nav_items as $item):
+                        if (can_view_menu($item['key'], $_SESSION['role'] ?? 'employee', $conn)):
+                            $gradient = match($item['color']) {
+                                'amber' => 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                                'indigo' => 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)',
+                                'emerald' => 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                'rose' => 'linear-gradient(135deg, #f43f5e 0%, #be123c 100%)',
+                                'orange' => 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                                'violet' => 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                                'cyan' => 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                                'teal' => 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',
+                                'yellow' => 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)',
+                                'green' => 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                                'sky' => 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                                'pink' => 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                                'lime' => 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
+                                'fuchsia' => 'linear-gradient(135deg, #d946ef 0%, #c026d3 100%)',
+                                'slate' => 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+                                'red' => 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                                'zinc' => 'linear-gradient(135deg, #71717a 0%, #52525b 100%)',
+                                default => 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)'
+                            };
+                    ?>
+                        <a href="<?php echo $item['url']; ?>" class="premium-card p-6 group no-underline flex flex-col h-full" style="--gradient: <?php echo $gradient; ?>">
+                            <div class="flex items-start justify-between mb-6">
+                                <div class="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg group-hover:scale-110 group-hover:rotate-3" style="background: <?php echo $gradient; ?>; color: white;">
+                                    <i class="<?php echo $item['icon']; ?> text-2xl"></i>
+                                </div>
+                                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-primary/10 group-hover:text-primary transition-all duration-500">
+                                    <i class="fas fa-arrow-right text-xs"></i>
+                                </div>
+                            </div>
+                            <h3 class="text-lg font-black text-slate-800 mb-2 group-hover:text-primary transition-colors"><?php echo $item['label']; ?></h3>
+                            <p class="text-xs font-semibold text-slate-500 leading-relaxed"><?php echo $item['desc']; ?></p>
+                            
+                            <div class="mt-auto pt-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-2 group-hover:translate-y-0">
+                                <span class="text-[10px] font-black text-primary uppercase tracking-widest">ចូលទៅកាន់ផ្នែកនេះ</span>
+                                <i class="fas fa-chevron-right text-[8px] text-primary"></i>
+                            </div>
+                        </a>
+                    <?php 
+                        endif;
+                    endforeach; 
+                    ?>
+                </div>
+            </div>
+
+
         
         <?php elseif ($view === 'inactive_users'): ?>
             <section class="card-base p-0">
@@ -2652,7 +3614,6 @@ $page_title = match($view) {
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <?php foreach ($pending_runs as $run): ?>
                         <div class="card-base p-6 flex flex-col justify-between">
-                                                     <tr class="loan-row <?php echo htmlspecialchars($loan['status']); ?>" data-loan-name="<?php echo htmlspecialchars(strtolower(trim($loan['full_name']))); ?>" data-loan-status="<?php echo htmlspecialchars($loan['status']); ?>">
                                 <div class="flex justify-between items-start mb-2">
                                     <h3 class="text-xl font-bold">ប្រាក់ខែ: <?php echo date('F Y', strtotime($run['month'])); ?></h3>
                                     <span class="status-badge status-<?php echo htmlspecialchars($run['status']); ?>"><?php echo htmlspecialchars($run['status']); ?></span>
@@ -2702,6 +3663,1312 @@ $page_title = match($view) {
                 <section class="card-base p-0"><div class="p-6"><h2 class="text-2xl font-bold text-accent-hover">ប្រវត្តិការទូទាត់ប្រាក់បៀវត្ស</h2></div><div class="overflow-x-auto table-container"><table class="min-w-full"><thead><tr><th>ខែ</th><th>ស្ថានភាព</th><th>អនុម័តដោយ</th><th>ប្រាក់ត្រូវបើកសរុប</th><th>សកម្មភាព</th></tr></thead><tbody><?php if (empty($paid_runs)): ?><tr><td colspan="5" class="text-center py-8 text-text-secondary">គ្មានប្រវត្តិទេ។</td></tr><?php else: ?><?php foreach ($paid_runs as $run): ?><tr><td class="font-semibold"><?php echo date('F Y', strtotime($run['month'])); ?></td><td><span class="status-badge status-paid">បានទូទាត់</span></td><td><?php echo htmlspecialchars($run['approver_name']); ?></td><td>$<?php echo number_format($run['total_net_salary'], 2); ?></td><td><a href="dashboard.php?view=payroll_payslip&run_id=<?php echo $run['id']; ?>" class="text-accent-hover hover:underline"><i class="fas fa-eye"></i> មើល Payslips</a></td></tr><?php endforeach; ?><?php endif; ?></tbody></table></div></section>
             <?php endif; ?>
 
+        <?php elseif ($view === 'meetings'): ?>
+            <section class="mb-10 card-base border-none shadow-xl overflow-hidden bg-white">
+                <div class="p-8 bg-slate-900 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
+                            <i class="fas fa-calendar-check text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black text-white tracking-tight m-0">បញ្ជីកិច្ចប្រជុំ (Meetings List)</h2>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">ព័ត៌មាន និងសកម្មភាពប្រជុំនានា</p>
+                        </div>
+                    </div>
+                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                        <a href="dashboard.php?view=post_meeting" class="btn-base bg-amber-500 text-white hover:bg-amber-600 px-6 py-3 rounded-xl shadow-lg shadow-amber-500/20">
+                            <i class="fas fa-plus"></i><span>បង្ហោះកិច្ចប្រជុំថ្មី</span>
+                        </a>
+                    <?php endif; ?>
+                </div>
+
+                <div class="p-8">
+                    <?php if (empty($meetings)): ?>
+                        <div class="p-20 text-center space-y-4">
+                            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300 border-2 border-dashed border-slate-100">
+                                <i class="fas fa-calendar-day text-3xl"></i>
+                            </div>
+                            <p class="text-slate-400 font-medium">មិនមានកិច្ចប្រជុំដែលបានបង្ហោះនៅឡើយទេ</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <?php foreach ($meetings as $meeting): ?>
+                                <div class="group bg-white rounded-3xl border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 flex flex-col h-full">
+                                    <?php 
+                                        $photos = !empty($meeting['photo_urls']) ? explode(',', $meeting['photo_urls']) : [];
+                                        $first_photo = !empty($photos) ? $photos[0] : null;
+                                    ?>
+                                    <div class="relative h-56 overflow-hidden bg-slate-100">
+                                        <?php if ($first_photo): ?>
+                                            <img src="<?php echo htmlspecialchars($first_photo); ?>" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Meeting Cover">
+                                        <?php else: ?>
+                                            <div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                                                <i class="fas fa-camera text-4xl mb-2"></i>
+                                                <span class="text-xs font-bold uppercase tracking-widest">No Image</span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <div class="absolute top-4 left-4">
+                                            <span class="px-3 py-1 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-lg shadow-sm">
+                                                <i class="fas fa-folder mr-1 text-amber-500"></i><?php echo htmlspecialchars($meeting['category'] ?: 'General'); ?>
+                                            </span>
+                                        </div>
+                                        <div class="absolute bottom-4 right-4">
+                                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30">
+                                                <i class="fas fa-microphone-alt"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-6 flex-grow flex flex-col">
+                                        <div class="flex items-center gap-3 text-slate-600 text-[10px] font-black uppercase tracking-widest mb-3">
+                                            <i class="fas fa-clock text-amber-500"></i>
+                                            <span><?php echo date('d M Y', strtotime($meeting['meeting_date'])); ?></span>
+                                        </div>
+                                        <h3 class="text-lg font-black text-slate-900 leading-tight mb-3 group-hover:text-amber-600 transition-colors">
+                                            <?php echo htmlspecialchars($meeting['title']); ?>
+                                        </h3>
+                                        <p class="text-slate-800 text-sm leading-relaxed mb-6 line-clamp-3 font-medium">
+                                            <?php echo htmlspecialchars($meeting['description']); ?>
+                                        </p>
+
+                                        <?php if ($meeting['mp3_url']): ?>
+                                            <div class="mt-auto pt-6 border-t border-slate-50">
+                                                <audio controls class="w-full audio-player-mini">
+                                                    <source src="<?php echo htmlspecialchars($meeting['mp3_url']); ?>" type="audio/mpeg">
+                                                </audio>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <div class="flex items-center gap-2 mt-6">
+                                            <a href="dashboard.php?view=view_meeting&id=<?php echo $meeting['id']; ?>" class="flex-grow btn-base bg-slate-50 text-slate-600 hover:bg-slate-900 hover:text-white group-hover:bg-amber-50 group-hover:text-amber-600 group-hover:border-amber-100 transition-all font-bold text-xs">
+                                                <i class="fas fa-external-link-alt"></i><span>លម្អិត</span>
+                                            </a>
+                                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                                <a href="dashboard.php?view=edit_meeting&id=<?php echo $meeting['id']; ?>" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-amber-100 hover:text-amber-600 transition-all font-bold" title="កែប្រែ">
+                                                    <i class="fas fa-edit text-xs"></i>
+                                                </a>
+                                                <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-100 hover:text-rose-600 transition-all" title="លុប" onclick="deleteMeeting(<?php echo $meeting['id']; ?>)">
+                                                    <i class="fas fa-trash-alt text-xs"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <!-- Pagination -->
+                        <?php if ($total_pages > 1): ?>
+                            <div class="mt-12 flex items-center justify-center gap-2">
+                                <?php if ($page > 1): ?>
+                                    <a href="dashboard.php?view=meetings&page=<?php echo $page - 1; ?>" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
+                                        <i class="fas fa-chevron-left text-xs"></i>
+                                    </a>
+                                <?php endif; ?>
+
+                                <?php 
+                                    $start_page = max(1, $page - 2);
+                                    $end_page = min($total_pages, $page + 2);
+                                    
+                                    for ($i = $start_page; $i <= $end_page; $i++): 
+                                ?>
+                                    <a href="dashboard.php?view=meetings&page=<?php echo $i; ?>" 
+                                       class="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-xs transition-all shadow-sm
+                                              <?php echo ($i === $page) ? 'bg-amber-500 text-white shadow-amber-500/30' : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'; ?>">
+                                        <?php echo $i; ?>
+                                    </a>
+                                <?php endfor; ?>
+
+                                <?php if ($page < $total_pages): ?>
+                                    <a href="dashboard.php?view=meetings&page=<?php echo $page + 1; ?>" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:bg-slate-900 hover:text-white transition-all shadow-sm">
+                                        <i class="fas fa-chevron-right text-xs"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                            <div class="text-center mt-4">
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    ទំព័រទី <?php echo $page; ?> នៃ <?php echo $total_pages; ?> (សរុប <?php echo $total_items; ?> កិច្ចប្រជុំ)
+                                </span>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </section>
+
+            <script>
+                async function deleteMeeting(id) {
+                    if (!confirm('តើអ្នកប្រាកដថាចង់លុបកិច្ចប្រជុំនេះ?')) return;
+                    
+                    try {
+                        const formData = new FormData();
+                        formData.append('action', 'delete_meeting');
+                        formData.append('id', id);
+
+                        const response = await fetch('api_handler.php', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const result = await response.json();
+
+                        if (result.status === 'success') {
+                            showNotification(result.message, 'success');
+                            location.reload(); 
+                        } else {
+                            showNotification(result.message, 'error');
+                        }
+                    } catch (error) {
+                        showNotification('មានបញ្ហាក្នុងការតភ្ជាប់', 'error');
+                    }
+                }
+            </script>
+
+        <?php elseif ($view === 'edit_meeting' && !empty($editing_meeting)): ?>
+            <section class="max-w-4xl mx-auto mb-12 animate-fade-in">
+                <div class="card-base border-none shadow-2xl bg-white overflow-hidden">
+                    <div class="p-8 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                <i class="fas fa-edit text-xl"></i>
+                            </div>
+                            <div>
+                                <h1 class="text-xl font-black text-white tracking-tight m-0">កែសម្រួលកិច្ចប្រជុំ (Edit Meeting)</h1>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">ធ្វើបច្ចុប្បន្នភាពព័ត៌មានកិច្ចប្រជុំ</p>
+                            </div>
+                        </div>
+                        <a href="dashboard.php?view=meetings" class="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center hover:bg-slate-700 hover:text-white transition-all">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+
+                    <form id="editMeetingForm" class="p-8 space-y-8">
+                        <input type="hidden" name="id" value="<?php echo $editing_meeting['id']; ?>">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1">ប្រធានបទ (Meeting Title) *</label>
+                                <input type="text" name="title" value="<?php echo htmlspecialchars($editing_meeting['title']); ?>" required class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 outline-none transition-all font-medium" placeholder="បញ្ជាក់ប្រធានបទប្រជុំ...">
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1">ផ្នែក/ប្រភេទ (Category) *</label>
+                                <input type="text" name="category" list="edit-categories" value="<?php echo htmlspecialchars($editing_meeting['category']); ?>" required class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 outline-none transition-all font-medium" placeholder="ជ្រើសរើស ឬវាយបញ្ចូលថ្មី...">
+                                <datalist id="edit-categories">
+                                    <?php foreach ($existing_categories as $cat): ?>
+                                        <option value="<?php echo htmlspecialchars($cat); ?>">
+                                    <?php endforeach; ?>
+                                </datalist>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1">កាលបរិច្ឆេទ (Meeting Date) *</label>
+                            <input type="date" name="date" value="<?php echo $editing_meeting['meeting_date']; ?>" required class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 outline-none transition-all font-medium">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1">សេចក្តីរៀបរាប់ (Description) *</label>
+                            <textarea name="description" rows="6" required class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 outline-none transition-all font-medium leading-relaxed" placeholder="រ៉ាយរ៉ាប់បន្ថែមពីកិច្ចប្រជុំ..."><?php echo htmlspecialchars($editing_meeting['description']); ?></textarea>
+                        </div>
+
+                        <!-- Audio Section -->
+                        <div class="space-y-4 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <i class="fas fa-microphone-alt text-amber-500"></i>
+                                    <span>ឯកសារសំឡេង (Audio Recording)</span>
+                                </label>
+                                <div class="flex items-center gap-4">
+                                    <label class="flex items-center gap-2 cursor-pointer group">
+                                        <div class="relative">
+                                            <input type="checkbox" id="edit_compress_audio_toggle" checked class="sr-only peer">
+                                            <div class="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-amber-500 transition-colors"></div>
+                                            <div class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                                        </div>
+                                        <span class="text-[9px] font-black text-slate-500 uppercase tracking-tighter">បង្រួមសំឡេង (Compress)</span>
+                                    </label>
+                                    <button type="button" onclick="document.getElementById('edit_audio_file_input').click()" class="text-amber-600 hover:text-amber-700 font-bold uppercase tracking-tighter text-[9px] bg-amber-50 px-4 py-2 rounded-full border border-amber-100 shadow-sm transition-all">
+                                        <i class="fas fa-upload mr-1"></i>ប្តូរសំឡេងថ្មី
+                                    </button>
+                                </div>
+                            </div>
+
+                            <input type="file" id="edit_audio_file_input" accept="audio/*" class="hidden">
+                            
+                            <div id="edit_audio_preview_container" class="<?php echo $editing_meeting['mp3_url'] ? '' : 'hidden'; ?> space-y-4">
+                                <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm animate-zoom-in">
+                                    <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                        <i class="fas fa-play text-sm"></i>
+                                    </div>
+                                    <div class="flex-grow min-w-0">
+                                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Preview Audio</div>
+                                        <div id="edit_audio_file_name" class="text-xs font-bold text-slate-700 truncate"><?php echo basename($editing_meeting['mp3_url']); ?></div>
+                                    </div>
+                                    <div id="edit_compression_badge" class="hidden flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">
+                                        <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                                        <span class="text-[9px] font-black uppercase">បង្រួមរួចរាល់</span>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-2" id="edit_audio_status_msg" style="display:none">
+                                    <i class="fas fa-spinner fa-spin"></i>កំពុងបង្រួមសំឡេង សូមរង់ចាំ...
+                                </div>
+                                <div class="p-2 bg-white rounded-2xl border border-slate-100">
+                                    <audio id="edit_audio_preview_player" controls class="w-full audio-player-mini">
+                                        <source src="<?php echo htmlspecialchars($editing_meeting['mp3_url']); ?>" type="audio/mpeg">
+                                    </audio>
+                                </div>
+                                <input type="hidden" name="audio_url" value="<?php echo htmlspecialchars($editing_meeting['mp3_url']); ?>">
+                            </div>
+                        </div>
+
+                        <!-- Photo Section -->
+                        <div class="space-y-4">
+                            <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1 flex items-center justify-between">
+                                <span class="flex items-center gap-2"><i class="fas fa-images text-amber-500"></i>រូបភាពពាក់ព័ន្ធ (Photos Upload)</span>
+                                <button type="button" onclick="document.getElementById('edit_photo_upload_input').click()" class="text-amber-600 hover:text-amber-700 font-bold uppercase tracking-tighter text-[9px] bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                                    <i class="fas fa-file-image mr-1"></i>បន្ថែមរូបភាព
+                                </button>
+                            </label>
+                            
+                            <input type="file" id="edit_photo_upload_input" multiple accept="image/*" class="hidden" onchange="handleEditPhotoSelection(this)">
+                            
+                            <div id="edit_photo-preview-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <?php foreach ($editing_photos as $index => $url): ?>
+                                    <?php $pid = 'old_' . $index; ?>
+                                    <div id="photo-preview-<?php echo $pid; ?>" class="relative aspect-square rounded-xl overflow-hidden group shadow-sm animate-zoom-in">
+                                        <img src="<?php echo htmlspecialchars($url); ?>" class="w-full h-full object-cover">
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button type="button" onclick="removeEditPhoto('<?php echo $pid; ?>')" class="w-10 h-10 bg-rose-500 text-white rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <div id="edit_no_photo_msg" class="<?php echo empty($editing_photos) ? '' : 'hidden'; ?> p-10 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100 text-slate-300">
+                                <i class="fas fa-images text-3xl mb-2"></i>
+                                <div class="text-[10px] font-bold uppercase tracking-widest">មិនទាន់មានរូបភាព</div>
+                            </div>
+                        </div>
+
+                        <div id="edit_upload_progress_container" class="hidden space-y-2 mt-4 animate-slide-up">
+                            <div class="flex items-center justify-between text-[10px] font-black text-slate-500 uppercase">
+                                <span>កំពុងរក្សាទុកការផ្លាស់ប្តូរ (Updating...)</span>
+                                <span id="edit_upload_percentage">0%</span>
+                            </div>
+                            <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div id="edit_upload_progress_bar" class="h-full bg-amber-500 w-0 transition-all duration-300 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+                            </div>
+                        </div>
+
+                        <div class="pt-8 flex flex-col sm:flex-row items-center gap-4">
+                            <a href="dashboard.php?view=meetings" class="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-all text-center">
+                                បោះបង់
+                            </a>
+                            <button type="submit" id="edit_meeting_submit" class="w-full sm:flex-grow py-4 bg-slate-900 text-white rounded-xl font-black text-sm hover:bg-black transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2">
+                                <i class="fas fa-save mr-2 text-amber-500"></i>រក្សាទុកការផ្លាស់ប្តូរ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <script>
+                let edit_selectedPhotos = [];
+                let edit_removedPhotos = []; // Track URLs of old photos to delete
+                let edit_finalAudioBlob = null;
+
+                async function handleEditPhotoSelection(input) {
+                    // ... same logic but use shared compressImage
+                    const files = Array.from(input.files);
+                    for (const file of files) {
+                        try {
+                            const compressedFile = await compressImage(file);
+                            const photoId = Math.random().toString(36).substr(2, 9);
+                            edit_selectedPhotos.push({ id: photoId, file: compressedFile });
+                            
+                            const reader = new FileReader();
+                            reader.onload = (e) => renderEditPhotoPreview(photoId, e.target.result);
+                            reader.readAsDataURL(compressedFile);
+                            checkEditPhotoEmptyState();
+                        } catch (err) {
+                            console.error('Image compression failed:', err);
+                        }
+                    }
+                    input.value = '';
+                }
+
+                function renderEditPhotoPreview(id, src) {
+                    const grid = document.getElementById('edit_photo-preview-grid');
+                    const div = document.createElement('div');
+                    div.id = `photo-preview-${id}`;
+                    div.className = 'relative aspect-square rounded-xl overflow-hidden group shadow-sm animate-zoom-in';
+                    div.innerHTML = `
+                        <img src="${src}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button type="button" onclick="removeEditPhoto('${id}')" class="w-10 h-10 bg-rose-500 text-white rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(div);
+                }
+
+                function removeEditPhoto(id) {
+                    if (id.startsWith('old_')) {
+                        const img = document.querySelector(`#photo-preview-${id} img`);
+                        if (img) {
+                            const url = img.getAttribute('src');
+                            edit_removedPhotos.push(url); // Mark for server-side deletion
+                        }
+                    }
+                    edit_selectedPhotos = edit_selectedPhotos.filter(p => p.id !== id);
+                    const el = document.getElementById(`photo-preview-${id}`);
+                    if (el) el.remove();
+                    checkEditPhotoEmptyState();
+                }
+
+                function checkEditPhotoEmptyState() {
+                    const msg = document.getElementById('edit_no_photo_msg');
+                    const grid = document.getElementById('edit_photo-preview-grid');
+                    if (grid.children.length > 0) {
+                        msg.classList.add('hidden');
+                    } else {
+                        msg.classList.remove('hidden');
+                    }
+                }
+
+                document.getElementById('edit_audio_file_input').addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    document.getElementById('edit_audio_file_name').textContent = file.name;
+                    document.getElementById('edit_audio_preview_container').classList.remove('hidden');
+                    const previewPlayer = document.getElementById('edit_audio_preview_player');
+                    previewPlayer.src = URL.createObjectURL(file);
+
+                    if (document.getElementById('edit_compress_audio_toggle').checked) {
+                        const statusMsg = document.getElementById('edit_audio_status_msg');
+                        const badge = document.getElementById('edit_compression_badge');
+                        statusMsg.style.display = 'flex';
+                        badge.classList.add('hidden');
+
+                        try {
+                            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                            const arrayBuffer = await file.arrayBuffer();
+                            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                            const compressedSR = 8000;
+                            const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * compressedSR, compressedSR);
+                            const source = offlineCtx.createBufferSource();
+                            source.buffer = audioBuffer;
+                            source.connect(offlineCtx.destination);
+                            source.start();
+                            const renderedBuffer = await offlineCtx.startRendering();
+                            const wavBlob = bufferToWav(renderedBuffer, compressedSR);
+                            const compressedFile = new File([wavBlob], file.name.replace(/\.[^/.]+$/, "") + "_low.wav", { type: 'audio/wav' });
+                            
+                            if (compressedFile.size < file.size) {
+                                edit_finalAudioBlob = compressedFile;
+                                badge.classList.remove('hidden');
+                                badge.textContent = 'បង្រួមរួច (' + (compressedFile.size / (1024*1024)).toFixed(1) + 'MB)';
+                                badge.classList.add('bg-emerald-500', 'text-white');
+                            } else {
+                                edit_finalAudioBlob = file;
+                            }
+                            statusMsg.style.display = 'none';
+                            previewPlayer.src = URL.createObjectURL(edit_finalAudioBlob);
+                        } catch (err) {
+                            console.error("Compression failed:", err);
+                            statusMsg.style.display = 'none';
+                            edit_finalAudioBlob = file;
+                        }
+                    } else {
+                        edit_finalAudioBlob = file;
+                    }
+                });
+
+                document.getElementById('editMeetingForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    formData.append('action', 'update_meeting');
+                    
+                    if (edit_finalAudioBlob) {
+                        formData.append('audio_file', edit_finalAudioBlob);
+                    }
+
+                    edit_selectedPhotos.forEach(p => {
+                        formData.append('meeting_photos[]', p.file);
+                    });
+
+                    // Add removed photos list
+                    edit_removedPhotos.forEach(url => {
+                        formData.append('removed_photos[]', url);
+                    });
+
+                    const submitBtn = document.getElementById('edit_meeting_submit');
+                    const progressContainer = document.getElementById('edit_upload_progress_container');
+                    const progressBar = document.getElementById('edit_upload_progress_bar');
+                    const progressText = document.getElementById('edit_upload_percentage');
+                    const originalText = submitBtn.innerHTML;
+
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>កំពុងរៀបចំ...';
+
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'api_handler.php', true);
+                    xhr.upload.onprogress = function(e) {
+                        if (e.lengthComputable) {
+                            progressContainer.classList.remove('hidden');
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>កំពុងរក្សាទុក...';
+                            const p = Math.round((e.loaded / e.total) * 100);
+                            progressBar.style.width = p + '%';
+                            progressText.textContent = p + '%';
+                        }
+                    };
+
+                    xhr.onload = function() {
+                        try {
+                            const result = JSON.parse(xhr.responseText);
+                            if (result.status === 'success') {
+                                showNotification(result.message, 'success');
+                                setTimeout(() => location.href = 'dashboard.php?view=meetings', 1500);
+                            } else {
+                                showNotification(result.message, 'error');
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalText;
+                                progressContainer.classList.add('hidden');
+                            }
+                        } catch (e) {
+                            console.error('Server response:', xhr.responseText);
+                            showNotification('មានបញ្ហាក្នុងការបកប្រែទិន្នន័យពី Server', 'error');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            progressContainer.classList.add('hidden');
+                        }
+                    };
+                    xhr.send(formData);
+                });
+            </script>
+
+        <?php elseif ($view === 'post_meeting'): ?>
+            <div class="max-w-4xl mx-auto mb-12">
+                <div class="card-base border-none shadow-2xl overflow-hidden bg-white">
+                    <div class="p-8 bg-slate-900 border-b border-slate-800 flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 shadow-inner">
+                            <i class="fas fa-calendar-plus text-2xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black text-white tracking-tight m-0">បង្ហោះកិច្ចប្រជុំថ្មី</h2>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">បំពេញព័ត៌មានខាងក្រោមដើម្បីផ្សព្វផ្សាយ</p>
+                        </div>
+                    </div>
+
+                    <form id="postMeetingForm" class="p-10 space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1">ប្រធានបទកិច្ចប្រជុំ <span class="text-amber-500">*</span></label>
+                                <div class="relative group">
+                                    <i class="fas fa-heading absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors"></i>
+                                    <input type="text" name="title" required class="form-input pl-12 h-14 bg-slate-50 border-slate-100 focus:bg-white text-slate-900 font-bold" placeholder="ឧ. កិច្ចប្រជុំប្រចាំខែសីហា">
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1">ផ្នែក / ថតឯកសារ <span class="text-amber-500">*</span></label>
+                                <div class="relative group">
+                                    <i class="fas fa-folder-open absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors"></i>
+                                    <input type="text" name="category" list="meeting-categories" required class="form-input pl-12 h-14 bg-slate-50 border-slate-100 focus:bg-white text-slate-900 font-bold" placeholder="ជ្រើសរើស ឬវាយបញ្ចូលថ្មី">
+                                    <datalist id="meeting-categories">
+                                        <?php if (isset($existing_categories)): foreach ($existing_categories as $cat): ?>
+                                            <option value="<?php echo htmlspecialchars($cat); ?>">
+                                        <?php endforeach; endif; ?>
+                                    </datalist>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1">កាលបរិច្ឆេទ <span class="text-amber-500">*</span></label>
+                                <div class="relative group">
+                                    <i class="fas fa-calendar-day absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors"></i>
+                                    <input type="date" name="date" required class="form-input pl-12 h-14 bg-slate-50 border-slate-100 focus:bg-white text-slate-900 font-bold">
+                                </div>
+                            </div>
+                            <div class="md:col-span-2 space-y-4 pt-4 border-t border-slate-50">
+                                <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <i class="fas fa-microphone-alt text-amber-500"></i>ឯកសារសំឡេង (Audio Management)
+                                </label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter ml-1">Upload File (MP3, WAV, M4A)</label>
+                                        <div class="relative group">
+                                            <input type="file" name="audio_file_input" id="audio_file_input" accept="audio/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                            <div class="form-input flex items-center gap-3 bg-slate-50 border-slate-100 group-hover:bg-white group-hover:border-amber-200 transition-all h-14 overflow-hidden">
+                                                <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                                                    <i class="fas fa-file-audio"></i>
+                                                </div>
+                                                <span id="audio_file_name" class="text-xs text-slate-400 truncate">ជ្រើសរើសឯកសារសំឡេង...</span>
+                                                <div id="compression_badge" class="hidden ml-auto px-2 py-0.5 bg-green-100 text-green-700 text-[9px] font-black uppercase rounded">Compressed</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter ml-1">តំណភ្ជាប់ខាងក្រៅ (External URL)</label>
+                                        <div class="relative group">
+                                            <i class="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-500 transition-colors"></i>
+                                            <input type="url" name="audio_url" id="audio_url_final" class="form-input pl-12 h-14 bg-slate-50 border-slate-100 focus:bg-white text-slate-900 font-bold" placeholder="ឬបញ្ចូល Google Drive Link">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4 mt-2 bg-amber-50/50 p-4 rounded-xl border border-amber-100/50">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="compress_audio_toggle" class="sr-only peer" checked>
+                                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                        <span class="ml-3 text-[11px] font-bold text-slate-700 uppercase tracking-tight">បង្រួមទំហំសំឡេងឱ្យតូច (Compress for fast upload)</span>
+                                    </label>
+                                    <div id="audio_status_msg" class="text-[10px] font-medium text-amber-600 ml-auto animate-pulse hidden">កំពុងបង្រួម...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="audio_preview_container" class="hidden animate-slide-up">
+                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+                                    <i class="fas fa-play text-xs"></i>
+                                </div>
+                                <div class="flex-grow">
+                                    <div class="text-[10px] font-black text-slate-400 uppercase mb-1">Preview Audio</div>
+                                    <audio id="audio_preview_player" controls class="w-full h-8 audio-player-mini"></audio>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1">ការពិពណ៌នា <span class="text-amber-500">*</span></label>
+                            <textarea name="description" rows="5" required class="form-input p-6 bg-slate-50 border-slate-100 focus:bg-white text-slate-900 leading-relaxed font-bold" placeholder="រៀបរាប់អំពីគោលបំណង ឬលទ្ធផលនៃកិច្ចប្រជុំ..."></textarea>
+                        </div>
+
+                        <div class="space-y-4">
+                            <label class="text-[11px] font-black text-slate-900 uppercase tracking-widest ml-1 flex items-center justify-between">
+                                <span>រូបភាពពាក់ព័ន្ធ (Photos Upload)</span>
+                                <button type="button" onclick="document.getElementById('photo_upload_input').click()" class="text-amber-600 hover:text-amber-700 font-bold uppercase tracking-tighter text-[9px] bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                                    <i class="fas fa-file-image mr-1"></i>ជ្រើសរើសរូបភាព
+                                </button>
+                            </label>
+                            
+                            <input type="file" id="photo_upload_input" multiple accept="image/*" class="hidden" onchange="handlePhotoSelection(this)">
+                            
+                            <div id="photo-preview-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <!-- Previews will be inserted here -->
+                            </div>
+
+                            <div id="no-photo-msg" class="p-10 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100 text-slate-300">
+                                <i class="fas fa-images text-3xl mb-2"></i>
+                                <div class="text-[10px] font-bold uppercase tracking-widest">មិនទាន់មានរូបភាព</div>
+                            </div>
+                        </div>
+
+                        <div id="upload_progress_container" class="hidden space-y-2 mt-4 animate-slide-up">
+                            <div class="flex items-center justify-between text-[10px] font-black text-slate-500 uppercase">
+                                <span>កំពុងបង្ហោះទិន្នន័យ (Uploading...)</span>
+                                <span id="upload_percentage">0%</span>
+                            </div>
+                            <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div id="upload_progress_bar" class="h-full bg-amber-500 w-0 transition-all duration-300 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+                            </div>
+                        </div>
+
+                        <div class="pt-8 flex flex-col sm:flex-row items-center gap-4">
+                            <a href="dashboard.php?view=meetings" class="w-full sm:w-auto px-8 py-4 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-all text-center">
+                                បោះបង់
+                            </a>
+                            <button type="submit" id="post_meeting_submit" class="w-full sm:flex-grow py-4 bg-slate-900 text-white rounded-xl font-black text-sm hover:bg-black transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2">
+                                <i class="fas fa-paper-plane mr-2 text-amber-500"></i>បង្ហោះកិច្ចប្រជុំ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                let selectedPhotos = [];
+                let finalAudioBlob = null;
+
+                async function handlePhotoSelection(input) {
+                    const files = Array.from(input.files);
+                    for (const file of files) {
+                        try {
+                            const compressedFile = await compressImage(file);
+                            const photoId = Math.random().toString(36).substr(2, 9);
+                            selectedPhotos.push({ id: photoId, file: compressedFile });
+                            
+                            const reader = new FileReader();
+                            reader.onload = (e) => renderPhotoPreview(photoId, e.target.result);
+                            reader.readAsDataURL(compressedFile);
+                            checkPhotoEmptyState();
+                        } catch (err) {
+                            console.error('Image compression failed:', err);
+                        }
+                    }
+                    input.value = ''; // Reset input to allow re-selection
+                }
+
+                function renderPhotoPreview(id, src) {
+                    const grid = document.getElementById('photo-preview-grid');
+                    const div = document.createElement('div');
+                    div.id = `photo-preview-${id}`;
+                    div.className = 'relative aspect-square rounded-xl overflow-hidden group shadow-sm animate-zoom-in';
+                    div.innerHTML = `
+                        <img src="${src}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button type="button" onclick="removePhoto('${id}')" class="w-10 h-10 bg-rose-500 text-white rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(div);
+                }
+
+                function removePhoto(id) {
+                    selectedPhotos = selectedPhotos.filter(p => p.id !== id);
+                    document.getElementById(`photo-preview-${id}`).remove();
+                    checkPhotoEmptyState();
+                }
+
+                function checkPhotoEmptyState() {
+                    const msg = document.getElementById('no-photo-msg');
+                    if (selectedPhotos.length > 0) {
+                        msg.classList.add('hidden');
+                    } else {
+                        msg.classList.remove('hidden');
+                    }
+                }
+
+                document.getElementById('audio_file_input').addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    document.getElementById('audio_file_name').textContent = file.name;
+                    document.getElementById('audio_preview_container').classList.remove('hidden');
+                    
+                    const previewPlayer = document.getElementById('audio_preview_player');
+                    previewPlayer.src = URL.createObjectURL(file);
+
+                    if (document.getElementById('compress_audio_toggle').checked) {
+                        compressAudio(file);
+                    } else {
+                        finalAudioBlob = file;
+                        document.getElementById('compression_badge').classList.add('hidden');
+                    }
+                });
+
+                async function compressAudio(file) {
+                    const statusMsg = document.getElementById('audio_status_msg');
+                    const badge = document.getElementById('compression_badge');
+                    statusMsg.classList.remove('hidden');
+                    badge.classList.add('hidden');
+
+                    try {
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const arrayBuffer = await file.arrayBuffer();
+                        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                        
+                        // Use 8kHz mono for maximum compression (Standard for voice/telephony)
+                        // This will result in ~0.9MB per minute, which is very safe for the server.
+                        const compressedSampleRate = 8000;
+                        const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * compressedSampleRate, compressedSampleRate);
+                        const source = offlineCtx.createBufferSource();
+                        source.buffer = audioBuffer;
+                        source.connect(offlineCtx.destination);
+                        source.start();
+                        
+                        const renderedBuffer = await offlineCtx.startRendering();
+                        const wavBlob = bufferToWav(renderedBuffer, compressedSampleRate);
+                        
+                        const compressedFile = new File([wavBlob], file.name.replace(/\.[^/.]+$/, "") + "_low.wav", { type: 'audio/wav' });
+                        
+                        // ONLY use compressed version if it's actually smaller than the original
+                        if (compressedFile.size < file.size) {
+                            finalAudioBlob = compressedFile;
+                            badge.textContent = `បង្រួមរួច (${(finalAudioBlob.size/1024/1024).toFixed(2)}MB)`;
+                            badge.classList.remove('bg-rose-500', 'text-white');
+                            badge.classList.add('bg-emerald-500', 'text-white');
+                        } else {
+                            finalAudioBlob = file;
+                            badge.textContent = `រក្សាទុកច្បាប់ដើម (តូចជាង)`;
+                            badge.classList.remove('bg-emerald-500');
+                            badge.classList.add('bg-slate-500', 'text-white');
+                        }
+                        
+                        statusMsg.classList.add('hidden');
+                        badge.classList.remove('hidden');
+                        
+                        // Update preview with final version
+                        document.getElementById('audio_preview_player').src = URL.createObjectURL(finalAudioBlob);
+                    } catch (err) {
+                        console.error("Compression failed:", err);
+                        statusMsg.classList.add('hidden');
+                        finalAudioBlob = file;
+                    }
+                }
+
+                document.getElementById('postMeetingForm').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    formData.append('action', 'add_meeting');
+                    
+                    if (finalAudioBlob) {
+                        formData.append('audio_file', finalAudioBlob);
+                    }
+
+                    // Append photos
+                    selectedPhotos.forEach((photo, index) => {
+                        formData.append(`meeting_photos[]`, photo.file);
+                    });
+
+                    const submitBtn = document.getElementById('post_meeting_submit');
+                    const progressContainer = document.getElementById('upload_progress_container');
+                    const progressBar = document.getElementById('upload_progress_bar');
+                    const progressText = document.getElementById('upload_percentage');
+                    const originalText = submitBtn.innerHTML;
+
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>កំពុងរៀបចំ...';
+
+                    // Use XMLHttpRequest to track progress
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'api_handler.php', true);
+
+                    xhr.upload.onprogress = function(e) {
+                        if (e.lengthComputable) {
+                            progressContainer.classList.remove('hidden');
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>កំពុងបង្ហោះ...';
+                            const percentComplete = Math.round((e.loaded / e.total) * 100);
+                            progressBar.style.width = percentComplete + '%';
+                            progressText.textContent = percentComplete + '%';
+                        }
+                    };
+
+                    xhr.onload = function() {
+                        try {
+                            const result = JSON.parse(xhr.responseText);
+                            if (result.status === 'success') {
+                                showNotification(result.message, 'success');
+                                setTimeout(() => location.href = 'dashboard.php?view=meetings', 1500);
+                            } else {
+                                showNotification(result.message, 'error');
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalText;
+                                progressContainer.classList.add('hidden');
+                            }
+                        } catch (e) {
+                            console.error('Server response:', xhr.responseText);
+                            let errorMsg = 'មានបញ្ហាក្នុងការបកប្រែទិន្នន័យពី Server (Invalid JSON)';
+                            if (xhr.status === 413 || xhr.responseText.toLowerCase().includes('too large')) {
+                                errorMsg = 'ឯកសារធំពេក! Server មិនអាចទទួលយកបានទេ។ សូមបន្ថយទំហំសំឡេង ឬរូបភាព។';
+                            } else if (xhr.status === 500) {
+                                errorMsg = 'កំហុសបច្ចេកទេសលើ Server (500 Error)។ ប្រហែលជាដោយសារទំហំឯកសារលើសការកំណត់។';
+                            }
+                            showNotification(errorMsg, 'error');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalText;
+                            progressContainer.classList.add('hidden');
+                        }
+                    };
+
+                    xhr.onerror = function() {
+                        showNotification('មានបញ្ហាក្នុងការតភ្ជាប់', 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                        progressContainer.classList.add('hidden');
+                    };
+
+                    xhr.send(formData);
+                });
+            </script>
+
+        <?php elseif ($view === 'view_meeting' && !empty($meeting)): ?>
+            <div class="max-w-5xl mx-auto mb-12">
+                <div class="card-base border-none shadow-2xl overflow-hidden bg-white">
+                    <!-- Header with Dynamic Background -->
+                    <div class="relative h-64 bg-slate-900 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent z-10"></div>
+                        <?php if (!empty($meeting_photos)): ?>
+                            <img src="<?php echo htmlspecialchars($meeting_photos[0]); ?>" class="absolute inset-0 w-full h-full object-cover blur-sm opacity-40" alt="Background">
+                        <?php endif; ?>
+                        
+                        <div class="absolute inset-x-0 bottom-0 p-10 z-20">
+                            <div class="flex items-center gap-4 mb-4">
+                                <span class="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg">
+                                    <i class="fas fa-folder mr-1"></i><?php echo htmlspecialchars($meeting['category']); ?>
+                                </span>
+                                <span class="px-3 py-1 bg-white/20 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-lg">
+                                    <i class="fas fa-calendar-day mr-1 text-amber-500"></i><?php echo date('d M Y', strtotime($meeting['meeting_date'])); ?>
+                                </span>
+                            </div>
+                            <h1 class="text-4xl font-black text-white tracking-tight leading-tight">
+                                <?php echo htmlspecialchars($meeting['title']); ?>
+                            </h1>
+                        </div>
+                    </div>
+
+                    <div class="p-10 grid grid-cols-1 lg:grid-cols-3 gap-12">
+                        <!-- Main Content -->
+                        <div class="lg:col-span-2 space-y-10">
+                            <div>
+                                <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <i class="fas fa-align-left text-amber-500"></i>សេចក្តីលម្អិតនៃកិច្ចប្រជុំ
+                                </h3>
+                                <div class="text-slate-800 leading-relaxed text-lg font-medium bg-slate-50 p-8 rounded-3xl border border-slate-100 italic">
+                                    <?php echo nl2br(htmlspecialchars($meeting['description'])); ?>
+                                </div>
+                            </div>
+
+                            <?php if ($meeting['mp3_url']): ?>
+                            <div>
+                                <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <i class="fas fa-microphone-alt text-amber-500"></i>កំណត់ត្រាសំឡេង
+                                </h3>
+                                <div class="bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800">
+                                    <audio controls class="w-full audio-player-mini">
+                                        <source src="<?php echo htmlspecialchars($meeting['mp3_url']); ?>" type="audio/mpeg">
+                                    </audio>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Sidebar / Photos -->
+                        <div class="space-y-8">
+                            <div>
+                                <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <i class="fas fa-images text-amber-500"></i>រូបភាពពាក់ព័ន្ធ
+                                </h3>
+                                <?php if (!empty($meeting_photos)): ?>
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <?php foreach ($meeting_photos as $purl): ?>
+                                            <div class="group relative rounded-2xl overflow-hidden border border-slate-100 shadow-sm transition-all hover:shadow-xl">
+                                                <img src="<?php echo htmlspecialchars($purl); ?>" class="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110" alt="Meeting Photo">
+                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <a href="<?php echo htmlspecialchars($purl); ?>" target="_blank" class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-lg translate-y-4 group-hover:translate-y-0 transition-transform">
+                                                        <i class="fas fa-expand-alt"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="p-10 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100 text-slate-300">
+                                        <i class="fas fa-image text-3xl mb-2"></i>
+                                        <div class="text-[10px] font-bold uppercase tracking-widest">No Photos</div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="pt-6 border-t border-slate-100">
+                                <a href="dashboard.php?view=meetings" class="w-full py-4 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2 grayscale hover:grayscale-0">
+                                    <i class="fas fa-arrow-left"></i>ត្រឡប់ទៅបញ្ជី
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <?php elseif ($view === 'view_meeting'): ?>
+            <div class="max-w-3xl mx-auto p-20 text-center space-y-6">
+                <div class="w-24 h-24 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto border border-rose-100 shadow-sm">
+                    <i class="fas fa-exclamation-triangle text-4xl"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800">រកមិនឃើញកិច្ចប្រជុំ!</h2>
+                <p class="text-slate-500 font-medium">កិច្ចប្រជុំដែលអ្នកកំពុងស្វែងរកប្រហែលជាត្រូវបានលុប ឬមិនត្រឹមត្រូវ។</p>
+                <a href="dashboard.php?view=meetings" class="inline-block px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm shadow-xl">ត្រឡប់ទៅបញ្ជីវិញ</a>
+            </div>
+
+        <?php elseif ($view === 'settings'): ?>
+            <!-- Refactored Settings with Tabs -->
+            <div class="card-base p-6 bg-white/80 backdrop-blur-xl border-white/20 shadow-xl rounded-3xl">
+                <ul class="nav nav-tabs nav-fill flex flex-col md:flex-row gap-2 md:gap-0 border-b-0 mb-8 p-1 bg-slate-100/50 rounded-2xl" id="settingsTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold text-slate-500 hover:text-amber-600 transition-all border-none aria-selected:bg-white aria-selected:text-amber-600 aria-selected:shadow-md" 
+                            id="telegram-tab" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#telegram-content" 
+                            type="button" 
+                            role="tab" 
+                            aria-selected="true">
+                            <i class="fab fa-telegram text-xl"></i>
+                            <span class="uppercase tracking-wider text-xs">ការកំណត់ Telegram</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold text-slate-500 hover:text-indigo-600 transition-all border-none aria-selected:bg-white aria-selected:text-indigo-600 aria-selected:shadow-md" 
+                            id="categories-tab" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#categories-content" 
+                            type="button" 
+                            role="tab" 
+                            aria-selected="false">
+                            <i class="fas fa-tags text-xl"></i>
+                            <span class="uppercase tracking-wider text-xs">ប្រភេទប្រព័ន្ធ (Categories)</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold text-slate-500 hover:text-rose-600 transition-all border-none aria-selected:bg-white aria-selected:text-rose-600 aria-selected:shadow-md" 
+                            id="theme-tab" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#theme-content" 
+                            type="button" 
+                            role="tab" 
+                            aria-selected="false">
+                            <i class="fas fa-palette text-xl"></i>
+                            <span class="uppercase tracking-wider text-xs">រូបរាង & Theme</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="settingsTabsContent">
+                    <!-- Telegram Tab -->
+                    <div class="tab-pane fade show active space-y-8 animate-fade-in" id="telegram-content" role="tabpanel" tabindex="0">
+                        <!-- Telegram Bot Token Setting -->
+                        <section class="settings-card">
+                            <div class="settings-header">
+                                <div class="bg-white/20 p-2 rounded-lg"><i class="fab fa-telegram text-2xl"></i></div>
+                                <div>
+                                    <h2 class="text-xl font-bold m-0 text-white">ការកំណត់ Telegram Bot</h2>
+                                    <p class="text-xs opacity-80 m-0 text-white">កំណត់ Bot Token ដើម្បីផ្ញើរបាយការណ៍ស្វ័យប្រវត្តិ</p>
+                                </div>
+                            </div>
+                            <div class="p-6">
+                                <form method="POST" action="dashboard.php?view=settings" class="flex flex-col md:flex-row items-end gap-6">
+                                    <input type="hidden" name="settings_action" value="update_bot_token">
+                                    <div class="flex-grow w-full">
+                                        <label for="bot_token" class="form-label text-sm uppercase tracking-wider">Telegram Bot Token</label>
+                                        <div class="token-input-wrapper">
+                                            <input type="password" name="bot_token" id="bot_token" class="form-input pr-10" value="<?php echo htmlspecialchars($telegramBotToken); ?>" placeholder="ហាមឱ្យអ្នកដទៃដឹង...">
+                                            <i class="fas fa-eye token-toggle" onclick="toggleToken()"></i>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn-base btn-primary w-full md:w-auto h-[46px] px-8"><i class="fas fa-save"></i> រក្សាទុកបម្រែបម្រួល</button>
+                                </form>
+                            </div>
+                        </section>
+
+                        <!-- Telegram Groups & Threads Management -->
+                        <section>
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                                <div>
+                                    <h2 class="text-2xl font-bold text-accent-hover mb-1"><i class="fas fa-users-cog mr-2"></i>គ្រប់គ្រងក្រុម Telegram</h2>
+                                    <p class="text-text-secondary">គ្រប់គ្រងបណ្តាញបញ្ជូនរបាយការណ៍ទៅកាន់ Group នានា</p>
+                                </div>
+                                <button type="button" class="btn-base btn-success" data-bs-toggle="modal" data-bs-target="#addGroupModal"><i class="fas fa-plus"></i> បន្ថែមក្រុមថ្មី</button>
+                            </div>
+
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                                <?php foreach ($telegramGroups as $group): ?>
+                                    <div class="settings-card group-card border-l-[6px]">
+                                        <div class="p-5">
+                                            <div class="flex justify-between items-start mb-6">
+                                                <div class="flex items-center gap-4">
+                                                    <div class="bg-accent-color/10 text-accent-color p-3 rounded-xl"><i class="fas fa-layer-group text-xl"></i></div>
+                                                    <div>
+                                                        <h3 class="font-bold text-xl text-gray-800"><?php echo htmlspecialchars($group['name']); ?></h3>
+                                                        <div class="flex items-center gap-2 text-xs text-text-secondary">
+                                                            <span class="bg-gray-100 px-2 py-0.5 rounded">ID: <?php echo htmlspecialchars($group['chat_id']); ?></span>
+                                                            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Format: <?php echo htmlspecialchars($group['report_format']); ?></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="flex gap-1">
+                                                    <button class="p-2 hover:bg-gray-100 rounded-lg text-accent-color transition-colors" title="កែប្រែ" onclick="editGroup(<?php echo htmlspecialchars(json_encode($group)); ?>)"><i class="fas fa-edit"></i></button>
+                                                    <form method="POST" action="dashboard.php?view=settings" onsubmit="return confirm('តើអ្នកប្រាកដថាចង់លុបក្រុមនេះ?')" class="inline">
+                                                        <input type="hidden" name="settings_action" value="delete_group">
+                                                        <input type="hidden" name="group_id" value="<?php echo $group['group_id']; ?>">
+                                                        <button type="submit" class="p-2 hover:bg-red-50 rounded-lg text-danger transition-colors"><i class="fas fa-trash"></i></button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="space-y-4">
+                                                <div class="flex justify-between items-center bg-gray-50 p-2 px-4 rounded-lg">
+                                                    <h4 class="font-bold text-sm text-gray-600 uppercase tracking-tight m-0">Threads (ផ្នែក/តួនាទី)</h4>
+                                                    <button class="text-xs font-bold text-accent-color hover:text-accent-hover" onclick="addThread(<?php echo $group['group_id']; ?>)"><i class="fas fa-plus-circle"></i> បន្ថែម</button>
+                                                </div>
+                                                
+                                                <div class="space-y-2">
+                                                    <?php if (empty($group['thread_ids'])): ?>
+                                                        <div class="text-center py-6 border-2 border-dashed border-gray-100 rounded-xl">
+                                                            <p class="text-xs italic text-text-secondary m-0">មិនទាន់មានការកំណត់ Thread នៅឡើយ...</p>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <?php foreach ($group['thread_ids'] as $thread): ?>
+                                                            <div class="thread-item group/item">
+                                                                <div class="flex items-center gap-3">
+                                                                    <div class="w-2 h-2 rounded-full bg-accent-color"></div>
+                                                                    <div>
+                                                                        <span class="font-bold text-sm text-gray-800"><?php echo htmlspecialchars($thread['category']); ?></span>
+                                                                        <span class="mx-2 text-gray-300">|</span>
+                                                                        <span class="text-xs text-text-secondary"><?php echo htmlspecialchars($thread['position']); ?></span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="flex items-center gap-4">
+                                                                    <span class="text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-gray-200"><?php echo htmlspecialchars($thread['thread_id']); ?></span>
+                                                                    <div class="flex gap-1">
+                                                                        <button class="text-accent-color hover:scale-110 transition-transform" onclick="editThread(<?php echo htmlspecialchars(json_encode($thread)); ?>)"><i class="fas fa-pen-to-square"></i></button>
+                                                                        <form method="POST" action="dashboard.php?view=settings" onsubmit="return confirm('លុប Thread នេះ?')" class="inline">
+                                                                            <input type="hidden" name="settings_action" value="delete_thread">
+                                                                            <input type="hidden" name="thread_map_id" value="<?php echo $thread['thread_map_id']; ?>">
+                                                                            <button type="submit" class="text-danger hover:scale-110 transition-transform"><i class="fas fa-trash"></i></button>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Categories Tab -->
+                    <div class="tab-pane fade space-y-8 animate-fade-in" id="categories-content" role="tabpanel" tabindex="0">
+                        <!-- System Categories Management -->
+                        <section>
+                            <div class="mb-6">
+                                <h2 class="text-2xl font-bold text-accent-hover mb-1"><i class="fas fa-tags mr-2"></i>គ្រប់គ្រង ប្រភេទនានា</h2>
+                                <p class="text-text-secondary">គ្រប់គ្រងឈ្មោះ ដេប៉ាតឺម៉ង់ តួនាទី និងសាខា ក្នុងប្រព័ន្ធ</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                <?php foreach ($category_types as $type): ?>
+                                    <div class="settings-card flex flex-col h-full">
+                                        <div class="bg-gradient-to-r from-gray-800 to-gray-700 p-4 flex justify-between items-center">
+                                            <div class="flex items-center gap-3">
+                                                <div class="text-white opacity-80"><i class="fas <?php echo $type === 'department' ? 'fa-building' : ($type === 'position' ? 'fa-user-tie' : 'fa-map-marker-alt'); ?>"></i></div>
+                                                <h3 class="font-bold text-white m-0"><?php echo $khmer_names[$type]; ?></h3>
+                                            </div>
+                                            <button onclick="addCategory('<?php echo $type; ?>')" class="w-8 h-8 rounded-full bg-white/10 text-white hover:bg-white/30 transition-colors flex items-center justify-center"><i class="fas fa-plus"></i></button>
+                                        </div>
+                                        <div class="cat-list-container flex-grow">
+                                            <?php if (empty($dynamic_categories[$type])): ?>
+                                                <div class="flex flex-col items-center justify-center p-10 opacity-30">
+                                                    <i class="fas fa-inbox text-4xl mb-2"></i>
+                                                    <p class="text-sm italic m-0 text-white">គ្មានទិន្នន័យ</p>
+                                                </div>
+                                            <?php else: ?>
+                                                <?php foreach ($dynamic_categories[$type] as $cat): ?>
+                                                    <div class="cat-item">
+                                                        <span class="text-sm font-medium text-gray-700"><?php echo htmlspecialchars($cat['name']); ?></span>
+                                                        <div class="flex gap-2">
+                                                            <button class="p-1.5 text-accent-color hover:bg-blue-50 rounded" onclick="editCategory(<?php echo htmlspecialchars(json_encode($cat)); ?>)"><i class="fas fa-edit"></i></button>
+                                                            <form method="POST" action="dashboard.php?view=settings" onsubmit="return confirm('តើអ្នកចង់លុបប្រភេទនេះមែនទេ?')" class="inline">
+                                                                <input type="hidden" name="settings_action" value="delete_category">
+                                                                <input type="hidden" name="category_id" value="<?php echo $cat['id']; ?>">
+                                                                <button type="submit" class="p-1.5 text-danger hover:bg-red-50 rounded"><i class="fas fa-trash"></i></button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Theme Tab -->
+                    <div class="tab-pane fade space-y-8 animate-fade-in" id="theme-content" role="tabpanel" tabindex="0">
+                        <?php include 'includes/theme_settings_ui.php'; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modals for Settings (Group) -->
+            <div class="modal fade" id="groupModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-none shadow-2xl">
+                        <form method="POST" action="dashboard.php?view=settings">
+                            <input type="hidden" name="settings_action" id="group_action" value="add_group">
+                            <input type="hidden" name="group_id" id="group_id">
+                            <div class="settings-header">
+                                <i class="fas fa-layer-group text-xl"></i>
+                                <h5 class="modal-title font-bold m-0 text-white" id="groupModalLabel">បន្ថែម/កែប្រែក្រុម</h5>
+                                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" style="filter: brightness(0) invert(1);"></button>
+                            </div>
+                            <div class="modal-body p-6 space-y-5">
+                                <div>
+                                    <label class="form-label">ឈ្មោះក្រុម (សម្រាប់សម្គាល់)</label>
+                                    <input type="text" name="group_name" id="modal_group_name" class="form-input" placeholder="ឧ. Telegram Group IT" required>
+                                </div>
+                                <div>
+                                    <label class="form-label">Telegram Chat ID</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" name="chat_id" id="modal_chat_id" class="form-input" placeholder="-123456789" required>
+                                        <span class="btn-base btn-secondary cursor-help" title="Chat ID របស់ Group"><i class="fas fa-question-circle"></i></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label">ទម្រង់របាយការណ៍ (Report Format)</label>
+                                    <select name="report_format" id="modal_report_format" class="form-select">
+                                        <option value="text">ចំណងជើង និងអត្ថបទ (Text Only)</option>
+                                        <option value="summary">តារាងសង្ខេប (Summary Table)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-gray-50 rounded-b-2xl">
+                                <button type="button" class="btn-base" data-bs-dismiss="modal">បោះបង់</button>
+                                <button type="submit" class="btn-base btn-primary px-8">រក្សាទុកទិន្នន័យ</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modals for Settings (Thread) -->
+            <div class="modal fade" id="threadModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-none shadow-2xl">
+                        <form method="POST" action="dashboard.php?view=settings">
+                            <input type="hidden" name="settings_action" id="thread_action" value="add_thread">
+                            <input type="hidden" name="thread_map_id" id="thread_map_id">
+                            <input type="hidden" name="group_id" id="thread_group_id">
+                            <div class="settings-header" style="background: linear-gradient(90deg, #28a745, #1e7e34);">
+                                <i class="fas fa-hashtag text-xl"></i>
+                                <h5 class="modal-title font-bold m-0 text-white" id="threadModalLabel">គ្រប់គ្រង Thread</h5>
+                                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" style="filter: brightness(0) invert(1);"></button>
+                            </div>
+                            <div class="modal-body p-6 space-y-5">
+                                <div>
+                                    <label class="form-label">ភ្ជាប់ជាមួយប្រភេទ (Category Match)</label>
+                                    <select name="thread_category" id="modal_thread_category" class="form-select">
+                                        <?php foreach ($telegramAllCategories as $tc): ?>
+                                            <option value="<?php echo htmlspecialchars($tc); ?>"><?php echo htmlspecialchars($tc); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="text-[10px] text-text-secondary mt-1 italic">ប្រព័ន្ធនឹងផ្ញើទៅ Thread នេះ បើផ្នែកក្នុងរបាយការណ៍ត្រូវគ្នា</p>
+                                </div>
+                                <div>
+                                    <label class="form-label">ឈ្មោះសម្គាល់ / តួនាទី</label>
+                                    <input type="text" name="thread_name" id="modal_thread_name" class="form-input" placeholder="ឧ. IT Department" required>
+                                </div>
+                                <div>
+                                    <label class="form-label">Message Thread ID</label>
+                                    <input type="text" name="thread_id" id="modal_thread_id" class="form-input" placeholder="ឧ. 12" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-gray-50 rounded-b-2xl">
+                                <button type="button" class="btn-base" data-bs-dismiss="modal">បោះបង់</button>
+                                <button type="submit" class="btn-base btn-success px-8">រក្សាទុក</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modals for Settings (Categories) -->
+            <div class="modal fade" id="catModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-none shadow-2xl">
+                        <form method="POST" action="dashboard.php?view=settings">
+                            <input type="hidden" name="settings_action" id="cat_action" value="add_category">
+                            <input type="hidden" name="category_id" id="cat_id">
+                            <div class="settings-header" style="background: linear-gradient(90deg, #343a40, #000);">
+                                <i class="fas fa-tags text-xl"></i>
+                                <h5 class="modal-title font-bold m-0 text-white" id="catModalLabel">គ្រប់គ្រងប្រភេទ</h5>
+                                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" style="filter: brightness(0) invert(1);"></button>
+                            </div>
+                            <div class="modal-body p-6 space-y-5">
+                                <div>
+                                    <label class="form-label">ប្រភេទមេ (Root Type)</label>
+                                    <select name="category_type" id="modal_cat_type" class="form-select">
+                                        <?php foreach ($category_types as $t): ?>
+                                            <option value="<?php echo $t; ?>"><?php echo $khmer_names[$t]; ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label">ឈ្មោះ (Title)</label>
+                                    <input type="text" name="category_name" id="modal_cat_name" class="form-input" placeholder="បញ្ចូលឈ្មោះ..." required>
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-gray-50 rounded-b-2xl">
+                                <button type="button" class="btn-base" data-bs-dismiss="modal">បោះបង់</button>
+                                <button type="submit" class="btn-base btn-primary px-8">រក្សាទុក</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function toggleToken() {
+                    const input = document.getElementById('bot_token');
+                    const icon = document.querySelector('.token-toggle');
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.replace('fa-eye', 'fa-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.replace('fa-eye-slash', 'fa-eye');
+                    }
+                }
+                function editGroup(group) {
+                    document.getElementById('group_action').value = 'update_group';
+                    document.getElementById('group_id').value = group.group_id;
+                    document.getElementById('modal_group_name').value = group.name;
+                    document.getElementById('modal_chat_id').value = group.chat_id;
+                    document.getElementById('modal_report_format').value = group.report_format;
+                    document.getElementById('groupModalLabel').innerText = 'កែប្រែព័ត៌មានក្រុម';
+                    new bootstrap.Modal(document.getElementById('groupModal')).show();
+                }
+                function addThread(groupId) {
+                    document.getElementById('thread_action').value = 'add_thread';
+                    document.getElementById('thread_group_id').value = groupId;
+                    document.getElementById('modal_thread_name').value = '';
+                    document.getElementById('modal_thread_id').value = '';
+                    document.getElementById('threadModalLabel').innerText = 'បន្ថែម Thread ថ្មី';
+                    new bootstrap.Modal(document.getElementById('threadModal')).show();
+                }
+                function editThread(thread) {
+                    document.getElementById('thread_action').value = 'update_thread';
+                    document.getElementById('thread_map_id').value = thread.thread_map_id;
+                    document.getElementById('modal_thread_category').value = thread.category;
+                    document.getElementById('modal_thread_name').value = thread.position;
+                    document.getElementById('modal_thread_id').value = thread.thread_id;
+                    document.getElementById('threadModalLabel').innerText = 'កែប្រែព័ត៌មាន Thread';
+                    new bootstrap.Modal(document.getElementById('threadModal')).show();
+                }
+                function addCategory(type) {
+                    document.getElementById('cat_action').value = 'add_category';
+                    document.getElementById('modal_cat_type').value = type;
+                    document.getElementById('modal_cat_name').value = '';
+                    document.getElementById('catModalLabel').innerText = 'បន្ថែមប្រភេទថ្មី';
+                    new bootstrap.Modal(document.getElementById('catModal')).show();
+                }
+                function editCategory(cat) {
+                    document.getElementById('cat_action').value = 'edit_category';
+                    document.getElementById('cat_id').value = cat.id;
+                    document.getElementById('modal_cat_type').value = cat.type;
+                    document.getElementById('modal_cat_name').value = cat.name;
+                    document.getElementById('catModalLabel').innerText = 'កែប្រែព័ត៌មានប្រភេទ';
+                    new bootstrap.Modal(document.getElementById('catModal')).show();
+                }
+                // Handle the initial Add Group button - we need a slightly different way to target it now
+                document.addEventListener('DOMContentLoaded', function() {
+                    const addGroupBtn = document.querySelector('[data-bs-target="#addGroupModal"]');
+                    if (addGroupBtn) {
+                       addGroupBtn.addEventListener('click', function(e) {
+                            document.getElementById('group_action').value = 'add_group';
+                            document.getElementById('modal_group_name').value = '';
+                            document.getElementById('modal_chat_id').value = '';
+                            document.getElementById('groupModalLabel').innerText = 'បន្ថែមក្រុមថ្មី';
+                        });
+                    }
+                });
+            </script>
         <?php elseif ($view === 'permissions'): ?>
             <div id="permissions-view">
                 <div class="d-flex justify-content-between align-items-center mb-4"><h2 class="text-2xl font-bold text-accent-hover">គ្រប់គ្រង Sidebar និងការកំណត់សិទ្ធ</h2><button class="btn-base btn-success" onclick="openMenuModal()"><i class="fas fa-plus mr-2"></i> បន្ថែមម៉ឺនុយថ្មី</button></div>
@@ -2724,25 +4991,69 @@ $page_title = match($view) {
     <div class="modal fade" id="categoryModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><form method="POST" action="dashboard.php?view=checklist"><div class="modal-header"><h5 class="modal-title text-accent-hover font-bold" id="categoryModalLabel">បន្ថែមប្រភេទថ្មី</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><label for="new_category" class="form-label">ឈ្មោះប្រភេទ</label><input type="text" name="new_category" class="form-input w-full" required></div><div class="modal-footer"><button type="button" class="btn-base btn-secondary" data-bs-dismiss="modal">បោះបង់</button><button type="submit" class="btn-base btn-primary">បន្ថែម</button></div></form></div></div></div>
     
     <!-- ## MODIFICATION START: Edit User Modal ## -->
-    <div class="modal fade" id="editUserModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><form id="editUserForm" enctype="multipart/form-data"><div class="modal-header"><h5 class="modal-title text-accent-hover font-bold" id="editUserModalLabel">កែសម្រួលព័ត៌មានអ្នកប្រើប្រាស់</h5><button type="button" class="btn btn-sm btn-outline-secondary me-2" id="editUserSettingsBtn" title="កំណត់ Field ដែលទាមទារបំពេញ"><i class="fas fa-cog"></i></button><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" name="user_id" id="editUserId"><input type="hidden" name="existing_image_url" id="existingImageUrl"><input type="hidden" name="existing_jd_url" id="existingJdUrl"><input type="hidden" name="existing_workflow_url" id="existingWorkflowUrl"><input type="hidden" name="existing_bank_qr_url" id="existingBankQrUrl">
-        <ul class="nav nav-tabs" id="edit-user-tabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="edit-account-tab" data-bs-toggle="tab" data-bs-target="#edit-account-pane" type="button" role="tab">ព័ត៌មានគណនី</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="edit-personnel-tab" data-bs-toggle="tab" data-bs-target="#edit-personnel-pane" type="button" role="tab">ព័ត៌មានបុគ្គលិក</button>
-            </li>
-            <?php if ($canManagePayrollInfo): ?>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="edit-payroll-tab" data-bs-toggle="tab" data-bs-target="#edit-payroll-pane" type="button" role="tab">ព័ត៌មានសម្រាប់ Payroll</button>
-            </li>
-            <?php endif; ?>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="edit-documents-tab" data-bs-toggle="tab" data-bs-target="#edit-documents-pane" type="button" role="tab">ឯកសារនិងរូបភាព</button>
-            </li>
-        </ul>
-        <div class="tab-content" id="edit-user-tabs-content">
-            <div class="tab-pane fade show active" id="edit-account-pane" role="tabpanel">
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-white overflow-hidden border-0 shadow-2xl rounded-3xl">
+                <form id="editUserForm" enctype="multipart/form-data">
+                    <div class="px-6 py-5 bg-slate-900 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                <i class="fas fa-user-edit"></i>
+                            </div>
+                            <h5 class="text-lg font-black text-white tracking-tight m-0" id="editUserModalLabel">កែសម្រួលព័ត៌មានបុគ្គលិក</h5>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="w-10 h-10 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all flex items-center justify-center border border-white/10" id="editUserSettingsBtn" title="កំណត់ Field">
+                                <i class="fas fa-cog text-sm"></i>
+                            </button>
+                            <button type="button" class="w-10 h-10 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all flex items-center justify-center border border-white/10" data-bs-dismiss="modal">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="modal-body p-0">
+                        <input type="hidden" name="user_id" id="editUserId">
+                        <input type="hidden" name="existing_image_url" id="existingImageUrl">
+                        <input type="hidden" name="existing_jd_url" id="existingJdUrl">
+                        <input type="hidden" name="existing_workflow_url" id="existingWorkflowUrl">
+                        <input type="hidden" name="existing_bank_qr_url" id="existingBankQrUrl">
+                        
+                        <!-- Premium Tabs -->
+                        <div class="bg-slate-50 border-b border-slate-200 px-6 pt-4">
+                            <ul class="nav nav-tabs border-0 flex gap-6" id="edit-user-tabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active !border-0 !bg-transparent pb-3 px-0 relative group" id="edit-account-tab" data-bs-toggle="tab" data-bs-target="#edit-account-pane" type="button" role="tab">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-600 group-[.active]:text-amber-500 transition-colors">គណនី</span>
+                                        <div class="absolute bottom-0 left-0 w-0 h-1 bg-amber-500 rounded-full transition-all duration-300 group-[.active]:w-full"></div>
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link !border-0 !bg-transparent pb-3 px-0 relative group" id="edit-personnel-tab" data-bs-toggle="tab" data-bs-target="#edit-personnel-pane" type="button" role="tab">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-600 group-[.active]:text-amber-500 transition-colors">ព័ត៌មានបុគ្គលិក</span>
+                                        <div class="absolute bottom-0 left-0 w-0 h-1 bg-amber-500 rounded-full transition-all duration-300 group-[.active]:w-full"></div>
+                                    </button>
+                                </li>
+                                <?php if ($canManagePayrollInfo): ?>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link !border-0 !bg-transparent pb-3 px-0 relative group" id="edit-payroll-tab" data-bs-toggle="tab" data-bs-target="#edit-payroll-pane" type="button" role="tab">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-600 group-[.active]:text-amber-500 transition-colors">Payroll</span>
+                                        <div class="absolute bottom-0 left-0 w-0 h-1 bg-amber-500 rounded-full transition-all duration-300 group-[.active]:w-full"></div>
+                                    </button>
+                                </li>
+                                <?php endif; ?>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link !border-0 !bg-transparent pb-3 px-0 relative group" id="edit-documents-tab" data-bs-toggle="tab" data-bs-target="#edit-documents-pane" type="button" role="tab">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-600 group-[.active]:text-amber-500 transition-colors">ឯកសារ/រូបភាព</span>
+                                        <div class="absolute bottom-0 left-0 w-0 h-1 bg-amber-500 rounded-full transition-all duration-300 group-[.active]:w-full"></div>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="p-8">
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="edit-account-pane" role="tabpanel">
                 <div class="row">
                     <div class="col-md-6 mb-3"><label for="edit_employee_id" class="form-label">អត្តលេខ</label><input type="text" name="employee_id" id="edit_employee_id" class="form-input w-full"></div>
                     <div class="col-md-6 mb-3"><label for="editGender" class="form-label">ភេទ</label><select name="gender" id="editGender" class="form-select w-full"><option value="">-- ជ្រើសរើស --</option><option value="male">ប្រុស</option><option value="female">ស្រី</option></select></div>
@@ -2826,27 +5137,66 @@ $page_title = match($view) {
             <div class="tab-pane fade" id="edit-documents-pane" role="tabpanel">
                 <div class="mb-3"><label class="form-label">រូបភាពបច្ចុប្បន្ន</label><img id="editImagePreview" src="" alt="Current Avatar" style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:2px solid #ccc; margin-bottom:8px;"><label for="editImageFile" class="form-label">ផ្លាស់ប្តូររូបភាព (ជា File JPG, PNG, GIF)</label><input type="file" name="image_file" id="editImageFile" class="form-input w-full" accept="image/*"></div><div class="row"><div class="col-md-6 mb-3"><label for="editJdPdf" class="form-label">ឯកសារ JD (PDF - មិនតម្រូវ)</label><div id="currentJdLink" class="mb-2"></div><input type="file" name="jd_pdf" id="editJdPdf" class="form-input w-full" accept=".pdf"></div><div class="col-md-6 mb-3"><label for="editWorkflowPdf" class="form-label">ឯកសារ Workflow (PDF - មិនតម្រូវ)</label><div id="currentWorkflowLink" class="mb-2"></div><input type="file" name="workflow_pdf" id="editWorkflowPdf" class="form-input w-full" accept=".pdf"></div></div>
             </div>
-        </div></div><div class="modal-footer"><button type="button" class="btn-base btn-secondary" data-bs-dismiss="modal">បោះបង់</button><button type="submit" class="btn-base btn-primary">រក្សាទុកការផ្លាស់ប្តូរ</button></div></form></div></div></div>
+        </div></div></div><div class="modal-footer"><button type="button" class="btn-base btn-secondary" data-bs-dismiss="modal">បោះបង់</button><button type="submit" class="btn-base btn-primary">រក្សាទុកការផ្លាស់ប្តូរ</button></div></form></div></div></div>
     
     <!-- ## MODIFICATION START: Add User Modal ## -->
-    <div class="modal fade" id="addUserModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><form id="addUserForm" enctype="multipart/form-data"><div class="modal-header"><h5 class="modal-title text-accent-hover font-bold" id="addUserModalLabel"><i class="fas fa-user-plus mr-2"></i> បន្ថែមបុគ្គលិកថ្មី</h5><button type="button" class="btn btn-sm btn-outline-secondary me-2" id="addUserSettingsBtn" title="កំណត់ Field ដែលទាមទារបំពេញ"><i class="fas fa-cog"></i></button><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">        <ul class="nav nav-tabs" id="add-user-tabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="account-tab" data-bs-toggle="tab" data-bs-target="#account-pane" type="button" role="tab">ព័ត៌មានគណនី</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="personnel-tab" data-bs-toggle="tab" data-bs-target="#personnel-pane" type="button" role="tab">ព័ត៌មានបុគ្គលិក</button>
-            </li>
-            <?php if ($canManagePayrollInfo): ?>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="payroll-tab" data-bs-toggle="tab" data-bs-target="#payroll-pane" type="button" role="tab">ព័ត៌មានសម្រាប់ Payroll</button>
-            </li>
-            <?php endif; ?>
-            <li class="nav-item" role="presentation"></li>
-                <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents-pane" type="button" role="tab">ឯកសារនិងរូបភាព</button>
-            </li>
-        </ul>
-        <div class="tab-content" id="add-user-tabs-content">
-            <div class="tab-pane fade show active" id="account-pane" role="tabpanel">
+    <div class="modal fade" id="addUserModal" tabindex="-1" style="z-index: 10555;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-white overflow-hidden border-0 shadow-2xl rounded-3xl">
+                <form id="addUserForm" enctype="multipart/form-data">
+                    <div class="px-6 py-5 bg-slate-900 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <h5 class="text-lg font-black text-white tracking-tight m-0" id="addUserModalLabel">បន្ថែមបុគ្គលិកថ្មី</h5>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="w-10 h-10 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all flex items-center justify-center border border-white/10" id="addUserSettingsBtn" title="កំណត់ Field">
+                                <i class="fas fa-cog text-sm"></i>
+                            </button>
+                            <button type="button" class="w-10 h-10 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-all flex items-center justify-center border border-white/10" data-bs-dismiss="modal">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="modal-body p-0">
+                        <!-- Premium Tabs -->
+                        <div class="bg-slate-50 border-b border-slate-200 px-6 pt-4">
+                            <ul class="nav nav-tabs border-0 flex gap-6" id="add-user-tabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active !border-0 !bg-transparent pb-3 px-0 relative group" id="account-tab" data-bs-toggle="tab" data-bs-target="#account-pane" type="button" role="tab">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-600 group-[.active]:text-amber-500 transition-colors">គណនី</span>
+                                        <div class="absolute bottom-0 left-0 w-0 h-1 bg-amber-500 rounded-full transition-all duration-300 group-[.active]:w-full"></div>
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link !border-0 !bg-transparent pb-3 px-0 relative group" id="personnel-tab" data-bs-toggle="tab" data-bs-target="#personnel-pane" type="button" role="tab">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-600 group-[.active]:text-amber-500 transition-colors">ព័ត៌មានបុគ្គលិក</span>
+                                        <div class="absolute bottom-0 left-0 w-0 h-1 bg-amber-500 rounded-full transition-all duration-300 group-[.active]:w-full"></div>
+                                    </button>
+                                </li>
+                                <?php if ($canManagePayrollInfo): ?>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link !border-0 !bg-transparent pb-3 px-0 relative group" id="payroll-tab" data-bs-toggle="tab" data-bs-target="#payroll-pane" type="button" role="tab">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-600 group-[.active]:text-amber-500 transition-colors">Payroll</span>
+                                        <div class="absolute bottom-0 left-0 w-0 h-1 bg-amber-500 rounded-full transition-all duration-300 group-[.active]:w-full"></div>
+                                    </button>
+                                </li>
+                                <?php endif; ?>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link !border-0 !bg-transparent pb-3 px-0 relative group" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents-pane" type="button" role="tab">
+                                        <span class="text-xs font-black uppercase tracking-widest text-slate-600 group-[.active]:text-amber-500 transition-colors">ឯកសារ/រូបភាព</span>
+                                        <div class="absolute bottom-0 left-0 w-0 h-1 bg-amber-500 rounded-full transition-all duration-300 group-[.active]:w-full"></div>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="p-8">
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="account-pane" role="tabpanel">
                 <div class="row">
                     <div class="col-md-6 mb-3"><label for="add_employee_id" class="form-label">អត្តលេខ</label><input type="text" name="employee_id" id="add_employee_id" class="form-input w-full"></div>
                     <div class="col-md-6 mb-3"><label for="add_gender" class="form-label">ភេទ</label><select name="gender" id="add_gender" class="form-select w-full"><option value="">-- ជ្រើសរើស --</option><option value="male">ប្រុស</option><option value="female">ស្រី</option></select></div>
@@ -2927,7 +5277,7 @@ $page_title = match($view) {
             <div class="tab-pane fade" id="documents-pane" role="tabpanel">
                 <div class="mb-3"><label for="add_profile_image" class="form-label">រូបភាព Profile<span class="text-danger">*</span></label><input type="file" name="profile_image" id="add_profile_image" class="form-input w-full" accept="image/*" required></div><div class="row"><div class="col-md-6 mb-3"><label for="add_jd_pdf" class="form-label">ឯកសារ JD (PDF - មិនតម្រូវ)</label><input type="file" name="jd_pdf" id="add_jd_pdf" class="form-input w-full" accept=".pdf"></div><div class="col-md-6 mb-3"><label for="add_workflow_pdf" class="form-label">ឯកសារ Workflow (PDF - មិនតម្រូវ)</label><input type="file" name="workflow_pdf" id="add_workflow_pdf" class="form-input w-full" accept=".pdf"></div></div>
             </div>
-        </div></div><div class="modal-footer"><button type="button" class="btn-base btn-secondary" data-bs-dismiss="modal">បោះបង់</button><button type="submit" class="btn-base btn-primary">បន្ថែមអ្នកប្រើប្រាស់</button></div></form></div></div></div>
+        </div></div></div><div class="modal-footer"><button type="button" class="btn-base btn-secondary" data-bs-dismiss="modal">បោះបង់</button><button type="submit" class="btn-base btn-primary">បន្ថែមអ្នកប្រើប្រាស់</button></div></form></div></div></div>
 
     <!-- Field Settings Modal for Add User -->
     <div class="modal fade" id="addUserFieldSettingsModal" tabindex="-1">
@@ -3147,78 +5497,161 @@ $page_title = match($view) {
     function showEmployeeDetails(row) {
         const data = row.dataset;
         const body = document.getElementById('employeeDetailsBody');
+        const default_placeholder = 'https://via.placeholder.com/150';
+        const imgUrl = data.image ? 'thumb.php?src=' + encodeURIComponent(data.image) + '&w=300&h=300' : default_placeholder;
+        
         let content = `
-            <div class="text-center mb-4">
-                <img src="${data.image ? 'thumb.php?src=' + encodeURIComponent(data.image) + '&w=150&h=150' : 'https://via.placeholder.com/150'}" alt="Avatar" class="rounded-circle border border-2 border-accent-color shadow-lg" style="width: 120px; height: 120px; object-fit: cover;">
-                <h4 class="mt-3 text-accent-hover font-bold">${data.name}</h4>
-                <p class="text-text-secondary">${data.position || 'N/A'} - ${data.department || 'N/A'}</p>
-            </div>
-            <div class="card-base p-4">
-                <div class="row">
-                    <div class="col-md-6">
-                        <p class="mb-2"><i class="fas fa-user text-accent-color me-2"></i><strong>Username:</strong> ${data.username || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-envelope text-accent-color me-2"></i><strong>Email:</strong> ${data.email || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-calendar-alt text-accent-color me-2"></i><strong>Annual Leave Days:</strong> ${data.al || 'N/A'}</p>
+            <div class="p-2">
+                <div class="flex flex-col md:flex-row gap-8 items-start">
+                    <!-- Profile Card -->
+                    <div class="w-full md:w-1/3 flex flex-col items-center gap-4">
+                        <div class="relative group">
+                            <div class="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-amber-200 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                            <img src="${imgUrl}" alt="Avatar" class="relative w-48 h-48 rounded-3xl object-cover shadow-2xl border-4 border-white">
+                            <div class="absolute -bottom-2 -right-2 bg-emerald-500 text-white w-10 h-10 rounded-2xl flex items-center justify-center border-4 border-white shadow-lg">
+                                <i class="fas fa-check text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <h3 class="text-2xl font-black text-slate-800 mb-1">${data.name}</h3>
+                            <p class="text-amber-500 font-bold uppercase tracking-widest text-[10px]">${data.position || 'N/A'}</p>
+                            <div class="mt-4 flex flex-wrap justify-center gap-2">
+                                <span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm border border-slate-200/50">${data.department || 'N/A'}</span>
+                                <span class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm border border-emerald-200/50">Active</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <p class="mb-2"><i class="fas fa-briefcase text-accent-color me-2"></i><strong>Position:</strong> ${data.position || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-building text-accent-color me-2"></i><strong>Department:</strong> ${data.department || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-user-tie text-accent-color me-2"></i><strong>Manager ID:</strong> ${data.managerId || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-id-card text-accent-color me-2"></i><strong>Employee ID:</strong> ${data.employeeId || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-calendar-check text-accent-color me-2"></i><strong>Start Date:</strong> ${data.startDate || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-signature text-accent-color me-2"></i><strong>Latin Name:</strong> ${data.latinName || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-map-marker-alt text-accent-color me-2"></i><strong>Current Address:</strong> ${data.currentAddress || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-heart text-accent-color me-2"></i><strong>Marital Status:</strong> ${data.maritalStatus || 'N/A'}</p>
-                        ${data.maritalStatus === 'កូន' ? `<p class="mb-2"><i class="fas fa-child text-accent-color me-2"></i><strong>Number of Children:</strong> ${data.numberOfChildren || 'N/A'}</p>` : ''}
-                        <p class="mb-2"><i class="fas fa-file-contract text-accent-color me-2"></i><strong>Contract Start:</strong> ${data.contractStart || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-file-contract text-accent-color me-2"></i><strong>Contract End:</strong> ${data.contractEnd || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-briefcase text-accent-color me-2"></i><strong>Contract Type:</strong> ${data.contractType || 'N/A'}</p>
+
+                    <!-- Details Grid -->
+                    <div class="w-full md:w-2/3 space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Basic Info Group -->
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100/80">
+                                <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3 block">ព័ត៌មានមូលដ្ឋាន</label>
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-amber-600 border border-slate-100"><i class="fas fa-at text-xs"></i></div>
+                                        <div class="flex flex-col"><span class="text-[10px] text-slate-500 font-bold uppercase">Username</span><span class="text-sm font-black text-slate-800">${data.username || 'N/A'}</span></div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-amber-600 border border-slate-100"><i class="fas fa-envelope text-xs"></i></div>
+                                        <div class="flex flex-col"><span class="text-[10px] text-slate-500 font-bold uppercase">Email</span><span class="text-sm font-black text-slate-800">${data.email || 'N/A'}</span></div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-amber-600 border border-slate-100"><i class="fas fa-venus-mars text-xs"></i></div>
+                                        <div class="flex flex-col"><span class="text-[10px] text-slate-500 font-bold uppercase">Gender</span><span class="text-sm font-black text-slate-800">${data.gender === 'male' ? 'ប្រុស' : 'ស្រី'}</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Work Info Group -->
+                            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100/80">
+                                <label class="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3 block">ព័ត៌មានការងារ</label>
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-amber-600 border border-slate-100"><i class="fas fa-id-badge text-xs"></i></div>
+                                        <div class="flex flex-col"><span class="text-[10px] text-slate-500 font-bold uppercase">Employee ID</span><span class="text-sm font-black text-slate-800">#${data.employeeId || 'N/A'}</span></div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-amber-600 border border-slate-100"><i class="fas fa-calendar-star text-xs"></i></div>
+                                        <div class="flex flex-col"><span class="text-[10px] text-slate-500 font-bold uppercase">Start Date</span><span class="text-sm font-black text-slate-800">${data.startDate || 'N/A'}</span></div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-amber-600 border border-slate-100"><i class="fas fa-umbrella-beach text-xs"></i></div>
+                                        <div class="flex flex-col"><span class="text-[10px] text-slate-500 font-bold uppercase">Leave Bal.</span><span class="text-sm font-black text-slate-800">${data.al || '0.0'} Days</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Full Width Info -->
+                        <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100/80">
+                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div>
+                                    <span class="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Contract End</span>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-history text-rose-500 text-xs"></i>
+                                        <span class="text-sm font-black text-slate-800">${data.contractEnd || 'មិនមានកំណត់'}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Address</span>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-location-dot text-slate-400 text-xs"></i>
+                                        <span class="text-xs font-bold text-slate-700">${data.currentAddress || 'N/A'}</span>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+
+                        ${window.canManagePayrollInfo === 'true' && data.baseSalary ? `
+                        <div class="bg-amber-50/50 p-6 rounded-3xl border border-amber-100/50">
+                            <div class="flex items-center justify-between mb-4">
+                                <label class="text-[10px] font-black text-amber-600 uppercase tracking-widest">ព័ត៌មានហិរញ្ញវត្ថុ (Payroll Information)</label>
+                                <div class="px-3 py-1 bg-amber-500 text-white rounded-full text-[10px] font-black">PRIVATE</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-8">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-[10px] text-amber-600/60 font-black uppercase">Salary per month</span>
+                                    <span class="text-2xl font-black text-amber-700">$${parseFloat(data.baseSalary).toLocaleString()}</span>
+                                </div>
+                                <div class="flex flex-col gap-1 border-l border-amber-100 pl-8">
+                                    <span class="text-[10px] text-amber-600/60 font-black uppercase">Bank Info</span>
+                                    <span class="text-xs font-black text-amber-700">${data.bankName || 'N/A'}</span>
+                                    <span class="text-xs font-bold text-amber-600/80">${data.bankAccountNumber || ''}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
-        `;
-        if (window.canManagePayrollInfo === 'true' && data.baseSalary) {
-            content += `
-                <hr class="my-4 border-accent-color">
-                <h5 class="text-accent-hover mb-3"><i class="fas fa-money-bill-wave text-accent-color me-2"></i>Payroll Information</h5>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p class="mb-2"><i class="fas fa-dollar-sign text-success me-2"></i><strong>Base Salary:</strong> $${data.baseSalary}</p>
-                        <p class="mb-2"><i class="fas fa-university text-accent-color me-2"></i><strong>Bank Name:</strong> ${data.bankName || 'N/A'}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="mb-2"><i class="fas fa-credit-card text-accent-color me-2"></i><strong>Bank Account:</strong> ${data.bankAccountNumber || 'N/A'}</p>
-                        <p class="mb-2"><i class="fas fa-id-card text-accent-color me-2"></i><strong>NSSF ID:</strong> ${data.nssfId || 'N/A'}</p>
-                    </div>
-                </div>
-            `;
-        }
-        content += `
-            </div>
-        `;
+            </div>`;
+        
         body.innerHTML = content;
-        const modal = new bootstrap.Modal(document.getElementById('employeeDetailsModal'));
-        modal.show();
+        
+        // Update modal title to something modern
+        const modalEl = document.getElementById('employeeDetailsModal');
+        const titleEl = modalEl.querySelector('.modal-title');
+        titleEl.innerHTML = `<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20"><i class="fas fa-user-tie"></i></div><span class="font-black text-slate-800 tracking-tight">ព័ត៌មានបុគ្គលិកលម្អិត</span></div>`;
+        
+        if (typeof bootstrap !== 'undefined') {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            console.error('Bootstrap is not loaded');
+        }
+    }
+
+    function showNotification(message, type = 'success') {
+        const container = document.getElementById('notification-container');
+        if (!container) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert-message ${type === 'success' ? 'alert-success' : 'alert-error'} animate-zoom-in`;
+        alertDiv.textContent = message;
+        alertDiv.style.minWidth = '300px';
+        container.appendChild(alertDiv);
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            alertDiv.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => alertDiv.remove(), 500);
+        }, 5000);
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
         // Loading screen helpers
         function showLoading() {
-            const el = document.getElementById('loading-screen');
-            if (el) el.style.display = 'flex';
+            // Loading screen removed
         }
         function hideLoading() {
-            const el = document.getElementById('loading-screen');
-            if (el) {
-                el.style.transition = 'opacity 300ms ease';
-                el.style.opacity = '0';
-                setTimeout(() => { try { el.remove(); } catch(e){} }, 350);
-            }
+            // Loading screen removed
         }
         // Fallback: hide after full load if nothing else hides it
         window.addEventListener('load', function() { hideLoading(); });
         // --- START AJAX REAL-TIME LOGIC ---
         const addUserForm = document.getElementById('addUserForm');
         const editUserForm = document.getElementById('editUserForm');
+        const addUserModal = document.getElementById('addUserModal');
+        const editUserModal = document.getElementById('editUserModal');
         const tableBodies = document.querySelectorAll('#employee-table-body');
         const canManageEmployees = <?php echo (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'administration','accounting'])) ? 'true' : 'false'; ?>;
         const canManagePayrollInfo = <?php echo $canManagePayrollInfo ? 'true' : 'false'; ?>;
@@ -3228,7 +5661,10 @@ $page_title = match($view) {
 
         // --- NEW: Universal QR Code Logic ---
         const cropQrModalEl = document.getElementById('cropQrModal');
-        const cropQrModal = new bootstrap.Modal(cropQrModalEl);
+        let cropQrModal = null;
+        if (cropQrModalEl && typeof bootstrap !== 'undefined') {
+            cropQrModal = new bootstrap.Modal(cropQrModalEl);
+        }
         const imageToCrop = document.getElementById('imageToCrop');
         const cropAndSaveButton = document.getElementById('cropAndSaveButton');
         let cropper;
@@ -3381,10 +5817,8 @@ $page_title = match($view) {
         }
         
         // Reset state when modals close
-        const addUserModalEl = document.getElementById('addUserModal');
-        const editUserModalEl = document.getElementById('editUserModal');
-        if (addUserModalEl) {
-            addUserModalEl.addEventListener('hidden.bs.modal', () => {
+        if (addUserModal) {
+            addUserModal.addEventListener('hidden.bs.modal', () => {
                 finalQrBlob = null;
                 const qrDataInput = document.getElementById('add_qr_data_input');
                 if (qrDataInput) qrDataInput.value = '';
@@ -3396,7 +5830,7 @@ $page_title = match($view) {
                 }
             });
             // Reset field requirements to default when modal opens
-            addUserModalEl.addEventListener('show.bs.modal', () => {
+            addUserModal.addEventListener('show.bs.modal', () => {
                 const fields = ['full_name', 'username', 'password', 'email', 'role', 'position'];
                 fields.forEach(field => {
                     const input = document.getElementById(`add_${field}`);
@@ -3427,14 +5861,14 @@ $page_title = match($view) {
                 }
             });
         }
-        if (editUserModalEl) {
-            editUserModalEl.addEventListener('hidden.bs.modal', () => {
+        if (editUserModal) {
+            editUserModal.addEventListener('hidden.bs.modal', () => {
                 finalQrBlob = null;
                 const qrDataInput = document.getElementById('edit_qr_data_input');
                 if(qrDataInput) qrDataInput.value = '';
             });
             // Reset field requirements to default when modal opens
-            editUserModalEl.addEventListener('show.bs.modal', () => {
+            editUserModal.addEventListener('show.bs.modal', () => {
                 const fields = ['full_name', 'username', 'email', 'role'];
                 const fieldIds = {
                     'full_name': 'editFullName',
@@ -3559,7 +5993,7 @@ $page_title = match($view) {
             if (!tableBody) return;
             tableBody.innerHTML = '';
             if (!employees || employees.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-text-secondary text-lg">គ្មានបុគ្គលិក</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-24"><div class="flex flex-col items-center gap-4 text-slate-300"><i class="fas fa-users-slash text-5xl"></i><p class="font-black uppercase tracking-widest text-xs">មិនមានបុគ្គលិកត្រូវបង្ហាញទេ</p></div></td></tr>';
                 return;
             }
 
@@ -3569,68 +6003,105 @@ $page_title = match($view) {
 
                 employeeList.forEach(employee => {
                     const hasChildren = employee.children && employee.children.length > 0;
-                    const arrow = level > 0 ? '↳ ' : '';
-                    const indentPx = level * 16;
-                    const imageUrl = (employee.image_url && employee.image_url.length > 0) ? `thumb.php?src=${encodeURIComponent(employee.image_url)}&w=80&h=80` : default_avatar;
+                    const indentPx = level * 32;
+                    const imageUrl = (employee.image_url && employee.image_url.length > 0) ? `thumb.php?src=${encodeURIComponent(employee.image_url)}&w=120&h=120` : default_avatar;
                     
-                    let actionButtons = `<a href="view_employee.php?id=${employee.id}" class="btn-action-link" target="_blank">មើល</a>`;
-                    if (canManageEmployees) {
-                        let payrollDataAttributes = '';
-                        if (canManagePayrollInfo) {
-                            payrollDataAttributes = `
-                               data-base-salary="${employee.base_salary || ''}"
-                               data-bank-name="${employee.bank_name || ''}"
-                               data-bank-account-number="${employee.bank_account_number || ''}"
-                               data-bank-qr-code="${employee.bank_qr_code_url || ''}"
-                               data-nssf-id="${employee.nssf_id || ''}"`;
-                        }
+                    let payrollDataAttributes = '';
+                    if (canManagePayrollInfo) {
+                        payrollDataAttributes = `
+                           data-base-salary="${employee.base_salary || ''}"
+                           data-bank-name="${employee.bank_name || ''}"
+                           data-bank-account-number="${employee.bank_account_number || ''}"
+                           data-bank-qr-code="${employee.bank_qr_code_url || ''}"
+                           data-nssf-id="${employee.nssf_id || ''}"`;
+                    }
 
-                        // ## MODIFICATION START ##
-                        const allDataAttributes = `
-                           data-id="${employee.id}"
-                           data-name="${employee.full_name || employee.username}"
-                           data-username="${employee.username}"
-                           data-email="${employee.email || ''}"
-                           data-role="${employee.role || ''}"
-                           data-position="${employee.position || ''}"
-                           data-department="${employee.department || ''}"
-                           data-gender="${employee.gender || ''}"
-                           data-al="${employee.annual_leave_days || ''}"
-                           data-image="${employee.image_url || ''}"
-                           data-jd="${employee.jd_pdf || ''}"
-                           data-workflow="${employee.workflow_pdf || ''}"
-                           data-manager-id="${employee.manager_id || ''}"
-                           data-employee-id="${employee.employee_id || ''}"
-                           data-start-date="${employee.start_date || ''}"
-                           data-latin-name="${employee.latin_name || ''}"
-                           data-current-address="${employee.current_address || ''}"
-                           data-marital-status="${employee.marital_status || ''}"
-                           data-number-of-children="${employee.number_of_children || ''}"
-                           data-contract-start="${employee.contract_start || ''}"
-                           data-contract-end="${employee.contract_end || ''}"
-                           
-                           data-contract-type="${employee.contract_type || ''}"
-                           ${payrollDataAttributes}`;
-                        // ## MODIFICATION END ##
-                        
+                    const allDataAttributes = `
+                       data-id="${employee.id}"
+                       data-name="${employee.full_name || employee.username}"
+                       data-username="${employee.username}"
+                       data-email="${employee.email || ''}"
+                       data-role="${employee.role || ''}"
+                       data-position="${employee.position || ''}"
+                       data-department="${employee.department || ''}"
+                       data-gender="${employee.gender || ''}"
+                       data-al="${employee.annual_leave_days || ''}"
+                       data-image="${employee.image_url || ''}"
+                       data-jd="${employee.jd_pdf || ''}"
+                       data-workflow="${employee.workflow_pdf || ''}"
+                       data-manager-id="${employee.manager_id || ''}"
+                       data-employee-id="${employee.employee_id || ''}"
+                       data-start-date="${employee.start_date || ''}"
+                       data-latin-name="${employee.latin_name || ''}"
+                       data-current-address="${employee.current_address || ''}"
+                       data-marital-status="${employee.marital_status || ''}"
+                       data-number-of-children="${employee.number_of_children || ''}"
+                       data-contract-start="${employee.contract_start || ''}"
+                       data-contract-end="${employee.contract_end || ''}"
+                       data-contract-type="${employee.contract_type || ''}"
+                       ${payrollDataAttributes}`;
+
+                    let actionButtons = `
+                        <a href="view_employee.php?id=${employee.id}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-indigo-500 hover:text-white transition-all shadow-sm border border-slate-100" target="_blank" title="មើលព័ត៌មាន">
+                            <i class="fas fa-eye text-sm"></i>
+                        </a>`;
+                    
+                    if (canManageEmployees) {
                         actionButtons += `
-                            <button type="button" class="btn-action-link" data-bs-toggle="modal" data-bs-target="#editUserModal" ${allDataAttributes}>កែ</button>
-                            <a href="deactivate_user.php?id=${employee.id}" class="btn-action-link text-danger" onclick="return confirm('តើអ្នកពិតជាចង់បិទគណនីនេះមែនទេ?')">បិទ</a>`;
+                            <button type="button" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-amber-500 hover:text-white transition-all shadow-sm border border-slate-100" data-bs-toggle="modal" data-bs-target="#editUserModal" ${allDataAttributes} title="កែប្រែ">
+                                <i class="fas fa-edit text-sm"></i>
+                            </button>
+                            <a href="deactivate_user.php?id=${employee.id}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-slate-100" onclick="return confirm('តើអ្នកពិតជាចង់បិទគណនីនេះមែនទេ?')" title="បិទគណនី">
+                                <i class="fas fa-user-slash text-sm"></i>
+                            </a>`;
                     }
 
                     html += `
-                        <tr class="employee-row text-lg" data-id="${employee.id}" data-parent-id="${parentId || ''}" data-level="${level}" data-name="${employee.full_name || ''}" data-email="${employee.email || ''}" data-position="${employee.position || ''}" data-department="${employee.department || ''}" data-username="${employee.username}" data-al="${employee.annual_leave_days || ''}" data-image="${employee.image_url || ''}" data-jd="${employee.jd_pdf || ''}" data-workflow="${employee.workflow_pdf || ''}" data-manager-id="${employee.manager_id || ''}" data-employee-id="${employee.employee_id || ''}" data-start-date="${employee.start_date || ''}" data-latin-name="${employee.latin_name || ''}" data-current-address="${employee.current_address || ''}" data-marital-status="${employee.marital_status || ''}" data-number-of-children="${employee.number_of_children || ''}" data-contract-start="${employee.contract_start || ''}" data-contract-end="${employee.contract_end || ''}" data-contract-type="${employee.contract_type || ''}" ${canManagePayrollInfo === 'true' ? `data-base-salary="${employee.base_salary || ''}" data-bank-name="${employee.bank_name || ''}" data-bank-account-number="${employee.bank_account_number || ''}" data-bank-qr-code="${employee.bank_qr_code_url || ''}" data-nssf-id="${employee.nssf_id || ''}"` : ''} onclick="showEmployeeDetails(this)" style="cursor: pointer;">
-                            <td class="py-3 px-4"><img src="${imageUrl}" alt="Avatar" loading="lazy" class="w-12 h-12 rounded-full object-cover"></td>
-                            <td class="py-3 px-4 font-semibold">
-                                <div class="flex items-center">
-                                    ${hasChildren ? '<button type="button" class="toggle-children mr-2 text-accent-color" title="បិទ/បើកកូន"><i class="fas fa-caret-down"></i></button>' : '<span class="mr-6"></span>'}
-                                    <span style="margin-left:${indentPx}px">${arrow}${employee.full_name || employee.username}</span>
+                        <tr class="employee-row hover:bg-indigo-50/30 transition-all group border-b border-slate-50 last:border-0" data-parent-id="${parentId || ''}" data-level="${level}" ${allDataAttributes} onclick="showEmployeeDetails(this)" style="cursor: pointer;">
+                            <td class="py-5 px-8">
+                                <div class="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black w-fit">#${employee.employee_id || employee.id}</div>
+                            </td>
+                            <td class="py-5 px-8">
+                                <div class="flex items-center gap-5" style="padding-left:${indentPx}px">
+                                    <div class="flex items-center gap-4">
+                                        ${hasChildren ? `
+                                            <button type="button" class="toggle-children w-7 h-7 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm" title="បិទ/បើកកូន">
+                                                <i class="fas fa-plus text-[10px] group-[.expanded]:fa-minus"></i>
+                                            </button>` : `<span class="w-7"></span>`}
+                                        <div class="relative group/avatar">
+                                            <img src="${imageUrl}" class="w-14 h-14 rounded-2xl object-cover shadow-md border-2 border-white ring-1 ring-slate-100 group-hover/avatar:ring-indigo-400 transition-all" alt="User">
+                                            <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-4 border-white"></span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-black text-slate-800 tracking-tight text-base leading-tight">${employee.full_name || employee.username}</span>
+                                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">${employee.username}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="py-3 px-4 text-text-secondary hidden md:table-cell">${employee.email || ''}</td>
-                            <td class="py-3 px-4 text-text-secondary hidden sm:table-cell">${employee.position || ''}</td>
-                            <td class="py-3 px-4 text-text-secondary hidden sm:table-cell">${employee.department || 'N/A'}</td>
-                            <td class="py-3 px-4 text-center space-x-4" onclick="event.stopPropagation()">${actionButtons}</td>
+                            <td class="py-5 px-8 hidden md:table-cell">
+                                <div class="flex flex-col gap-1.5">
+                                    <div class="flex items-center gap-2 text-slate-600">
+                                        <div class="w-5 h-5 rounded-md bg-indigo-50 text-indigo-500 flex items-center justify-center text-[10px]"><i class="fas fa-envelope"></i></div>
+                                        <span class="text-sm font-bold truncate max-w-[200px]">${employee.email || '-'}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-slate-400">
+                                        <div class="w-5 h-5 rounded-md bg-slate-50 text-slate-400 flex items-center justify-center text-[10px]"><i class="fas fa-phone"></i></div>
+                                        <span class="text-[11px] font-black uppercase">តម្រូវឱ្យបញ្ចូល</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-5 px-8 hidden sm:table-cell">
+                                <div class="flex flex-col gap-2">
+                                    <span class="text-sm font-black text-slate-800">${employee.position || '-'}</span>
+                                    <div class="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit">${employee.department || 'N/A'}</div>
+                                </div>
+                            </td>
+                            <td class="py-5 px-8" onclick="event.stopPropagation()">
+                                <div class="flex items-center justify-center gap-3">
+                                    ${actionButtons}
+                                </div>
+                            </td>
                         </tr>`;
 
                     if (hasChildren) {
@@ -3702,6 +6173,19 @@ $page_title = match($view) {
             }
         }
 
+        // Function to handle row click and open Edit User Modal
+        window.showEmployeeDetails = function(element) {
+            const modalEl = document.getElementById('editUserModal');
+            if (modalEl) {
+                 // Manually populate the form since relatedTarget will be null when called via JS
+                if (window.populateEditUserForm) {
+                    window.populateEditUserForm(element);
+                }
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show(element);
+            }
+        };
+
         if (addUserForm) {
             addUserForm.addEventListener('submit', function(e) { e.preventDefault(); handleFormSubmit(this, 'add_user'); });
         }
@@ -3709,20 +6193,6 @@ $page_title = match($view) {
             editUserForm.addEventListener('submit', function(e) { e.preventDefault(); handleFormSubmit(this, 'update_user'); });
         }
 
-        function showNotification(message, type = 'success') {
-            const container = document.getElementById('notification-container');
-            if (!container) return;
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert-message ${type === 'success' ? 'alert-success' : 'alert-error'}`;
-            alertDiv.textContent = message;
-            alertDiv.style.minWidth = '300px';
-            container.appendChild(alertDiv);
-            setTimeout(() => {
-                alertDiv.style.opacity = '0';
-                alertDiv.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => alertDiv.remove(), 500);
-            }, 5000);
-        }
 
         try {
             await fetchAndDisplayEmployees();
@@ -3762,25 +6232,59 @@ $page_title = match($view) {
             }); 
         }
         
-        const menuToggle = document.getElementById('menu-toggle');
-        const sidebar = document.querySelector('aside');
-        if (menuToggle && sidebar) { 
-            menuToggle.addEventListener('click', () => { sidebar.classList.toggle('is-open'); sidebar.classList.toggle('hidden'); }); 
-        }
 
         if (editUserModal) { 
-            editUserModal.addEventListener('show.bs.modal', function (event) {
-                const button = event.relatedTarget; 
-                editUserModal.querySelector('.modal-title').textContent = 'កែសម្រួល: ' + button.getAttribute('data-name');
+            // Shared function to populate the Edit User form
+            window.populateEditUserForm = function(button) {
+                if (!button) return;
+                
+                // Debug: Check what data is actually coming in
+                console.log('Populating Edit Form with data:', {
+                    id: button.getAttribute('data-id'),
+                    employee_id: button.getAttribute('data-employee-id'),
+                    latin_name: button.getAttribute('data-latin-name'),
+                    gender: button.getAttribute('data-gender')
+                });
+
+                const titleEl = document.getElementById('editUserModalLabel');
+                if (titleEl) {
+                    titleEl.textContent = 'កែសម្រួល: ' + button.getAttribute('data-name');
+                }
                 document.getElementById('editUserId').value = button.getAttribute('data-id');
+                
+                // Populate fields
+                if(document.getElementById('edit_employee_id')) document.getElementById('edit_employee_id').value = button.getAttribute('data-employee-id') || '';
                 document.getElementById('editFullName').value = button.getAttribute('data-name');
+                if(document.getElementById('edit_latin_name')) document.getElementById('edit_latin_name').value = button.getAttribute('data-latin-name') || '';
                 document.getElementById('editUsername').value = button.getAttribute('data-username');
                 document.getElementById('editEmail').value = button.getAttribute('data-email');
                 document.getElementById('editPassword').value = '';
                 document.getElementById('editRole').value = button.getAttribute('data-role');
                 document.getElementById('editPosition').value = button.getAttribute('data-position');
                 document.getElementById('editDepartment').value = button.getAttribute('data-department');
-                document.getElementById('editGender').value = button.getAttribute('data-gender');
+                
+                // Gender: Handle potential case differences (Male vs male)
+                const genderVal = button.getAttribute('data-gender');
+                if(document.getElementById('editGender')) {
+                    const normalizedGender = genderVal ? genderVal.toLowerCase() : '';
+                    const genderSelect = document.getElementById('editGender');
+                    // Try to match value
+                    genderSelect.value = normalizedGender;
+                    // If not found (maybe mismatch like 'ប្រុស'), try to match text or just set empty
+                    if (!genderSelect.value && normalizedGender) {
+                         for(let i=0; i<genderSelect.options.length; i++) {
+                             if(genderSelect.options[i].text.toLowerCase() === normalizedGender || genderSelect.options[i].value.toLowerCase() === normalizedGender) {
+                                 genderSelect.selectedIndex = i;
+                                 break;
+                             }
+                         }
+                    }
+                }
+                if(document.getElementById('edit_current_address')) document.getElementById('edit_current_address').value = button.getAttribute('data-current-address') || '';
+                
+                // Personnel Tab fields
+                if(document.getElementById('edit_start_date')) document.getElementById('edit_start_date').value = button.getAttribute('data-start-date') || '';
+
                 document.getElementById('existingImageUrl').value = button.getAttribute('data-image');
                 document.getElementById('editImagePreview').src = button.getAttribute('data-image') || 'https://via.placeholder.com/96';
                 document.getElementById('editImagePreview').onerror = function() { this.src = 'https://via.placeholder.com/96'; };
@@ -3835,6 +6339,16 @@ $page_title = match($view) {
                     document.getElementById('edit_children_count_container').style.display = 'block';
                 } else {
                     document.getElementById('edit_children_count_container').style.display = 'none';
+                }
+            };
+            
+            // Standard event listener for button clicks
+            editUserModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget; 
+                // Only populate if triggered by a button (relatedTarget exists)
+                // If specificed manually via JS, populate function should be called manually
+                if (button) {
+                    window.populateEditUserForm(button);
                 }
             }); 
         }
@@ -3990,8 +6504,9 @@ $page_title = match($view) {
         }
 
         const menuModalEl = document.getElementById('menuModal');
-        if(menuModalEl) {
-            const menuModal = new bootstrap.Modal(menuModalEl);
+        let menuModal = null;
+        if(menuModalEl && typeof bootstrap !== 'undefined') {
+            menuModal = new bootstrap.Modal(menuModalEl);
             window.openMenuModal = function(data = null) {
                 const form = menuModalEl.querySelector('form');
                 form.reset();
@@ -4041,6 +6556,76 @@ $page_title = match($view) {
             }
         }
 
+        // Global Meeting Utilities
+        window.compressImage = function(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1200;
+                        const MAX_HEIGHT = 1200;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        canvas.toBlob(blob => {
+                            resolve(new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            }));
+                        }, 'image/jpeg', 0.7);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        };
+
+        window.bufferToWav = function(abuffer, offset = 0) {
+            let numOfChan = abuffer.numberOfChannels,
+                length = abuffer.length * numOfChan * 2 + 44,
+                buffer = new ArrayBuffer(length),
+                view = new DataView(buffer),
+                channels = [], i, sample, pos = 0;
+
+            const setUint16 = (data) => { view.setUint16(pos, data, true); pos += 2; };
+            const setUint32 = (data) => { view.setUint32(pos, data, true); pos += 4; };
+
+            setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+            setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+            setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2); setUint16(16);
+            setUint32(0x61746164); setUint32(length - pos - 4);
+
+            for(i = 0; i < abuffer.numberOfChannels; i++) channels.push(abuffer.getChannelData(i));
+            while(pos < length) {
+                for(i = 0; i < numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
+                    view.setInt16(pos, sample, true); pos += 2;
+                }
+                offset++;
+            }
+            return new Blob([buffer], {type: "audio/wav"});
+        };
+
         handleMaritalStatusChange('add_marital_status', 'add_children_count_container');
         handleMaritalStatusChange('edit_marital_status', 'edit_children_count_container');
 
@@ -4067,6 +6652,14 @@ $page_title = match($view) {
             const modal = new bootstrap.Modal(document.getElementById('editLoanModal'));
             modal.show();
         };
+
+
+        // FIX: Move modals to body to prevent z-index/backdrop issues
+        const modalsToMove = ['addUserModal', 'editUserModal', 'contentModal', 'taskModal', 'categoryModal'];
+        modalsToMove.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) document.body.appendChild(el);
+        });
 
     });
 

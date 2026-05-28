@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Redirect unauthorized users
 if (!isLoggedIn() || $_SESSION['role'] !== 'admin') {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 

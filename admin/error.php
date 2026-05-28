@@ -2,7 +2,7 @@
 session_start();
 
 if (!isset($_SESSION['error_message'])) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 

@@ -52,7 +52,7 @@ try {
         ]);
 
         // Redirect to the display page after insertion
-        header("Location: mission.php");
+        header("Location: ../missions/mission.php");
         exit;
     }
 
@@ -384,7 +384,7 @@ try {
 
             <div class="form-footer">
                 <button type="submit" class="btn-primary">បញ្ចូល</button>
-                <a href="mission.php" class="btn-secondary">សូមអភ័យទោស</a>
+                <a href="../missions/mission.php" class="btn-secondary">សូមអភ័យទោស</a>
             </div>
         </form>
     </div>

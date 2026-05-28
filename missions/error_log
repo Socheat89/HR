@@ -1,0 +1,34 @@
+[09-Feb-2026 08:30:26 UTC] PHP Warning:  Undefined variable $password in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 35
+[09-Feb-2026 08:30:26 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/samann1/public_html/app/HRM/missions/input_mission.php:35) in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 81
+[09-Feb-2026 08:30:26 UTC] PHP Warning:  http_response_code(): Cannot set response code - headers already sent (output started at /home/samann1/public_html/app/HRM/missions/input_mission.php:35) in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 82
+[09-Feb-2026 08:30:40 UTC] PHP Warning:  Undefined variable $password in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 35
+[09-Feb-2026 08:30:40 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/samann1/public_html/app/HRM/missions/input_mission.php:35) in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 81
+[09-Feb-2026 08:30:40 UTC] PHP Warning:  http_response_code(): Cannot set response code - headers already sent (output started at /home/samann1/public_html/app/HRM/missions/input_mission.php:35) in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 82
+[09-Feb-2026 10:59:03 UTC] PHP Warning:  Undefined variable $password in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 35
+[09-Feb-2026 10:59:05 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/samann1/public_html/app/HRM/missions/input_mission.php:35) in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 81
+[09-Feb-2026 10:59:05 UTC] PHP Warning:  http_response_code(): Cannot set response code - headers already sent (output started at /home/samann1/public_html/app/HRM/missions/input_mission.php:35) in /home/samann1/public_html/app/HRM/missions/input_mission.php on line 82
+[09-Feb-2026 11:25:58 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[09-Feb-2026 11:53:22 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[10-Feb-2026 05:38:31 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[10-Feb-2026 05:41:57 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[10-Feb-2026 05:49:09 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[10-Feb-2026 06:33:27 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[12-Feb-2026 01:01:53 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[12-Feb-2026 01:04:24 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[12-Feb-2026 03:47:57 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[12-Feb-2026 07:53:38 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 01:02:27 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 06:09:33 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 06:16:55 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 07:57:05 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 07:57:12 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 07:59:48 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 08:01:55 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 08:02:03 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 08:02:06 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 08:03:40 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 08:03:55 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 08:04:10 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 08:04:57 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[13-Feb-2026 08:05:02 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2
+[15-Feb-2026 06:38:22 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/samann1/public_html/app/HRM/missions/mission.php on line 2

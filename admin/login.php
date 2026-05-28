@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if (!empty($debug)): ?>
             <div class="debug-message"><?php echo htmlspecialchars($debug); ?></div>
         <?php endif; ?>
-        <form method="POST" action="login.php">
+        <form method="POST" action="../auth/login.php">
             <div class="mb-3">
                 <label for="username" class="form-label">ឈ្មោះអ្នកប្រើ</label>
                 <input type="text" class="form-control" id="username" name="username" placeholder="បញ្ចូលឈ្មោះអ្នកប្រើ" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required>

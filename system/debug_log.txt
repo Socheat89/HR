@@ -1,0 +1,117 @@
+
+Raw Input Length: 121076
+Raw Input Snippet: {"date":"2026-02-09","name":"សៅ សម្បត្តិ","position":"IT SUPPORT","department":"ព័ត៌មានវិទ្យា","next_plan_date":"2026-02-10","next_plan_details":"- បន...
+Attempting DB connection...
+Exception caught: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'samann1_admin_panel.report_tasks' doesn't exist
+#0 /home/samann1/public_html/app/HRM/system/send_to_telegram.php(216): PDOStatement->execute(Array)
+#1 {main}
+Raw Input Length: 121148
+Raw Input Snippet: {"date":"2026-02-09","name":"សៅ សម្បត្តិ","position":"IT SUPPORT","department":"ព័ត៌មានវិទ្យា","next_plan_date":"2026-02-10","next_plan_details":"- បន...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5716
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698a944617e22.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 182004
+Raw Input Snippet: {"date":"2026-02-10","name":"សៅ សម្បត្តិ","position":"IT SUPPORT","department":"ព័ត៌មានវិទ្យា","next_plan_date":"2026-02-11","next_plan_details":"- បន...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5736
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698b12ef7c184.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 173179
+Raw Input Snippet: {"date":"2026-02-11","name":"seangsarun","position":"Administration","department":"រដ្ឋបាលទូទៅ","next_plan_date":"2025-09-13","next_plan_details":"","image":"data:image/jpeg;base...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5765
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698c560c5d206.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 166031
+Raw Input Snippet: {"date":"2026-02-11","name":"ឌឹម​ សុជាតិ","position":"IT MANAGER","department":"ប្រធានផ្នែកព័ត៌មានវិទ្យា","next_plan_date":"2026-02-...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5767
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698c564d6b589.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 163290
+Raw Input Snippet: {"date":"2026-02-11","name":"សៅ សម្បត្តិ","position":"IT SUPPORT","department":"ព័ត៌មានវិទ្យា","next_plan_date":"2026-02-12","next_plan_details":"- បន...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5768
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698c57f0295f6.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 157645
+Raw Input Snippet: {"date":"2026-02-11","name":"ឌឹម​ សុជាតិ","position":"IT MANAGER","department":"ប្រធានផ្នែកព័ត៌មានវិទ្យា","next_plan_date":"2026-02-...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5802
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698db08216554.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 143767
+Raw Input Snippet: {"date":"2026-02-12","name":"សៅ សម្បត្តិ","position":"IT SUPPORT","department":"ព័ត៌មានវិទ្យា","next_plan_date":"2026-02-13","next_plan_details":"- បន...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5805
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698db1c0c0354.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 142560
+Raw Input Snippet: {"date":"2026-02-13","name":"ឌឹម​ សុជាតិ","position":"IT MANAGER","department":"ប្រធានផ្នែកព័ត៌មានវិទ្យា","next_plan_date":"2026-02-...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5837
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698f01a5a81c9.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 150908
+Raw Input Snippet: {"date":"2026-02-13","name":"សៅ សម្បត្តិ","position":"IT SUPPORT","department":"ព័ត៌មានវិទ្យា","next_plan_date":"2026-02-14","next_plan_details":"- បន...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5838
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_698f0669c5dcc.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 163742
+Raw Input Snippet: {"date":"2026-02-14","name":"ឌឹម​ សុជាតិ","position":"IT MANAGER","department":"ប្រធានផ្នែកព័ត៌មានវិទ្យា","next_plan_date":"2026-02-...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5858
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_6990477dd86f8.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.
+Raw Input Length: 182111
+Raw Input Snippet: {"date":"2026-02-15","name":"សៅ សម្បត្តិ","position":"IT SUPPORT","department":"ព័ត៌មានវិទ្យា","next_plan_date":"2026-02-16","next_plan_details":"- បន...
+Attempting DB connection...
+DB Commit Successful. Report ID: 5882
+Starting Telegram Process
+Sending text message to Telegram group: -1001618361706
+Text message sent successfully.
+Processing image for group -1002845612876. Format: image/jpeg. Temp Path: /tmp/report_69919ce1ddca1.jpg
+Sending photo to Telegram group: -1002845612876
+Photo sent successfully.

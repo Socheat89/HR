@@ -362,7 +362,7 @@ if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
         <!-- Sidebar Navigation for PC -->
         <nav class="sidebar">
             <a href="dashboard.php" class="nav-item"> <span>🏠</span> ផ្ទាំងគ្រប់គ្រង </a>
-            <a href="index.php" class="nav-item active"> <span>📦</span> ទំនិញ </a>
+            <a href="../index.php" class="nav-item active"> <span>📦</span> ទំនិញ </a>
             <a href="reports.php" class="nav-item"> <span>📊</span> របាយការណ៍ </a>
             <a href="stock_counting.php" class="nav-item"> <span>🔢</span> ការរាប់ស្តុក </a>
             <a href="review_requests.php" class="nav-item"> <span>🔍</span> ពិនិត្យសំណើរ </a>
@@ -388,7 +388,7 @@ if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
             <?php endif; ?>
 
             <div class="form-group">
-                <button class="btn-back" onclick="window.location.href='index.php'">ត្រឡប់ក្រោយ</button>
+                <button class="btn-back" onclick="window.location.href='../index.php'">ត្រឡប់ក្រោយ</button>
             </div>
         </div>
     </div>
@@ -396,7 +396,7 @@ if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
     <!-- Bottom Navigation for Mobile -->
     <div class="bottom-nav">
         <a href="dashboard.php" class="nav-item"> <span>🏠</span> ផ្ទាំងគ្រប់គ្រង </a>
-        <a href="index.php" class="nav-item active"> <span>📦</span> ទំនិញ </a>
+        <a href="../index.php" class="nav-item active"> <span>📦</span> ទំនិញ </a>
         <a href="reports.php" class="nav-item"> <span>📊</span> របាយការណ៍ </a>
         <a href="stock_counting.php" class="nav-item"> <span>🔢</span> ការរាប់ស្តុក </a>
     </div>
@@ -410,7 +410,7 @@ if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
                 modal.classList.remove('show', 'hide');
                 modal.querySelector('.modal-content').classList.remove('show', 'hide');
                 modal.style.display = 'none';
-                window.location.href = 'index.php';
+                window.location.href = '../index.php';
             }, 300);
         }
 

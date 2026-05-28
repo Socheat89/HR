@@ -6,7 +6,7 @@ session_start();
 $dbHost = 'localhost';
 $dbName = 'samann1_admin_panel';
 $dbUser = 'samann1_admin_panel';
-$dbPass = 'admin_panel@2025';
+$dbPass = '';
 $telegramChatId = '-1002496391098';
 define('BASE_URL', $_SERVER['PHP_SELF']);
 
@@ -23,11 +23,11 @@ try {
     ]);
     $pdo->exec("SET NAMES 'utf8mb4'");
 } catch (PDOException $e) {
-    die("ב€ב†ב ב»בב€ב’ב“ב»ב„ב€ב¶בב—ב’ב‡ב¶ב”ב‹ב˜ב¼ב›בב’ב‹ב¶ב“ב‘ב·ב“ב’ב“ב“בב™: " . $e->getMessage());
+    die("בבב ב»בבבבב»בבב¶בבבבב¶בבבב¼בבבבב¶בבב·בבבבבב: " . $e->getMessage());
 }
 
 // Fetch current user details
-$currentUserFullName = 'ב¢ב’ב“ב€ב”ב’בב¾ב˜ב·ב“בב’ב‚ב¶ב›ב‹';
+$currentUserFullName = 'ב¢בבבבבבב¾בב·בבבבב¶בב';
 $currentUserId = null;
 if (isset($_SESSION['user_id'])) {
     $currentUserId = $_SESSION['user_id'];
@@ -39,7 +39,7 @@ if (isset($_SESSION['user_id'])) {
     }
 } else {
     // ADDED: Redirect unauthenticated users to login page
-    header("Location: login.php");
+    header("Location: ../auth/login.php");
     exit;
 }
 
@@ -81,7 +81,7 @@ if (isset($_POST['submit_add_request'])) {
 
     // Basic validation
     if (empty($newRequestData['request_type']) || empty($newRequestData['user_id']) || empty($newRequestData['request_date'])) {
-        $error = "בב¼ב˜ב”ב†ב–בב‰ב‚ב’בב”ב‹ Field בב‚ב›ב˜ב¶ב“בב‰ב’ב‰ב¶ (*) ב“ב…ב€ב’ב“ב»ב„ב‘ב˜ב’בב„ב‹ב”ב“ב’בב‚ב˜ב”";
+        $error = "בב¼בבבבבבבבבבב Field בבבבב¶בבבבבב¶ (*) בבבבבב»בבבבבבבבבבבבבב";
     } else {
         try {
             $columns = implode(', ', array_keys($newRequestData));
@@ -91,17 +91,17 @@ if (isset($_POST['submit_add_request'])) {
             $stmt->execute(array_values($newRequestData));
             $newId = $pdo->lastInsertId();
 
-            $message = "נ†• *בב†בב¾בב’ב˜ב¸בב’בב¼בב”ב¶ב“ב”ב“ב’בב‚ב˜*\n" .
-                       "ב¢ב’ב“ב€ב”ב’בב¾ (ב¢ב’ב“ב€ב”ב“ב’בב‚ב˜): $currentUserFullName\n" .
-                       "ב”ב’בב—בב‘בב’ב“ב¾בב»ב†: {$newRequestData['request_type']}\n" .
-                       "ב¢ב’ב“ב€בב’ב“ב¾בב»ב†: {$newRequestData['requester_name']}\n" .
-                       "ב€ב¶ב›ב”בב·ב…ב’ב†בב‘: " . date('Y-m-d H:i:s');
+            $message = "נ *בבבב¾בבבב¸בבבב¼בבב¶בבבבבבב*\n" .
+                       "ב¢בבבבבבב¾ (ב¢בבבבבבבבב): $currentUserFullName\n" .
+                       "בבבבבבבבבב¾בב»ב: {$newRequestData['request_type']}\n" .
+                       "ב¢בבבבבבב¾בב»ב: {$newRequestData['requester_name']}\n" .
+                       "בב¶בבבב·בבבבב: " . date('Y-m-d H:i:s');
             sendTelegramMessage($telegramChatId, $message);
-            $_SESSION['success_message'] = "בב†בב¾ (ID: $newId) בב’בב¼בב”ב¶ב“ב”ב“ב’בב‚ב˜בב„ב™ב‡ב„ב‚ב‡בב™ב”";
+            $_SESSION['success_message'] = "בבבב¾ (ID: $newId) בבבב¼בבב¶בבבבבבבבבבבבבבבבב";
             header("Location: " . BASE_URL);
             exit;
         } catch (PDOException $e) {
-            $error = "ב€ב†ב ב»בב€ב’ב“ב»ב„ב€ב¶בב”ב“ב’בב‚ב˜ב€ב†בבב‹בב’בב¶: " . $e->getMessage();
+            $error = "בבב ב»בבבבב»בבב¶בבבבבבבבבבבבבבבב¶: " . $e->getMessage();
         }
     }
 }
@@ -115,7 +115,7 @@ if (isset($_POST['edit_id'])) {
     $originalRequest = $stmtOriginal->fetch();
 
     if (!$originalRequest) {
-        $error = "בב€ב˜ב·ב“בƒב¾ב‰בב†בב¾בב‚ב›בב’בב¼בב€ב‚בב˜ב’בב½ב›ב‘בב”";
+        $error = "בבבב·בבב¾בבבבב¾בבבבבבב¼בבבבבבבב½בבבב";
     } elseif ($isAdmin || ($originalRequest['user_id'] == $currentUserId)) {
         $updateFields = [];
         foreach ($requestFields as $field) {
@@ -154,14 +154,14 @@ if (isset($_POST['edit_id'])) {
 
                 $changes = [];
                 foreach ($updateFields as $key => $newValue) {
-                    $oldValue = $originalRequest[$key] ?? 'ב˜ב·ב“ב˜ב¶ב“';
+                    $oldValue = $originalRequest[$key] ?? 'בב·בבב¶ב';
                     if ((string)$oldValue != (string)$newValue) {
                         if ($key === 'user_id') {
                             $stmtOldUser = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
                             $stmtOldUser->execute([$oldValue]);
                             $oldUser = $stmtOldUser->fetch();
-                            $oldName = $oldUser ? $oldUser['full_name'] : 'ב˜ב·ב“בב’ב‚ב¶ב›ב‹';
-                            $newName = $updateFields['requester_name'] ?? 'ב˜ב·ב“בב’ב‚ב¶ב›ב‹';
+                            $oldName = $oldUser ? $oldUser['full_name'] : 'בב·בבבבב¶בב';
+                            $newName = $updateFields['requester_name'] ?? 'בב·בבבבב¶בב';
                             $changes[] = "$key: '$oldName' -> '$newName'";
                         } else {
                             $changes[] = "$key: '$oldValue' -> '$newValue'";
@@ -170,27 +170,27 @@ if (isset($_POST['edit_id'])) {
                 }
                 if (!empty($changes)) {
                     $editedBy = $isAdmin ? "(Admin) $currentUserFullName" : $currentUserFullName;
-                    $message = "גן¸ ב€ב¶בבב’ב“ב¾בב»ב†בב’בב¼בב”ב¶ב“ב€ב‚בב„ב™: $editedBy\n" .
+                    $message = "גן¸ בב¶בבבבב¾בב»בבבבב¼בבב¶בבבבבב: $editedBy\n" .
                                "__________________\n" .
-                               "ב›בבבב˜ב’ב‚ב¶ב›ב‹: $edit_id\n" .
-                               "ב”ב’בב—בב‘בב’ב“ב¾בב»ב†: {$updateFields['request_type']}\n" .
-                               "ב¢ב’ב“ב€בב’ב“ב¾בב»ב†: {$updateFields['requester_name']}\n" .
-                               "ב€ב¶בב•ב’ב›ב¶בב‹ב”ב’בב¼ב:\n" . implode("\n", $changes) . "\n" .
-                               "ב€ב¶ב›ב”בב·ב…ב’ב†בב‘: " . date('Y-m-d H:i:s');
+                               "בבבבבבבב¶בב: $edit_id\n" .
+                               "בבבבבבבבבב¾בב»ב: {$updateFields['request_type']}\n" .
+                               "ב¢בבבבבבב¾בב»ב: {$updateFields['requester_name']}\n" .
+                               "בב¶בבבבב¶בבבבבב¼ב:\n" . implode("\n", $changes) . "\n" .
+                               "בב¶בבבב·בבבבב: " . date('Y-m-d H:i:s');
                     sendTelegramMessage($telegramChatId, $message);
                 }
-                $_SESSION['success_message'] = "בב†בב¾ (ID: $edit_id) בב’בב¼בב”ב¶ב“ב€ב‚בב˜ב’בב½ב›בב„ב™ב‡ב„ב‚ב‡בב™ב”";
+                $_SESSION['success_message'] = "בבבב¾ (ID: $edit_id) בבבב¼בבב¶בבבבבבבב½בבבבבבבבבבב";
             } catch (PDOException $e) {
-                $error = "ב€ב†ב ב»בב€ב’ב“ב»ב„ב€ב¶בב€ב‚בב˜ב’בב½ב›: " . $e->getMessage();
+                $error = "בבב ב»בבבבב»בבב¶בבבבבבבב½ב: " . $e->getMessage();
             }
         } else {
-            $_SESSION['success_message'] = "ב˜ב·ב“ב˜ב¶ב“ב€ב¶בב•ב’ב›ב¶בב‹ב”ב’בב¼בבב’בב¼בב”ב¶ב“ב’ב’בב¾ב¡ב¾ב„ב…ב†ב–ב„ב‡בב†בב¾ (ID: $edit_id)ב”";
+            $_SESSION['success_message'] = "בב·בבב¶בבב¶בבבבב¶בבבבבב¼בבבבב¼בבב¶בבבבב¾ב¡ב¾בבבבבבבבבב¾ (ID: $edit_id)ב";
         }
 
         header("Location: " . BASE_URL);
         exit;
     } else {
-        $error = "ב¢ב’ב“ב€ב˜ב·ב“ב˜ב¶ב“בב·ב‘ב’ב’ב·ב€ב‚בב˜ב’בב½ב›בב†בב¾ב“בב‡ב‘בב”";
+        $error = "ב¢בבבבב·בבב¶בבב·בבבב·בבבבבבב½בבבבב¾בבבבבב";
     }
 }
 
@@ -207,25 +207,25 @@ if (isset($_POST['delete_id']) && $isAdmin) {
             $stmtDelete = $pdo->prepare("DELETE FROM requests WHERE id = ?");
             $stmtDelete->execute([$delete_id]);
             
-            $message = "נ—‘ן¸ *ב€ב¶בב›ב»ב”ב€ב¶בבב’ב“ב¾בב»ב†*\n" .
-                       "ב¢ב’ב“ב€ב”ב’בב¾ (Admin): $currentUserFullName\n" .
-                       "ב›בבבב˜ב’ב‚ב¶ב›ב‹: {$requestToDelete['id']}\n" .
-                       "ב”ב’בב—בב‘בב’ב“ב¾בב»ב†: {$requestToDelete['request_type']}\n" .
-                       "ב¢ב’ב“ב€בב’ב“ב¾בב»ב†: {$requestToDelete['requester_name']}\n" .
-                       "ב בבב»ב•ב›: {$requestToDelete['reason']}\n" .
-                       "ב€ב¶ב›ב”בב·ב…ב’ב†בב‘ב›ב»ב”: " . date('Y-m-d H:i:s');
+            $message = "נן¸ *בב¶בבב»בבב¶בבבבב¾בב»ב*\n" .
+                       "ב¢בבבבבבב¾ (Admin): $currentUserFullName\n" .
+                       "בבבבבבבב¶בב: {$requestToDelete['id']}\n" .
+                       "בבבבבבבבבב¾בב»ב: {$requestToDelete['request_type']}\n" .
+                       "ב¢בבבבבבב¾בב»ב: {$requestToDelete['requester_name']}\n" .
+                       "ב בבב»בב: {$requestToDelete['reason']}\n" .
+                       "בב¶בבבב·בבבבבבב»ב: " . date('Y-m-d H:i:s');
             sendTelegramMessage($telegramChatId, $message);
-            $_SESSION['success_message'] = "בב†בב¾ (ID: $delete_id) בב’בב¼בב”ב¶ב“ב›ב»ב”בב„ב™ב‡ב„ב‚ב‡בב™ב”";
+            $_SESSION['success_message'] = "בבבב¾ (ID: $delete_id) בבבב¼בבב¶בבב»בבבבבבבבבבב";
         } catch (PDOException $e) {
-            $error = "ב€ב†ב ב»בב€ב’ב“ב»ב„ב€ב¶בב›ב»ב”: " . $e->getMessage();
+            $error = "בבב ב»בבבבב»בבב¶בבב»ב: " . $e->getMessage();
         }
     } else {
-        $error = "בב€ב˜ב·ב“בƒב¾ב‰בב†בב¾בב‚ב›בב’בב¼בב›ב»ב”ב‘בב”";
+        $error = "בבבב·בבב¾בבבבב¾בבבבבבב¼בבב»בבבב";
     }
     header("Location: " . BASE_URL);
     exit;
 } elseif (isset($_POST['delete_id']) && !$isAdmin) {
-    $error = "ב¢ב’ב“ב€ב˜ב·ב“ב˜ב¶ב“בב·ב‘ב’ב’ב·ב›ב»ב”ב€ב†בבב‹בב’בב¶ב‘בב”";
+    $error = "ב¢בבבבב·בבב¶בבב·בבבב·בב»בבבבבבבבבב¶בבב";
 }
 
 // --- FETCH REQUESTS FOR DISPLAY ---
@@ -246,7 +246,7 @@ try {
     $stmt->execute($params);
     $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $error = "ב€ב†ב ב»בב˜ב¼ב›בב’ב‹ב¶ב“ב‘ב·ב“ב’ב“ב“בב™ב–בב›ב‘ב¶ב‰ב‘ב·ב“ב’ב“ב“בב™: " . $e->getMessage();
+    $error = "בבב ב»בבב¼בבבבב¶בבב·בבבבבבבבבבב¶בבב·בבבבבב: " . $e->getMessage();
     $requests = [];
 }
 
@@ -267,7 +267,7 @@ if (empty($error) && isset($_SESSION['error_message'])) {
      <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="https://i.ibb.co/r2JWnd2x/Logo-Van-Van-1.png">
-    <title>ב‚ב’בב”ב‹ב‚ב’בב„בב†בב¾</title>
+    <title>בבבבבבבבבבבבב¾</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css">
     <style>
@@ -415,9 +415,9 @@ if (empty($error) && isset($_SESSION['error_message'])) {
 <body>
     <div class="report-container">
         <div class="action-bar no-print">
-            <h2 class="report-title" style="margin-bottom:0;">ב”ב‰ב’ב‡ב¸בב†בב¾</h2>
+            <h2 class="report-title" style="margin-bottom:0;">בבבבב¸בבבב¾</h2>
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addRequestModal">
-                <i class="fas fa-plus"></i> ב”ב“ב’בב‚ב˜בב†בב¾בב’ב˜ב¸
+                <i class="fas fa-plus"></i> בבבבבבבבבב¾בבבב¸
             </button>
         </div>
 
@@ -429,23 +429,23 @@ if (empty($error) && isset($_SESSION['error_message'])) {
         <?php endif; ?>
 
         <div class="mb-3 no-print">
-            <input type="text" id="searchInput" class="form-control" placeholder="בב’בב‚ב„בב€ (ID, בˆב’ב˜ב„ב‡, ב”ב’בב—בב‘, ב בבב»ב•ב›...)....">
+            <input type="text" id="searchInput" class="form-control" placeholder="בבבבבבב (ID, בבבבב, בבבבבב, ב בבב»בב...)....">
         </div>
 
         <?php if (empty($requests)): ?>
-            <p class="text-center">ב˜ב·ב“ב˜ב¶ב“בב†בב¾בב¶ב˜ב½ב™בב’בב¼בב”ב¶ב“בב€בƒב¾ב‰ב‘בב”</p>
+            <p class="text-center">בב·בבב¶בבבבב¾בב¶בב½בבבבב¼בבב¶בבבבב¾בבבב</p>
         <?php else: ?>
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>ב”ב’בב—בב‘בב†בב¾</th>
-                            <th>בˆב’ב˜ב„ב‡ב¢ב’ב“ב€בב’ב“ב¾בב»ב†</th>
-                            <th>ב•ב’ב“ב‚ב€</th>
-                            <th>ב€ב¶ב›ב”בב·ב…ב’ב†בב‘בב’ב“ב¾בב»ב†</th>
-                            <th style="min-width: 150px;">ב˜ב¼ב›ב בבב»</th>
-                            <th class="no-print" style="min-width: 180px;">בב€ב˜ב’ב˜ב—ב¶ב–</th>
+                            <th>בבבבבבבבבב¾</th>
+                            <th>בבבבבב¢בבבבבבב¾בב»ב</th>
+                            <th>בבבבב</th>
+                            <th>בב¶בבבב·בבבבבבבבב¾בב»ב</th>
+                            <th style="min-width: 150px;">בב¼בב בבב»</th>
+                            <th class="no-print" style="min-width: 180px;">בבבבבבב¶ב</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -463,13 +463,13 @@ if (empty($error) && isset($_SESSION['error_message'])) {
                                     <button class="btn btn-sm btn-detail" data-bs-toggle="modal" data-bs-target="#detailModal" 
                                         data-request='<?php echo htmlspecialchars(json_encode($request), ENT_QUOTES, 'UTF-8'); ?>'
                                         data-can-edit="<?php echo ($isAdmin || $request['user_id'] == $currentUserId) ? 'true' : 'false'; ?>">
-                                        <i class="fas fa-eye"></i> ב˜ב¾ב›/ב€ב‚
+                                        <i class="fas fa-eye"></i> בב¾ב/בב
                                     </button>
                                     <?php if ($isAdmin): ?>
                                         <button class="btn btn-sm btn-delete" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal"
                                             data-id="<?php echo $request['id']; ?>"
-                                            data-name="<?php echo htmlspecialchars($request['request_type'] . ' בב„ב™ ' . $request['requester_name']); ?>">
-                                            <i class="fas fa-trash"></i> ב›ב»ב”
+                                            data-name="<?php echo htmlspecialchars($request['request_type'] . ' בבב ' . $request['requester_name']); ?>">
+                                            <i class="fas fa-trash"></i> בב»ב
                                         </button>
                                     <?php endif; ?>
                                 </td>
@@ -482,10 +482,10 @@ if (empty($error) && isset($_SESSION['error_message'])) {
 
         <div class="text-center mt-4 no-print">
             <button type="button" class="btn btn-info" id="printRequestFormButton">
-                <i class="fas fa-print"></i> ב”ב„ב‡ב–ב»ב˜ב’ב–בב†בב¾ (ב‘ב¶ב†ב„ב¢בב‹בב‚ב›ב”ב„ב’ב ב¶ב‰)
+                <i class="fas fa-print"></i> בבבבב»בבבבבבב¾ (בב¶בבב¢בבבבבבבבב ב¶ב)
             </button>
             <button type="button" class="back-btn btn btn-secondary" onclick="window.location.href='https://app.vvc.asia/requests_menu.php'">
-                <i class="fas fa-arrow-left"></i> בב’בב¡ב”ב‹ב‘ב… Menu
+                <i class="fas fa-arrow-left"></i> בבבב¡בבבב Menu
             </button>
         </div>
     </div>
@@ -496,96 +496,96 @@ if (empty($error) && isset($_SESSION['error_message'])) {
             <div class="modal-content">
                 <form method="POST" action="<?php echo BASE_URL; ?>">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="addRequestModalLabel"><i class="fas fa-plus-circle"></i> ב”ב“ב’בב‚ב˜בב†בב¾בב’ב˜ב¸</h5>
+                        <h5 class="modal-title" id="addRequestModalLabel"><i class="fas fa-plus-circle"></i> בבבבבבבבבב¾בבבב¸</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="section-header"><i class="fas fa-user"></i> ב–בבבב˜ב¶ב“ב”ב»ב‚ב’ב‚ב›</div>
+                        <div class="section-header"><i class="fas fa-user"></i> בבבבבב¶בבב»בבבב</div>
                         <div class="detail-row">
                             <?php if ($isAdmin): ?>
                                 <div class="detail-item">
-                                    <label for="add_user_id" class="form-label required-field">ב¢ב’ב“ב€ב”ב’בב¾ ID:</label>
+                                    <label for="add_user_id" class="form-label required-field">ב¢בבבבבבב¾ ID:</label>
                                     <input type="text" name="user_id" id="add_user_id" class="form-control" required>
                                 </div>
                             <?php else: ?>
                                 <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($currentUserId); ?>">
                             <?php endif; ?>
                             <div class="detail-item">
-                                <label for="add_requester_name" class="form-label required-field">בˆב’ב˜ב„ב‡ב¢ב’ב“ב€בב’ב“ב¾בב»ב†:</label>
+                                <label for="add_requester_name" class="form-label required-field">בבבבבב¢בבבבבבב¾בב»ב:</label>
                                 <input type="text" name="requester_name" id="add_requester_name" class="form-control"
                                        value="<?php echo htmlspecialchars($currentUserFullName); ?>" <?php echo !$isAdmin ? 'readonly' : ''; ?> required>
                             </div>
                             <div class="detail-item">
-                                <label for="add_department" class="form-label">ב•ב’ב“ב‚ב€:</label>
+                                <label for="add_department" class="form-label">בבבבב:</label>
                                 <input type="text" name="department" id="add_department" class="form-control">
                             </div>
                             <div class="detail-item">
-                                <label for="add_position" class="form-label">בב†בב‚ב„:</label>
+                                <label for="add_position" class="form-label">בבבבב:</label>
                                 <input type="text" name="position" id="add_position" class="form-control">
                             </div>
                             <div class="detail-item">
-                                <label for="add_branch" class="form-label">בב¶בב¶:</label>
+                                <label for="add_branch" class="form-label">בב¶בב¶:</label>
                                 <input type="text" name="branch" id="add_branch" class="form-control">
                             </div>
                             <div class="detail-item">
-                                <label for="add_contact_number" class="form-label">ב›בבב‘ב¼בבבב–ב’ב‘:</label>
+                                <label for="add_contact_number" class="form-label">בבבבב¼בבבבבב:</label>
                                 <input type="text" name="contact_number" id="add_contact_number" class="form-control">
                             </div>
                         </div>
 
-                        <div class="section-header mt-3"><i class="fas fa-file-alt"></i> ב–בבבב˜ב¶ב“בב†בב¾</div>
+                        <div class="section-header mt-3"><i class="fas fa-file-alt"></i> בבבבבב¶בבבבב¾</div>
                         <div class="detail-row">
                             <div class="detail-item">
-                                <label for="add_request_type" class="form-label required-field">ב”ב’בב—בב‘בב†בב¾:</label>
+                                <label for="add_request_type" class="form-label required-field">בבבבבבבבבב¾:</label>
                                 <input type="text" name="request_type" id="add_request_type" class="form-control" required>
-                                <small class="form-text text-muted">ב§. בב˜ב’בב¶ב€ב”ב’בב…ב¶ב†ב†ב’ב“ב¶ב†, ב—ב’ב›בב…בב’ב€בב“ב˜בבבƒ, ב›.</small>
+                                <small class="form-text text-muted">ב§. בבבבב¶בבבבבב¶בבבבב¶ב, בבבבבבבבבבבבבב, ב.</small>
                             </div>
                             <div class="detail-item">
-                                <label for="add_request_date" class="form-label required-field">ב€ב¶ב›ב”בב·ב…ב’ב†בב‘בב’ב“ב¾בב»ב†/בˆב”ב‹:</label>
+                                <label for="add_request_date" class="form-label required-field">בב¶בבבב·בבבבבבבבב¾בב»ב/בבב:</label>
                                 <input type="date" name="request_date" id="add_request_date" class="form-control" value="<?php echo date('Y-m-d'); ?>" required>
                             </div>
                             <div class="detail-item">
-                                <label for="add_return_date" class="form-label">בב’ב„בƒב…ב¼ב›ב’ב’בב¾ב€ב¶בבב·ב‰/בב’ב„בƒבב„בב·ב‰:</label>
+                                <label for="add_return_date" class="form-label">בבבבבב¼בבבבב¾בב¶בבב·ב/בבבבבבבב·ב:</label>
                                 <input type="date" name="return_date" id="add_return_date" class="form-control">
                             </div>
                             <div class="detail-item">
-                                <label for="add_number_of_days" class="form-label">ב…ב†ב“ב½ב“בב’ב„בƒבˆב”ב‹:</label>
+                                <label for="add_number_of_days" class="form-label">בבבב½בבבבבבבב:</label>
                                 <input type="number" step="0.1" name="number_of_days" id="add_number_of_days" class="form-control">
                             </div>
                             <div class="detail-item">
-                                <label for="add_remaining_days" class="form-label">בב’ב„בƒבˆב”ב‹ב“ב…בב›ב‹:</label>
+                                <label for="add_remaining_days" class="form-label">בבבבבבבבבבבב:</label>
                                 <input type="number" step="0.1" name="remaining_days" id="add_remaining_days" class="form-control">
                             </div>
                             <div class="detail-item" style="flex-basis: 100%;">
-                                <label for="add_reason" class="form-label">ב˜ב¼ב›ב בבב»:</label>
+                                <label for="add_reason" class="form-label">בב¼בב בבב»:</label>
                                 <textarea name="reason" id="add_reason" class="form-control" rows="3"></textarea>
                             </div>
                             <div class="detail-item">
-                                <label for="add_assigned_to" class="form-label">ב”ב’בב‚ב›ב‹ב€ב¶בב„ב¶בב±ב’ב™:</label>
+                                <label for="add_assigned_to" class="form-label">בבבבבבבב¶בבב¶בב±בב:</label>
                                 <input type="text" name="assigned_to" id="add_assigned_to" class="form-control">
                             </div>
                             <div class="detail-item">
-                                <label for="add_location" class="form-label">ב‘ב¸בב¶ב†ב„ב–בב›בˆב”ב‹:</label>
+                                <label for="add_location" class="form-label">בב¸בב¶בבבבבבבב:</label>
                                 <input type="text" name="location" id="add_location" class="form-control">
                             </div>
                         </div>
 
-                        <div class="section-header mt-3"><i class="fas fa-clock"></i> ב–בבבב˜ב¶ב“ב–בב›בבב›ב¶ (ב”ב†ב–בב‰ב”ב¾ב…ב¶ב†ב”ב¶ב…ב‹)</div>
+                        <div class="section-header mt-3"><i class="fas fa-clock"></i> בבבבבב¶בבבבבבבב¶ (בבבבבבב¾בב¶בבב¶בב)</div>
                         <div class="detail-row">
-                            <div class="detail-item"><label for="add_time_in" class="form-label">ב˜ב‰ב„ב„ב…ב¼ב› (ב…בב‰ב˜ב»ב“):</label><input type="time" name="time_in" id="add_time_in" class="form-control"></div>
-                            <div class="detail-item"><label for="add_time_out" class="form-label">ב˜ב‰ב„ב„ב…בב‰ (ב…בב‰ב˜ב»ב“):</label><input type="time" name="time_out" id="add_time_out" class="form-control"></div>
-                            <div class="detail-item"><label for="add_total_hours" class="form-label">ב˜ב‰ב„ב„בבב»ב” (ב…בב‰ב˜ב»ב“):</label><input type="text" name="total_hours" id="add_total_hours" class="form-control"></div>
-                            <div class="detail-item"><label for="add_repay_time_in" class="form-label">ב˜ב‰ב„ב„ב…ב¼ב›בב„:</label><input type="time" name="repay_time_in" id="add_repay_time_in" class="form-control"></div>
-                            <div class="detail-item"><label for="add_repay_time_out" class="form-label">ב˜ב‰ב„ב„ב…בב‰בב„:</label><input type="time" name="repay_time_out" id="add_repay_time_out" class="form-control"></div>
-                            <div class="detail-item"><label for="add_repay_total_hours" class="form-label">ב˜ב‰ב„ב„בב„בבב»ב”:</label><input type="text" name="repay_total_hours" id="add_repay_total_hours" class="form-control"></div>
-                            <div class="detail-item"><label for="add_late_hours" class="form-label">ב˜ב‰ב„ב„ב˜ב€ב™ב÷ב:</label><input type="text" name="late_hours" id="add_late_hours" class="form-control"></div>
-                            <div class="detail-item"><label for="add_forgot_scan_in" class="form-label">ב—ב’ב›בב…בב’ב€בב“ב…ב¼ב› (ב˜ב‰ב„ב„):</label><input type="text" name="forgot_scan_in" id="add_forgot_scan_in" class="form-control" placeholder="HH:MM"></div>
-                            <div class="detail-item"><label for="add_forgot_scan_out" class="form-label">ב—ב’ב›בב…בב’ב€בב“ב…בב‰ (ב˜ב‰ב„ב„):</label><input type="text" name="forgot_scan_out" id="add_forgot_scan_out" class="form-control" placeholder="HH:MM"></div>
+                            <div class="detail-item"><label for="add_time_in" class="form-label">בבבבבב¼ב (בבבבב»ב):</label><input type="time" name="time_in" id="add_time_in" class="form-control"></div>
+                            <div class="detail-item"><label for="add_time_out" class="form-label">בבבבבבב (בבבבב»ב):</label><input type="time" name="time_out" id="add_time_out" class="form-control"></div>
+                            <div class="detail-item"><label for="add_total_hours" class="form-label">בבבבבבב»ב (בבבבב»ב):</label><input type="text" name="total_hours" id="add_total_hours" class="form-control"></div>
+                            <div class="detail-item"><label for="add_repay_time_in" class="form-label">בבבבבב¼בבב:</label><input type="time" name="repay_time_in" id="add_repay_time_in" class="form-control"></div>
+                            <div class="detail-item"><label for="add_repay_time_out" class="form-label">בבבבבבבבב:</label><input type="time" name="repay_time_out" id="add_repay_time_out" class="form-control"></div>
+                            <div class="detail-item"><label for="add_repay_total_hours" class="form-label">בבבבבבבבב»ב:</label><input type="text" name="repay_total_hours" id="add_repay_total_hours" class="form-control"></div>
+                            <div class="detail-item"><label for="add_late_hours" class="form-label">בבבבבבבב÷ב:</label><input type="text" name="late_hours" id="add_late_hours" class="form-control"></div>
+                            <div class="detail-item"><label for="add_forgot_scan_in" class="form-label">בבבבבבבבבבבב¼ב (בבבב):</label><input type="text" name="forgot_scan_in" id="add_forgot_scan_in" class="form-control" placeholder="HH:MM"></div>
+                            <div class="detail-item"><label for="add_forgot_scan_out" class="form-label">בבבבבבבבבבבבב (בבבב):</label><input type="text" name="forgot_scan_out" id="add_forgot_scan_out" class="form-control" placeholder="HH:MM"></div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> ב”ב„ב‡ב”ב„ב‹</button>
-                        <button type="submit" name="submit_add_request" class="btn btn-primary"><i class="fas fa-plus-circle"></i> ב”ב“ב’בב‚ב˜בב†בב¾</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times"></i> בבבבבב</button>
+                        <button type="submit" name="submit_add_request" class="btn btn-primary"><i class="fas fa-plus-circle"></i> בבבבבבבבבב¾</button>
                     </div>
                 </form>
             </div>
@@ -597,7 +597,7 @@ if (empty($error) && isset($_SESSION['error_message'])) {
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="detailModalLabel"><i class="fas fa-info-circle"></i> ב–בבב˜ב¶ב“ב›ב†ב¢ב·בב“בƒבב†בב¾</h5>
+                    <h5 class="modal-title" id="detailModalLabel"><i class="fas fa-info-circle"></i> בבבבב¶בבבב¢ב·בבבבבבב¾</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" id="editForm" action="<?php echo BASE_URL; ?>">
@@ -605,118 +605,118 @@ if (empty($error) && isset($_SESSION['error_message'])) {
                         <input type="hidden" name="edit_id" id="edit_id_field">
                         <input type="hidden" name="user_id" id="edit_user_id_field">
                         <!-- Personal Info Section -->
-                        <div class="section-header"><i class="fas fa-user"></i> ב–בבבב˜ב¶ב“ב”ב»ב‚ב’ב‚ב›</div>
+                        <div class="section-header"><i class="fas fa-user"></i> בבבבבב¶בבב»בבבב</div>
                         <div class="detail-row">
                             <div class="detail-item"><i class="fas fa-id-badge"></i> <strong>ID:</strong> <span class="display-text" data-field="id"></span></div>
                             <?php if ($isAdmin): ?>
-                                <div class="detail-item"><i class="fas fa-user"></i> <strong>ב¢ב’ב“ב€ב”ב’בב¾ ID:</strong> 
+                                <div class="detail-item"><i class="fas fa-user"></i> <strong>ב¢בבבבבבב¾ ID:</strong> 
                                     <span class="display-text" data-field="user_id"></span>
                                     <input type="text" name="user_id" class="edit-field form-control form-control-sm" data-edit-field="user_id">
                                 </div>
                             <?php endif; ?>
-                            <div class="detail-item"><i class="fas fa-user"></i> <strong>בˆב’ב˜ב„ב‡ב¢ב’ב“ב€בב’ב“ב¾בב»ב†:</strong> 
+                            <div class="detail-item"><i class="fas fa-user"></i> <strong>בבבבבב¢בבבבבבב¾בב»ב:</strong> 
                                 <span class="display-text" data-field="requester_name"></span>
                                 <input type="text" name="requester_name" class="edit-field form-control form-control-sm" data-edit-field="requester_name" <?php echo !$isAdmin ? 'readonly' : ''; ?>>
                             </div>
-                            <div class="detail-item"><i class="fas fa-building"></i> <strong>ב•ב’ב“ב‚ב€:</strong> 
+                            <div class="detail-item"><i class="fas fa-building"></i> <strong>בבבבב:</strong> 
                                 <span class="display-text" data-field="department"></span>
                                 <input type="text" name="department" class="edit-field form-control form-control-sm" data-edit-field="department">
                             </div>
-                            <div class="detail-item"><i class="fas fa-briefcase"></i> <strong>בב†בב‚ב„:</strong> 
+                            <div class="detail-item"><i class="fas fa-briefcase"></i> <strong>בבבבב:</strong> 
                                 <span class="display-text" data-field="position"></span>
                                 <input type="text" name="position" class="edit-field form-control form-control-sm" data-edit-field="position">
                             </div>
-                            <div class="detail-item"><i class="fas fa-map-marker-alt"></i> <strong>בב¶בב¶:</strong> 
+                            <div class="detail-item"><i class="fas fa-map-marker-alt"></i> <strong>בב¶בב¶:</strong> 
                                 <span class="display-text" data-field="branch"></span>
                                 <input type="text" name="branch" class="edit-field form-control form-control-sm" data-edit-field="branch">
                             </div>
-                            <div class="detail-item"><i class="fas fa-phone"></i> <strong>ב›בבב‘ב¼בבבב–ב’ב‘:</strong> 
+                            <div class="detail-item"><i class="fas fa-phone"></i> <strong>בבבבב¼בבבבבב:</strong> 
                                 <span class="display-text" data-field="contact_number"></span>
                                 <input type="text" name="contact_number" class="edit-field form-control form-control-sm" data-edit-field="contact_number">
                             </div>
                         </div>
                         <!-- Request Info Section -->
-                        <div class="section-header mt-3"><i class="fas fa-file-alt"></i> ב–בבבב˜ב¶ב“בב†בב¾</div>
+                        <div class="section-header mt-3"><i class="fas fa-file-alt"></i> בבבבבב¶בבבבב¾</div>
                         <div class="detail-row">
-                            <div class="detail-item"><i class="fas fa-clipboard-list"></i> <strong>ב”ב’בב—בב‘בב†בב¾:</strong> 
+                            <div class="detail-item"><i class="fas fa-clipboard-list"></i> <strong>בבבבבבבבבב¾:</strong> 
                                 <span class="display-text" data-field="request_type"></span>
                                 <input type="text" name="request_type" class="edit-field form-control form-control-sm" data-edit-field="request_type">
                             </div>
-                            <div class="detail-item"><i class="fas fa-calendar-day"></i> <strong>ב€ב¶ב›ב”בב·ב…ב’ב†בב‘בב’ב“ב¾בב»ב†:</strong> 
+                            <div class="detail-item"><i class="fas fa-calendar-day"></i> <strong>בב¶בבבב·בבבבבבבבב¾בב»ב:</strong> 
                                 <span class="display-text" data-field="request_date" data-format="date"></span>
                                 <input type="date" name="request_date" class="edit-field form-control form-control-sm" data-edit-field="request_date">
                             </div>
-                            <div class="detail-item"><i class="fas fa-calendar-check"></i> <strong>בב’ב„בƒב…ב¼ב›ב’ב’בב¾ב€ב¶בבב·ב‰:</strong> 
+                            <div class="detail-item"><i class="fas fa-calendar-check"></i> <strong>בבבבבב¼בבבבב¾בב¶בבב·ב:</strong> 
                                 <span class="display-text" data-field="return_date" data-format="date"></span>
                                 <input type="date" name="return_date" class="edit-field form-control form-control-sm" data-edit-field="return_date">
                             </div>
-                            <div class="detail-item"><i class="fas fa-sort-numeric-down"></i> <strong>ב…ב†ב“ב½ב“בב’ב„בƒבˆב”ב‹:</strong> 
+                            <div class="detail-item"><i class="fas fa-sort-numeric-down"></i> <strong>בבבב½בבבבבבבב:</strong> 
                                 <span class="display-text" data-field="number_of_days"></span>
                                 <input type="number" step="0.1" name="number_of_days" class="edit-field form-control form-control-sm" data-edit-field="number_of_days">
                             </div>
-                            <div class="detail-item"><i class="fas fa-hourglass-half"></i> <strong>בב’ב„בƒבˆב”ב‹ב“ב…בב›ב‹:</strong> 
+                            <div class="detail-item"><i class="fas fa-hourglass-half"></i> <strong>בבבבבבבבבבבב:</strong> 
                                 <span class="display-text" data-field="remaining_days"></span>
                                 <input type="number" step="0.1" name="remaining_days" class="edit-field form-control form-control-sm" data-edit-field="remaining_days">
                             </div>
-                            <div class="detail-item" style="flex-basis: 100%;"><i class="fas fa-comment"></i> <strong>ב˜ב¼ב›ב בבב»:</strong> 
+                            <div class="detail-item" style="flex-basis: 100%;"><i class="fas fa-comment"></i> <strong>בב¼בב בבב»:</strong> 
                                 <span class="display-text" data-field="reason" style="white-space: pre-wrap;"></span>
                                 <textarea name="reason" class="edit-field form-control form-control-sm" data-edit-field="reason" rows="3"></textarea>
                             </div>
-                            <div class="detail-item"><i class="fas fa-user-tie"></i> <strong>ב”ב’בב‚ב›ב‹ב€ב¶בב„ב¶בב±ב’ב™:</strong> 
+                            <div class="detail-item"><i class="fas fa-user-tie"></i> <strong>בבבבבבבב¶בבב¶בב±בב:</strong> 
                                 <span class="display-text" data-field="assigned_to"></span>
                                 <input type="text" name="assigned_to" class="edit-field form-control form-control-sm" data-edit-field="assigned_to">
                             </div>
-                            <div class="detail-item"><i class="fas fa-map"></i> <strong>ב‘ב¸בב¶ב†ב„ב–בב›בˆב”ב‹:</strong> 
+                            <div class="detail-item"><i class="fas fa-map"></i> <strong>בב¸בב¶בבבבבבבב:</strong> 
                                 <span class="display-text" data-field="location"></span>
                                 <input type="text" name="location" class="edit-field form-control form-control-sm" data-edit-field="location">
                             </div>
                         </div>
                         <!-- Time Details Section -->
-                        <div class="section-header mt-3"><i class="fas fa-clock"></i> ב–בבבב˜ב¶ב“ב–בב›בבב›ב¶</div>
+                        <div class="section-header mt-3"><i class="fas fa-clock"></i> בבבבבב¶בבבבבבבב¶</div>
                         <div class="detail-row">
-                            <div class="detail-item"><i class="fas fa-sign-in-alt"></i> <strong>ב˜ב‰ב„ב„ב…ב¼ב› (ב…בב‰ב˜ב»ב“):</strong> 
+                            <div class="detail-item"><i class="fas fa-sign-in-alt"></i> <strong>בבבבבב¼ב (בבבבב»ב):</strong> 
                                 <span class="display-text" data-field="time_in" data-format="time"></span>
                                 <input type="time" name="time_in" class="edit-field form-control form-control-sm" data-edit-field="time_in">
                             </div>
-                            <div class="detail-item"><i class="fas fa-sign-out-alt"></i> <strong>ב˜ב‰ב„ב„ב…בב‰ (ב…בב‰ב˜ב»ב“):</strong> 
+                            <div class="detail-item"><i class="fas fa-sign-out-alt"></i> <strong>בבבבבבב (בבבבב»ב):</strong> 
                                 <span class="display-text" data-field="time_out" data-format="time"></span>
                                 <input type="time" name="time_out" class="edit-field form-control form-control-sm" data-edit-field="time_out">
                             </div>
-                            <div class="detail-item"><i class="fas fa-hourglass"></i> <strong>ב˜ב‰ב„ב„בבב»ב” (ב…בב‰ב˜ב»ב“):</strong> 
+                            <div class="detail-item"><i class="fas fa-hourglass"></i> <strong>בבבבבבב»ב (בבבבב»ב):</strong> 
                                 <span class="display-text" data-field="total_hours"></span>
                                 <input type="text" name="total_hours" class="edit-field form-control form-control-sm" data-edit-field="total_hours">
                             </div>
-                            <div class="detail-item"><i class="fas fa-sign-in-alt"></i> <strong>ב˜ב‰ב„ב„ב…ב¼ב›בב„:</strong> 
+                            <div class="detail-item"><i class="fas fa-sign-in-alt"></i> <strong>בבבבבב¼בבב:</strong> 
                                 <span class="display-text" data-field="repay_time_in" data-format="time"></span>
                                 <input type="time" name="repay_time_in" class="edit-field form-control form-control-sm" data-edit-field="repay_time_in">
                             </div>
-                            <div class="detail-item"><i class="fas fa-sign-out-alt"></i> <strong>ב˜ב‰ב„ב„ב…בב‰בב„:</strong> 
+                            <div class="detail-item"><i class="fas fa-sign-out-alt"></i> <strong>בבבבבבבבב:</strong> 
                                 <span class="display-text" data-field="repay_time_out" data-format="time"></span>
                                 <input type="time" name="repay_time_out" class="edit-field form-control form-control-sm" data-edit-field="repay_time_out">
                             </div>
-                            <div class="detail-item"><i class="fas fa-hourglass-end"></i> <strong>ב˜ב‰ב„ב„בב„בבב»ב”:</strong> 
+                            <div class="detail-item"><i class="fas fa-hourglass-end"></i> <strong>בבבבבבבבב»ב:</strong> 
                                 <span class="display-text" data-field="repay_total_hours"></span>
                                 <input type="text" name="repay_total_hours" class="edit-field form-control form-control-sm" data-edit-field="repay_total_hours">
                             </div>
-                            <div class="detail-item"><i class="fas fa-exclamation-triangle"></i> <strong>ב˜ב‰ב„ב„ב˜ב€ב™ב÷ב:</strong> 
+                            <div class="detail-item"><i class="fas fa-exclamation-triangle"></i> <strong>בבבבבבבב÷ב:</strong> 
                                 <span class="display-text" data-field="late_hours"></span>
                                 <input type="text" name="late_hours" class="edit-field form-control form-control-sm" data-edit-field="late_hours">
                             </div>
-                            <div class="detail-item"><i class="fas fa-fingerprint"></i> <strong>ב—ב’ב›בב…בב’ב€בב“ב…ב¼ב›:</strong> 
+                            <div class="detail-item"><i class="fas fa-fingerprint"></i> <strong>בבבבבבבבבבבב¼ב:</strong> 
                                 <span class="display-text" data-field="forgot_scan_in"></span>
                                 <input type="text" name="forgot_scan_in" class="edit-field form-control form-control-sm" data-edit-field="forgot_scan_in">
                             </div>
-                            <div class="detail-item"><i class="fas fa-fingerprint"></i> <strong>ב—ב’ב›בב…בב’ב€בב“ב…בב‰:</strong> 
+                            <div class="detail-item"><i class="fas fa-fingerprint"></i> <strong>בבבבבבבבבבבבב:</strong> 
                                 <span class="display-text" data-field="forgot_scan_out"></span>
                                 <input type="text" name="forgot_scan_out" class="edit-field form-control form-control-sm" data-edit-field="forgot_scan_out">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="detail_close_button"><i class="fas fa-times"></i> ב”ב·ב‘</button>
-                        <button type="button" class="btn btn-warning" id="detail_edit_button" style="display:none;"><i class="fas fa-edit"></i> ב€ב‚בב˜ב’בב½ב›</button>
-                        <button type="submit" class="btn btn-primary" id="detail_save_button" style="display: none;"><i class="fas fa-save"></i> בב€ב’בב¶ב‘ב»ב€</button>
-                        <button type="button" class="btn btn-info" id="detail_print_button"><i class="fas fa-print"></i> ב”ב„ב‡ב–ב»ב˜ב’ב–</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="detail_close_button"><i class="fas fa-times"></i> בב·ב</button>
+                        <button type="button" class="btn btn-warning" id="detail_edit_button" style="display:none;"><i class="fas fa-edit"></i> בבבבבבב½ב</button>
+                        <button type="submit" class="btn btn-primary" id="detail_save_button" style="display: none;"><i class="fas fa-save"></i> בבבבב¶בב»ב</button>
+                        <button type="button" class="btn btn-info" id="detail_print_button"><i class="fas fa-print"></i> בבבבב»בבב</button>
                     </div>
                 </form>
             </div>
@@ -729,18 +729,18 @@ if (empty($error) && isset($_SESSION['error_message'])) {
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="deleteModalLabel"><i class="fas fa-exclamation-triangle"></i> ב”ב‰ב’ב‡ב¶ב€ב‹ב€ב¶בב›ב»ב”</h5>
+                    <h5 class="modal-title" id="deleteModalLabel"><i class="fas fa-exclamation-triangle"></i> בבבבב¶בבבב¶בבב»ב</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>בב¾ב¢ב’ב“ב€ב–ב·בב‡ב¶ב…ב„ב‹ב›ב»ב”בב†בב¾ "<span id="deleteRequestNameDisplay"></span>" ב˜ב‚ב“ב‘ב?</p>
-                    <p class="text-danger">בב€ב˜ב’ב˜ב—ב¶ב–ב“בב‡ב˜ב·ב“ב¢ב¶ב…ב˜ב·ב“ב’ב’בב¾בב·ב‰ב”ב¶ב“ב‘בב”</p>
+                    <p>בב¾ב¢בבבבב·בבב¶בבבבב»בבבבב¾ "<span id="deleteRequestNameDisplay"></span>" בבבבב?</p>
+                    <p class="text-danger">בבבבבבב¶בבבבבב·בב¢ב¶בבב·בבבבב¾בב·בבב¶בבבב</p>
                 </div>
                 <div class="modal-footer">
                     <form method="POST" action="<?php echo BASE_URL; ?>" style="display: inline;">
                         <input type="hidden" name="delete_id" id="deleteConfirmIdInput">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-ban"></i> ב”ב„ב‡ב”ב„ב‹</button>
-                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> ב›ב»ב”</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-ban"></i> בבבבבב</button>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> בב»ב</button>
                     </form>
                 </div>
             </div>
@@ -753,7 +753,7 @@ if (empty($error) && isset($_SESSION['error_message'])) {
         <div class="header">
             <img src="https://i.ibb.co/x86F4TfC/Logo-Van-Van-2.png" alt="VanVan Cambodia Logo" class="print-logo">
         </div>
-        <span class="span">בב†בב¾בב»ב†ב…ב’ב”ב¶ב”ב‹בˆב”ב‹בב˜ב’בב¶ב€ב‹ ב”ב’בב¼בבבב¢ב¼ב ב…בב‰ב˜ב»ב“ב˜ב‰ב„ב„ ב˜ב€ב™ב÷ב ב“ב·ב„ב—ב’ב›בב…בב’ב€בב“ב˜בבבƒבבב’בב˜ב¶ב“</span>
+        <span class="span">בבבב¾בב»בבבבב¶בבבבבבבבבב¶בב בבבב¼בבבב¢ב¼ב בבבבב»בבבבב בבבב÷ב בב·בבבבבבבבבבבבבבבבבבבבב¶ב</span>
         <div class="container" id="printContainer">
             <!-- Dynamically populated content will go here -->
         </div>
@@ -867,7 +867,7 @@ if (empty($error) && isset($_SESSION['error_message'])) {
             if (editButton) editButton.style.display = (isEditing || !canEditThisRequest) ? 'none' : 'inline-block';
             if (saveButton) saveButton.style.display = isEditing && canEditThisRequest ? 'inline-block' : 'none';
             if (printButton) printButton.style.display = isEditing ? 'none' : 'inline-block';
-            if (closeButton) closeButton.innerHTML = isEditing ? '<i class="fas fa-times"></i> ב”ב„ב‡ב”ב„ב‹' : '<i class="fas fa-times"></i> ב”ב·ב‘';
+            if (closeButton) closeButton.innerHTML = isEditing ? '<i class="fas fa-times"></i> בבבבבב' : '<i class="fas fa-times"></i> בב·ב';
         }
 
         detailModalEl.addEventListener('show.bs.modal', function (event) {
@@ -959,66 +959,66 @@ if (empty($error) && isset($_SESSION['error_message'])) {
                         <tr>
                             <td colspan="5" class="value">
                                 <div class="icon-group">
-                                    <div class="request-icon-print" id="print-annual-${reqId}">בב˜ב’בב¶ב€ב”ב’בב…ב¶ב†ב†ב’ב“ב¶ב† (Annual Leave)</div>
-                                    <div class="request-icon-print" id="print-sick-${reqId}">בב˜ב’בב¶ב€בב„ב™ב‡ב†ב„ב÷ (Sick Leave)</div>
-                                    <div class="request-icon-print" id="print-forgot-fp-${reqId}">ב—ב’ב›בב…בב’ב€בב“ב˜בבבƒ (Forgot FP)</div>
-                                    <div class="request-icon-print" id="print-maternity-${reqId}">בב˜ב’בב¶ב€ב›ב†ב ב‚ב˜ב¶בב»ב—ב¶ב– (Maternity Leave)</div>
-                                    <div class="request-icon-print" id="print-ot-${reqId}">בב‚ב˜ב˜ב‰ב„ב„ (OT)</div>
-                                    <div class="request-icon-print" id="print-early-${reqId}">ב…בב‰ב˜ב»ב“ב˜ב‰ב„ב„ (Early)</div>
-                                    <div class="request-icon-print" id="print-changing-off-${reqId}">ב”ב’בב¼בבב’ב„בƒבב˜ב’בב¶ב€ (Changing day off)</div>
-                                    <div class="request-icon-print" id="print-special-${reqId}">בב˜ב’בב¶ב€ב–ב·בבב (Special Leave)</div>
-                                    <div class="request-icon-print" id="print-late-${reqId}">ב˜ב€ב™ב÷ב (Late)</div>
+                                    <div class="request-icon-print" id="print-annual-${reqId}">בבבבב¶בבבבבב¶בבבבב¶ב (Annual Leave)</div>
+                                    <div class="request-icon-print" id="print-sick-${reqId}">בבבבב¶בבבבבבבב÷ (Sick Leave)</div>
+                                    <div class="request-icon-print" id="print-forgot-fp-${reqId}">בבבבבבבבבבבבבב (Forgot FP)</div>
+                                    <div class="request-icon-print" id="print-maternity-${reqId}">בבבבב¶בבבב בבב¶בב»בב¶ב (Maternity Leave)</div>
+                                    <div class="request-icon-print" id="print-ot-${reqId}">בבבבבבב (OT)</div>
+                                    <div class="request-icon-print" id="print-early-${reqId}">בבבבב»בבבבב (Early)</div>
+                                    <div class="request-icon-print" id="print-changing-off-${reqId}">בבבב¼בבבבבבבבבב¶ב (Changing day off)</div>
+                                    <div class="request-icon-print" id="print-special-${reqId}">בבבבב¶בבב·בבב (Special Leave)</div>
+                                    <div class="request-icon-print" id="print-late-${reqId}">בבבב÷ב (Late)</div>
                                 </div>
                             </td>
                         </tr>
                         <tr>
-                            <td style="text-align: left; width:8rem;">בˆב’ב˜ב„ב‡ב¢ב’ב“ב€בב’ב“ב¾בבב»ב†ב–</td><td>${reqSafe('requester_name')}</td>
-                            <td>ב…ב†ב“ב½ב“בב’ב„בƒ/ב…ב’ב”ב¶ב”ב‹ב“ב…בב›ב‹ב–</td><td>${reqSafe('number_of_days')} בב’ב„בƒ</td><td>${reqSafe('remaining_days')} בב’ב„בƒ</td>
+                            <td style="text-align: left; width:8rem;">בבבבבב¢בבבבבבב¾בבב»בב</td><td>${reqSafe('requester_name')}</td>
+                            <td>בבבב½בבבבב/בבבב¶בבבבבבבב</td><td>${reqSafe('number_of_days')} בבבב</td><td>${reqSafe('remaining_days')} בבבב</td>
                         </tr>
                         <tr>
-                            <td style="text-align: left; width:8rem;">ב•ב’ב“ב‚ב€/ב˜ב»בבב†בב‚ב„/בב¶בב¶ב–</td><td>${reqSafe('department')}</td>
+                            <td style="text-align: left; width:8rem;">בבבבב/בב»בבבבבב/בב¶בב¶ב</td><td>${reqSafe('department')}</td>
                             <td>${reqSafe('position')}</td><td colspan="2">${reqSafe('branch')}</td>
                         </tr>
                         <tr>
-                            <td style="text-align: left;">בב’ב„בƒבב‚ב†ב’ב“ב¶ב†בב»ב†בˆב”ב‹ב–</td><td>${formatDate(reqSafe('request_date'))}</td>
-                            <td>ב…ב†ב“ב½ב“ב˜ב‰ב„ב„ב™ב÷ב/ב…בב‰ב˜ב»ב“ב–</td><td colspan="2">${reqSafe('late_hours')}</td>
+                            <td style="text-align: left;">בבבבבבבבבב¶בבב»בבבבב</td><td>${formatDate(reqSafe('request_date'))}</td>
+                            <td>בבבב½בבבבבבב÷ב/בבבבב»בב</td><td colspan="2">${reqSafe('late_hours')}</td>
                         </tr>
                         <tr>
-                            <td style="text-align: left;">בב’ב„בƒב…ב¼ב›ב’ב’בב¾ב€ב¶בבב·ב‰/בב’ב„בƒבב„בב·ב‰ב–</td><td>${formatDate(reqSafe('return_date'))}</td>
-                            <td>ב—ב’ב›בב…בב’ב€בב“ב˜בבבƒב–</td><td>${reqSafe('forgot_scan_in')}</td><td>${reqSafe('forgot_scan_out')}</td>
+                            <td style="text-align: left;">בבבבבב¼בבבבב¾בב¶בבב·ב/בבבבבבבב·בב</td><td>${formatDate(reqSafe('return_date'))}</td>
+                            <td>בבבבבבבבבבבבבבב</td><td>${reqSafe('forgot_scan_in')}</td><td>${reqSafe('forgot_scan_out')}</td>
                         </tr>
                         <tr>
-                            <td style="text-align: left;">ב˜ב‰ב„ב„ב…בב‰ב…ב¼ב›(ב€ב¶בב„ב¶ב)ב–</td>
-                            <td style="text-align: left;"><p style="display: inline-flex;">ב˜ב‰ב„ב„ב…ב¼ב›ב–</p><p style="padding-left: 1rem; display: inline-flex;">${formatTime(reqSafe('time_in'))}</p></td>
-                            <td style="text-align: left;"><p style="display: inline-flex;">ב˜ב‰ב„ב„ב…בב‰ב–</p><p style="padding-left: 1rem; display: inline-flex;">${formatTime(reqSafe('time_out'))}</p></td>
-                            <td colspan="2" style="text-align: left;"><p style="display: inline-flex;">ב˜ב‰ב„ב„בבב»ב”ב–</p><p style="padding-left: 1rem; display: inline-flex;">${reqSafe('total_hours')}</p></td>
+                            <td style="text-align: left;">בבבבבבבבב¼ב(בב¶בבב¶ב)ב</td>
+                            <td style="text-align: left;"><p style="display: inline-flex;">בבבבבב¼בב</p><p style="padding-left: 1rem; display: inline-flex;">${formatTime(reqSafe('time_in'))}</p></td>
+                            <td style="text-align: left;"><p style="display: inline-flex;">בבבבבבבב</p><p style="padding-left: 1rem; display: inline-flex;">${formatTime(reqSafe('time_out'))}</p></td>
+                            <td colspan="2" style="text-align: left;"><p style="display: inline-flex;">בבבבבבב»בב</p><p style="padding-left: 1rem; display: inline-flex;">${reqSafe('total_hours')}</p></td>
                         </tr>
                         <tr>
-                            <td style="text-align: left;">ב˜ב‰ב„ב„ב’ב’בב¾ב€ב¶בבב„בב·ב‰ב–</td>
-                            <td style="text-align: left;"><p style="display: inline-flex;">ב˜ב‰ב„ב„ב…ב¼ב›בב„ב–</p><p style="padding-left: 0.2rem; display: inline-flex;">${formatTime(reqSafe('repay_time_in'))}</p></td>
-                            <td style="text-align: left;"><p style="display: inline-flex;">ב˜ב‰ב„ב„ב…בב‰בב„ב–</p><p style="padding-left: 0.2rem; display: inline-flex;">${formatTime(reqSafe('repay_time_out'))}</p></td>
-                            <td colspan="2" style="text-align: left;"><p style="display: inline-flex;">ב˜ב‰ב„ב„בב„בבב»ב”ב–</p><p style="padding-left: 0.2rem; display: inline-flex;">${reqSafe('repay_total_hours')}</p></td>
+                            <td style="text-align: left;">בבבבבבבב¾בב¶בבבבב·בב</td>
+                            <td style="text-align: left;"><p style="display: inline-flex;">בבבבבב¼בבבב</p><p style="padding-left: 0.2rem; display: inline-flex;">${formatTime(reqSafe('repay_time_in'))}</p></td>
+                            <td style="text-align: left;"><p style="display: inline-flex;">בבבבבבבבבב</p><p style="padding-left: 0.2rem; display: inline-flex;">${formatTime(reqSafe('repay_time_out'))}</p></td>
+                            <td colspan="2" style="text-align: left;"><p style="display: inline-flex;">בבבבבבבבב»בב</p><p style="padding-left: 0.2rem; display: inline-flex;">${reqSafe('repay_total_hours')}</p></td>
                         </tr>
-                        <tr><td style="text-align: left;">ב˜ב¼ב›ב בבב»ב–</td><td colspan="4" style="text-align: left; white-space: pre-wrap;">${reqSafe('reason')}</td></tr>
-                        <tr><td style="text-align: left;">ב‘ב¸ב€ב“ב’ב›ב‚ב„ב¢ב†ב¡ב»ב„ב–בב›בˆב”ב‹ב–</td><td colspan="4" style="text-align: left;">${reqSafe('location')}</td></tr>
-                        <tr><td style="text-align: left;">ב›בבב‘ב†ב“ב¶ב€ב‹ב‘ב†ב“ב„ב”ב“ב’ב‘ב¶ב“ב‹ב–</td><td style="text-align: left;">${reqSafe('contact_number')}</td>
-                            <td>ב”ב’בב‚ב›ב‹ב€ב¶בב„ב¶בב±ב’ב™ב–</td><td colspan="2" style="text-align: left;">${reqSafe('assigned_to')}</td>
+                        <tr><td style="text-align: left;">בב¼בב בבב»ב</td><td colspan="4" style="text-align: left; white-space: pre-wrap;">${reqSafe('reason')}</td></tr>
+                        <tr><td style="text-align: left;">בב¸בבבבבבב¢בב¡ב»בבבבבבבב</td><td colspan="4" style="text-align: left;">${reqSafe('location')}</td></tr>
+                        <tr><td style="text-align: left;">בבבבבבב¶בבבבבבבבבבב¶בבב</td><td style="text-align: left;">${reqSafe('contact_number')}</td>
+                            <td>בבבבבבבב¶בבב¶בב±בבב</td><td colspan="2" style="text-align: left;">${reqSafe('assigned_to')}</td>
                         </tr>
                     </table>
                     <table class="main-footer">
-                        <tr><th style="text-align: left;"><p>ב”ב‰ב’ב‡ב¶ב€ב‹/ב¢ב“ב»ב˜בבבב„ב™</p></th><th><p>בˆב’ב˜ב„ב‡ (Name)</p></th><th><p>ב בב’בב›בבב¶ (Signature)</p></th><th colspan="2"><p>בב’ב„בƒבב‚ב†ב’ב“ב¶ב† (Date)</p></th></tr>
-                        <tr><th style="text-align: left;"><p>ב¢ב’ב“ב€בב’ב“ב¾בבב»ב†</p></th><th>${reqSafe('requester_name')}</th><th>${signatureHtml}</th><th colspan="2">${formatDate(reqSafe('request_date'))}</th></tr>
-                        <tr><th style="text-align: left;"><p>ב”ב’בב’ב¶ב“ב•ב’ב“ב‚ב€</p></th><th>_________________________</th><th>_________________________</th><th colspan="2">_________________________</th></tr>
-                        <tr><th style="text-align: left;"><p>ב”ב’בב’ב¶ב“ב’ב“ב’ב¶ב“ב˜ב“ב»בב’ב</p></th><th>_________________________</th><th>_________________________</th><th colspan="2">_________________________</th></tr>
-                        <tr><th style="text-align: left;"><p>ב”ב’בב’ב¶ב“ב‚ב’בב”ב‹ב‚ב’בב„ב‘ב¼ב‘ב…</p></th><th>_________________________</th><th>_________________________</th><th colspan="2">_________________________</th></tr>
-                        <tr><th style="text-align: left;"><p>ב¢ב‚ב’ב‚ב“ב¶ב™ב·ב€ב¶</p></th><th>_________________________</th><th>_________________________</th><th colspan="2">_________________________</th></tr>
+                        <tr><th style="text-align: left;"><p>בבבבב¶בב/ב¢בב»בבבבבב</p></th><th><p>בבבבב (Name)</p></th><th><p>ב בבבבבבב¶ (Signature)</p></th><th colspan="2"><p>בבבבבבבבבב¶ב (Date)</p></th></tr>
+                        <tr><th style="text-align: left;"><p>ב¢בבבבבבב¾בבב»ב</p></th><th>${reqSafe('requester_name')}</th><th>${signatureHtml}</th><th colspan="2">${formatDate(reqSafe('request_date'))}</th></tr>
+                        <tr><th style="text-align: left;"><p>בבבבב¶בבבבבב</p></th><th>_________________________</th><th>_________________________</th><th colspan="2">_________________________</th></tr>
+                        <tr><th style="text-align: left;"><p>בבבבב¶בבבבב¶בבבב»בבב</p></th><th>_________________________</th><th>_________________________</th><th colspan="2">_________________________</th></tr>
+                        <tr><th style="text-align: left;"><p>בבבבב¶בבבבבבבבבבבב¼בב</p></th><th>_________________________</th><th>_________________________</th><th colspan="2">_________________________</th></tr>
+                        <tr><th style="text-align: left;"><p>ב¢בבבבב¶בב·בב¶</p></th><th>_________________________</th><th>_________________________</th><th colspan="2">_________________________</th></tr>
                     </table>
                     <div style="page-break-after: always;"></div>`;
                 
                 container.insertAdjacentHTML('beforeend', formContent);
 
                 // This part highlights the correct icon. It's now safer.
-                const requestTypesMap = { 'בב˜ב’בב¶ב€ב”ב’בב…ב¶ב†ב†ב’ב“ב¶ב† (Annual Leave)': `print-annual-${reqId}`, 'בב˜ב’בב¶ב€בב„ב™ב‡ב†ב„ב÷ (Sick Leave)': `print-sick-${reqId}`, 'ב—ב’ב›בב…בב’ב€בב“ב˜בבבƒ (Forgot FP)': `print-forgot-fp-${reqId}`, 'בב˜ב’בב¶ב€ב›ב†ב ב‚ב˜ב¶בב»ב—ב¶ב– (Maternity Leave)': `print-maternity-${reqId}`, 'בב‚ב˜ב˜ב‰ב„ב„ (OT)': `print-ot-${reqId}`, 'ב…בב‰ב˜ב»ב“ב˜ב‰ב„ב„ (Early)': `print-early-${reqId}`, 'ב”ב’בב¼בבב’ב„בƒבב˜ב’בב¶ב€ (Changing day off)': `print-changing-off-${reqId}`, 'בב˜ב’בב¶ב€ב–ב·בבב (Special Leave)': `print-special-${reqId}`, 'ב˜ב€ב™ב÷ב (Late)': `print-late-${reqId}` };
+                const requestTypesMap = { 'בבבבב¶בבבבבב¶בבבבב¶ב (Annual Leave)': `print-annual-${reqId}`, 'בבבבב¶בבבבבבבב÷ (Sick Leave)': `print-sick-${reqId}`, 'בבבבבבבבבבבבבב (Forgot FP)': `print-forgot-fp-${reqId}`, 'בבבבב¶בבבב בבב¶בב»בב¶ב (Maternity Leave)': `print-maternity-${reqId}`, 'בבבבבבב (OT)': `print-ot-${reqId}`, 'בבבבב»בבבבב (Early)': `print-early-${reqId}`, 'בבבב¼בבבבבבבבבב¶ב (Changing day off)': `print-changing-off-${reqId}`, 'בבבבב¶בבב·בבב (Special Leave)': `print-special-${reqId}`, 'בבבב÷ב (Late)': `print-late-${reqId}` };
                 
                 setTimeout(() => {
                     // Split is now safe because requestType is guaranteed to be a string.
@@ -1046,7 +1046,7 @@ if (empty($error) && isset($_SESSION['error_message'])) {
                 document.querySelectorAll('table tbody tr:not([style*="display: none"]) .btn-detail').forEach(button => {
                      try { allVisibleRequests.push(JSON.parse(button.getAttribute('data-request'))); } catch (e) { console.error("Error parsing for main print:", e); }
                 });
-                if (allVisibleRequests.length === 0) { alert("ב˜ב·ב“ב˜ב¶ב“בב†בב¾בב¾ב˜ב’ב”ב¸ב”ב„ב‡ב–ב»ב˜ב’ב–ב‘בב”"); return; }
+                if (allVisibleRequests.length === 0) { alert("בב·בבב¶בבבבב¾בב¾בבבב¸בבבבב»בבבבבב"); return; }
                 const printContentEl = document.getElementById('printableForm');
                 printContentEl.style.display = 'block';
                 populatePrintForm(allVisibleRequests);
@@ -1057,7 +1057,7 @@ if (empty($error) && isset($_SESSION['error_message'])) {
         const detailPrintButton = document.getElementById('detail_print_button');
         if(detailPrintButton){
             detailPrintButton.addEventListener('click', function() {
-                if (!currentRequestForDetailModal) { alert("ב˜ב·ב“ב˜ב¶ב“ב‘ב·ב“ב’ב“ב“בב™בב†בב¾בב¾ב˜ב’ב”ב¸ב”ב„ב‡ב–ב»ב˜ב’ב–ב–ב¸ Modal ב‘בב”"); return; }
+                if (!currentRequestForDetailModal) { alert("בב·בבב¶בבב·בבבבבבבבבב¾בב¾בבבב¸בבבבב»בבבבב¸ Modal בבב"); return; }
                 const printContentEl = document.getElementById('printableForm');
                 printContentEl.style.display = 'block';
                 populatePrintForm([currentRequestForDetailModal]);

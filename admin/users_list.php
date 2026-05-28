@@ -1,7 +1,7 @@
 <?php
 include 'includes/auth.php';
 if (!isLoggedIn() || $_SESSION['role'] !== 'admin') {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit();
 }
 include 'includes/db.php';
@@ -25,7 +25,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <ul>
             <li><a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a></li>
             <li><a href="users_list.php" class="active"><i class="fas fa-users"></i> User List</a></li>
-            <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            <li><a href="../auth/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
     </div>
     <div class="main-content">

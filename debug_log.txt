@@ -1,3 +1,0 @@
-Inserting: report_date=2025-04-10 11:32:00, name=IT, position=គិតលុយ, unique_id=CASH78901
-Inserting: report_date=2025-04-10 11:32:00, name=IT, position=គិតលុយ, unique_id=CASH78901
-Inserting: report_date=2025-04-10 11:34:00, name=IT, position=គិតលុយ, unique_id=CASH78901

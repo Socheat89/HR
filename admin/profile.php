@@ -342,6 +342,28 @@ function check_totp_columns(PDO $conn)
 
 // Determine current page for active navigation
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// --- Theme Loading Logic ---
+$themeConfigPath = __DIR__ . '/includes/theme_config.json';
+$currentTheme = 'default';
+$customImage = '';
+if (file_exists($themeConfigPath)) {
+    $configData = json_decode(file_get_contents($themeConfigPath), true);
+    $currentTheme = $configData['theme'] ?? 'default';
+    $customImage = $configData['custom_image'] ?? '';
+}
+
+// Default Background Images
+$themeBackgrounds = [
+    'kny'  => 'https://i.ibb.co/RKMS4tb/khmer-new-year-bg-1770518313913.jpg',
+    'pb'   => 'https://i.ibb.co/S4dYb35p/khmer-new-year-bg-1770518389358.jpg',
+    'cny'  => 'https://i.ibb.co/4462998/khmer-new-year-bg-1770518448823.jpg',
+    'wf'   => 'https://i.ibb.co/2611144/khmer-new-year-bg-1770518505378.jpg',
+    'kb'   => 'https://images.unsplash.com/photo-1596701062351-be5f6a200a45?q=80&w=1600',
+    'indy' => 'https://images.unsplash.com/photo-1629813289069-7c8704204d60?q=80&w=1600'
+];
+
+$bgImage = !empty($customImage) ? $customImage : ($themeBackgrounds[$currentTheme] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="km">
@@ -371,6 +393,37 @@ $current_page = basename($_SERVER['PHP_SELF']);
             --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             --border-radius: 12px;
         }
+
+        /* --- Theme Overrides --- */
+        <?php if ($currentTheme === 'kny'): ?>
+        :root { --primary-color: #f59e0b; --secondary-color: #ec4899; }
+        <?php elseif ($currentTheme === 'pb'): ?>
+        :root { --primary-color: #ea580c; --secondary-color: #4b5563; }
+        <?php elseif ($currentTheme === 'cny'): ?>
+        :root { --primary-color: #dc2626; --secondary-color: #fbbf24; }
+        <?php elseif ($currentTheme === 'wf'): ?>
+        :root { --primary-color: #0284c7; --secondary-color: #0ea5e9; }
+        <?php elseif ($currentTheme === 'kb'): ?>
+        :root { --primary-color: #d97706; --secondary-color: #1e3a8a; }
+        <?php elseif ($currentTheme === 'indy'): ?>
+        :root { --primary-color: #7e22ce; --secondary-color: #1d4ed8; }
+        <?php endif; ?>
+
+        <?php if (!empty($bgImage)): ?>
+        body {
+            background-image: url('<?php echo $bgImage; ?>') !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+            background-repeat: no-repeat !important;
+        }
+        /* Glass Effect for Container */
+        .container {
+            background-color: rgba(255, 255, 255, 0.92) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        <?php endif; ?>
 
         body {
             font-family: var(--font-family);
@@ -834,50 +887,55 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 bottom: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
+                height: 60px;
                 background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
+                backdrop-filter: blur(10px);
                 justify-content: space-around;
-                padding: 8px 0;
-                box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.1);
+                align-items: center;
+                padding: 0;
+                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
                 z-index: 1000;
-                border-top-left-radius: 20px;
-                border-top-right-radius: 20px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                min-height: 64px;
+                border-top: 1px solid rgba(0,0,0,0.05);
+                border-radius: 0;
             }
 
             .nav-item {
+                flex: 1;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                text-decoration: none;
+                height: 100%;
                 color: #6b7280;
+                text-decoration: none;
                 font-size: 0.75rem;
-                font-weight: 600;
+                font-weight: 500;
                 transition: all 0.2s ease;
-                padding: 6px 8px;
-                border-radius: 12px;
-                min-width: 60px;
-                min-height: 48px;
-                flex: 1;
-                max-width: 80px;
+                border-radius: 0;
+                margin: 0;
+                padding: 0;
+                max-width: none;
+                min-width: 0;
             }
 
             .nav-item.active {
-                color: #6366f1;
-                background: rgba(99, 102, 241, 0.1);
-                transform: scale(1.05);
+                color: var(--primary-color);
+                background: transparent;
+                transform: none;
             }
 
-            .nav-item:hover {
-                color: #6366f1;
-                background: rgba(99, 102, 241, 0.05);
+            .nav-item.active .nav-icon {
+                transform: translateY(-2px);
             }
 
             .nav-icon {
-                font-size: 1.3rem;
-                margin-bottom: 2px;
+                font-size: 1.4rem;
+                margin-bottom: 4px;
+                transition: transform 0.2s ease;
+            }
+            
+            .nav-item:active {
+                background-color: rgba(0,0,0,0.02);
             }
 
             /* 2FA Mobile Styles */
@@ -1132,20 +1190,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <?php endif; ?>
 
     <!-- Bottom Navigation -->
+    <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-        <a href="../homes.php" class="nav-item <?php echo $current_page === '../homes.php' ? 'active' : ''; ?>">
+        <a href="../homes.php" class="nav-item">
             <i class="fas fa-home nav-icon"></i>
             <span>ទំព័រដើម</span>
         </a>
-        <a href="../checklist.php" class="nav-item <?php echo $current_page === '../checklist.php' ? 'active' : ''; ?>">
+        <a href="../system/checklist.php" class="nav-item">
             <i class="fas fa-tasks nav-icon"></i>
             <span>ការងារ</span>
         </a>
-        <a href="../announcements.php" class="nav-item <?php echo $current_page === '../announcements.php' ? 'active' : ''; ?>">
+        <a href="../posts/announcements.php" class="nav-item">
             <i class="fas fa-bell nav-icon"></i>
             <span>ដំណឹង</span>
         </a>
-        <a href="../profile.php" class="nav-item <?php echo $current_page === '../profile.php' ? 'active' : ''; ?>">
+        <a href="profile.php" class="nav-item active">
             <i class="fas fa-user nav-icon"></i>
             <span>គណនី</span>
         </a>

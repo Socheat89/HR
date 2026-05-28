@@ -227,6 +227,7 @@ $vehicles = $stmt->fetch(PDO::FETCH_ASSOC) ?: array_fill_keys(['trucks', 'tricyc
         }
         .add-btn { background-color: #2196F3; }
         .edit-btn { background-color: #FFC107; }
+        .back-btn { background-color: #6c757d; }
         .delete-btn { background-color: #f44336; }
         .action-btn:hover { opacity: 0.9; }
         .editable-cell input[type="number"] {
@@ -286,6 +287,7 @@ $vehicles = $stmt->fetch(PDO::FETCH_ASSOC) ?: array_fill_keys(['trucks', 'tricyc
 <body>
     <div class="container">
         <div class="top-controls">
+            <a href="attendance_menu.php" class="action-btn back-btn"><i class="fas fa-arrow-left"></i> ត្រឡប់ទៅមេនុយ</a>
             <div class="date-form">
                 <form method="GET" action="">
                     <label for="date">ជ្រើសរើសថ្ងៃ: </label>

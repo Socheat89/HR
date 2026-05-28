@@ -210,7 +210,7 @@ try {
     </div>
     <div class="bottom-nav">
         <a href="dashboard.php" class="nav-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>"><i class="fa-solid fa-house"></i> ផ្ទាំងគ្រប់គ្រង</a>
-        <a href="index.php" class="nav-item <?php echo $current_page == 'index.php' ? 'active' : ''; ?>"><i class="fa-solid fa-box-archive"></i> ទំនិញ</a>
+        <a href= class="nav-item <?php echo $current_page ==  ? 'active' : ''; ?>"><i class="fa-solid fa-box-archive"></i> ទំនិញ</a>
         <a href="reports.php" class="nav-item <?php echo $current_page == 'reports.php' ? 'active' : ''; ?>"><i class="fa-solid fa-chart-simple"></i> របាយការណ៍</a>
         <a href="stock_counting.php" class="nav-item <?php echo $current_page == 'stock_counting.php' ? 'active' : ''; ?>"><i class="fa-solid fa-clipboard-list"></i> ការរាប់ស្តុក</a>
     </div>
