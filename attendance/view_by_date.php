@@ -75,10 +75,20 @@ function calculateStaffTotal(array $record, array $config): int {
 }
 
 function ensureColumn(PDO $pdo, string $table, string $column, string $definition): void {
-    $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE ?");
-    $stmt->execute([$column]);
+    if (!preg_match('/^[A-Za-z0-9_]+$/', $table) || !preg_match('/^[A-Za-z0-9_]+$/', $column)) {
+        throw new InvalidArgumentException('Invalid table or column name.');
+    }
 
-    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+    ");
+    $stmt->execute([$table, $column]);
+
+    if ((int)$stmt->fetchColumn() === 0) {
         $pdo->exec("ALTER TABLE `{$table}` ADD COLUMN `{$column}` {$definition}");
     }
 }
@@ -499,7 +509,7 @@ function renderTable(string $key, array $config, array $records) {
             
             <?php
             foreach ($table_configs as $key => $config) {
-                 renderTable($key, $config, $all_records[$key]);
+                 renderTable($key, $config, $all_records[$key] ?? []);
             }
             ?>
             
