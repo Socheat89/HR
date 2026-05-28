@@ -366,7 +366,7 @@ function renderTable(string $key, array $config, array $records) {
 
     } elseif ($type === 'warehouse') {
         echo "<tr><th colspan='5' class='section-header text-h2'>{$label}</th></tr>";
-        echo "<tr><th>CKD</th><th>PSP</th><th>សរុប</th><th>ថ្ងៃរាយការណ៍</th><th class='actions-column'>សកម្មភាព</th></tr></thead><tbody>";
+        echo "<tr><th>PRV</th><th>PSP</th><th>សរុប</th><th>ថ្ងៃរាយការណ៍</th><th class='actions-column'>សកម្មភាព</th></tr></thead><tbody>";
         foreach ($records as $record) {
             $total = calculateStaffTotal($record, $config);
             echo "<tr data-id='{$record['id']}' data-key='{$key}'>
@@ -893,7 +893,7 @@ function renderTable(string $key, array $config, array $records) {
                          <label>ថ្ងៃរាយការណ៍:</label><input type="date" name="reports_date" value="${record ? val('reports_date') : selectedDate}" required>`;
                 break;
             case 'warehouse':
-                html += `<label>CKD:</label><input type="number" name="ckd" min="0" value="${val('ckd') || '0'}">
+                html += `<label>PRV:</label><input type="number" name="ckd" min="0" value="${val('ckd') || '0'}">
                          <label>PSP:</label><input type="number" name="psp" min="0" value="${val('psp') || '0'}">
                          <label>ថ្ងៃរាយការណ៍:</label><input type="date" name="reports_date" value="${record ? val('reports_date') : selectedDate}" required>`;
                 break;
@@ -944,7 +944,7 @@ function renderTable(string $key, array $config, array $records) {
             } else if (tableConfigs[record._key].type === 'store') {
                 description += `GM: ${record.gm || 0}, Manager store: ${record.manager_store || 0}, Manager stock: ${record.manager_stock || 0}, SKKS2: ${record.staff_skks2 || 0}, NR3: ${record.staff_nr3 || 0}`;
             } else if (record._key === 'warehouse_staff') {
-                description += `CKD: ${record.ckd || 0}, PSP: ${record.psp || 0}`;
+                description += `PRV: ${record.ckd || 0}, PSP: ${record.psp || 0}`;
             } else if (record._key === 'new_staff') {
                 description += `${record.name} (${record.role})`;
             }
