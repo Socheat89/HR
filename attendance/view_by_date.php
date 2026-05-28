@@ -436,6 +436,11 @@ function renderTable(string $key, array $config, array $records) {
                         <td class='actions-column'><span class='inline-hint'>ចុចកែ</span></td>
                     </tr>";
         }
+        echo "<tr class='inline-add-row'>
+                    <td colspan='6'>
+                        <button type='button' class='action-btn insert-btn inline-add-btn' onclick=\"addInlineNewStaffRow(this, '{$key}')\">+ Table</button>
+                    </td>
+                </tr>";
     }
 
     echo "</tbody></table>";
@@ -467,6 +472,8 @@ function renderTable(string $key, array $config, array $records) {
         .delete-btn { background-color: #dc3545; padding: 6px 12px; }
         .delete-btn:hover { background-color: #bb2d3b; }
         .inline-hint { color: #6c757d; font-size: 13px; }
+        .inline-add-row td { background-color: #f8f9fa; padding: 10px; }
+        .inline-add-btn { padding: 7px 16px; margin: 0; font-weight: 700; }
         .message { text-align: center; padding: 12px; margin-bottom: 20px; border-radius: 6px; }
         .error { color: #842029; background-color: #f8d7da; border: 1px solid #f5c2c7; }
         .success { color: #0f5132; background-color: #d1e7dd; border: 1px solid #badbcc; }
@@ -787,6 +794,35 @@ function renderTable(string $key, array $config, array $records) {
         if (grandTotalCell) {
             grandTotalCell.innerHTML = `${grandTotal} នាក់`;
         }
+    }
+
+    function createInlineNewStaffRow(key) {
+        const row = document.createElement('tr');
+        row.dataset.key = key;
+        row.dataset.newRow = '1';
+        row.innerHTML = `
+            <td class="editable" data-column="number"></td>
+            <td class="editable" data-column="name"></td>
+            <td class="editable" data-column="role"></td>
+            <td class="editable" data-column="note" style="white-space: pre-wrap;"></td>
+            <td class="editable" data-column="reports_date">${selectedDate}</td>
+            <td class="actions-column"><span class="inline-hint">ចុចកែ</span></td>
+        `;
+        return row;
+    }
+
+    function addInlineNewStaffRow(button, key) {
+        const existingUnsavedRow = document.querySelector(`tr[data-key="${key}"][data-new-row="1"]:not([data-id])`);
+        if (existingUnsavedRow) {
+            const firstEditableCell = existingUnsavedRow.querySelector('td.editable');
+            if (firstEditableCell) makeCellEditable(firstEditableCell);
+            return;
+        }
+
+        const addRow = button.closest('tr');
+        const newRow = createInlineNewStaffRow(key);
+        addRow.parentNode.insertBefore(newRow, addRow);
+        makeCellEditable(newRow.querySelector('td.editable'));
     }
 
     function makeCellEditable(cell) {
