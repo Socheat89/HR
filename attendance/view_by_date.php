@@ -25,7 +25,7 @@ $table_configs = [
         'label' => 'បុគ្គលិកហាង អេស ខេ',
         'db_table' => 'sk_store_staff',
         'type' => 'store',
-        'columns' => ['gm', 'manager_store', 'manager_stock', 'reports_date']
+        'columns' => ['gm', 'manager_store', 'manager_stock', 'staff_skks2', 'staff_nr3', 'reports_date']
     ],
     'warehouse_staff' => [
         'label' => 'បុគ្គលិកឃ្លាំង',
@@ -74,6 +74,15 @@ function calculateStaffTotal(array $record, array $config): int {
     return $total;
 }
 
+function ensureColumn(PDO $pdo, string $table, string $column, string $definition): void {
+    $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE ?");
+    $stmt->execute([$column]);
+
+    if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+        $pdo->exec("ALTER TABLE `{$table}` ADD COLUMN `{$column}` {$definition}");
+    }
+}
+
 try {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS sk_store_staff (
@@ -81,10 +90,15 @@ try {
             gm INT NOT NULL DEFAULT 0,
             manager_store INT NOT NULL DEFAULT 0,
             manager_stock INT NOT NULL DEFAULT 0,
+            staff_skks2 INT NOT NULL DEFAULT 0,
+            staff_nr3 INT NOT NULL DEFAULT 0,
             total INT NOT NULL DEFAULT 0,
             reports_date DATE NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
+
+    ensureColumn($pdo, 'sk_store_staff', 'staff_skks2', 'INT NOT NULL DEFAULT 0 AFTER `manager_stock`');
+    ensureColumn($pdo, 'sk_store_staff', 'staff_nr3', 'INT NOT NULL DEFAULT 0 AFTER `staff_skks2`');
 
     // =========================================================================
     // ការគ្រប់គ្រងការបញ្ជូនទិន្នន័យ (CRUD HANDLING)
@@ -171,9 +185,11 @@ try {
                                 $gm = (int)($record['gm'] ?? 0);
                                 $manager_store = (int)($record['manager_store'] ?? 0);
                                 $manager_stock = (int)($record['manager_stock'] ?? 0);
-                                $total = $gm + $manager_store + $manager_stock;
-                                $stmt = $pdo->prepare("INSERT INTO {$db_table} (gm, manager_store, manager_stock, total, reports_date) VALUES (?, ?, ?, ?, ?)");
-                                $stmt->execute([$gm, $manager_store, $manager_stock, $total, $record['reports_date']]);
+                                $staff_skks2 = (int)($record['staff_skks2'] ?? 0);
+                                $staff_nr3 = (int)($record['staff_nr3'] ?? 0);
+                                $total = $gm + $manager_store + $manager_stock + $staff_skks2 + $staff_nr3;
+                                $stmt = $pdo->prepare("INSERT INTO {$db_table} (gm, manager_store, manager_stock, staff_skks2, staff_nr3, total, reports_date) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                                $stmt->execute([$gm, $manager_store, $manager_stock, $staff_skks2, $staff_nr3, $total, $record['reports_date']]);
                                 break;
                             
                             case 'warehouse':
@@ -264,20 +280,22 @@ function renderTable(string $key, array $config, array $records) {
         if (empty($records)) echo "<tr><td colspan='8'>មិនមានទិន្នន័យសម្រាប់ថ្ងៃនេះទេ។</td></tr>";
 
     } elseif ($type === 'store') {
-        echo "<tr><th colspan='6' class='section-header text-h2'>{$label}</th></tr>";
-        echo "<tr><th>GM</th><th>Manager store</th><th>Manager stock</th><th>សរុប</th><th>ថ្ងៃរាយការណ៍</th><th class='actions-column'>សកម្មភាព</th></tr></thead><tbody>";
+        echo "<tr><th colspan='8' class='section-header text-h2'>{$label}</th></tr>";
+        echo "<tr><th>GM</th><th>Manager store</th><th>Manager stock</th><th>SKKS2</th><th>NR3</th><th>សរុប</th><th>ថ្ងៃរាយការណ៍</th><th class='actions-column'>សកម្មភាព</th></tr></thead><tbody>";
         foreach ($records as $record) {
             $total = calculateStaffTotal($record, $config);
             echo "<tr data-id='{$record['id']}' data-key='{$key}'>
                         <td class='editable' data-column='gm'>" . htmlspecialchars($record['gm'] ?? '0') . "</td>
                         <td class='editable' data-column='manager_store'>" . htmlspecialchars($record['manager_store'] ?? '0') . "</td>
                         <td class='editable' data-column='manager_stock'>" . htmlspecialchars($record['manager_stock'] ?? '0') . "</td>
+                        <td class='editable' data-column='staff_skks2'>" . htmlspecialchars($record['staff_skks2'] ?? '0') . "</td>
+                        <td class='editable' data-column='staff_nr3'>" . htmlspecialchars($record['staff_nr3'] ?? '0') . "</td>
                         <td data-column='total'><b>" . htmlspecialchars((string)$total) . " នាក់</b></td>
                         <td class='editable' data-column='reports_date'>" . htmlspecialchars($record['reports_date'] ?? '') . "</td>
                         <td class='actions-column'><button class='action-btn delete-btn' onclick=\"deleteRecord({$record['id']}, '{$key}_delete', 'តើអ្នកប្រាកដជាចង់លុប?')\">លុប</button></td>
                     </tr>";
         }
-        if (empty($records)) echo "<tr><td colspan='6'>មិនមានទិន្នន័យសម្រាប់ថ្ងៃនេះទេ។</td></tr>";
+        if (empty($records)) echo "<tr><td colspan='8'>មិនមានទិន្នន័យសម្រាប់ថ្ងៃនេះទេ។</td></tr>";
 
     } elseif ($type === 'warehouse') {
         echo "<tr><th colspan='5' class='section-header text-h2'>{$label}</th></tr>";
@@ -791,6 +809,8 @@ function renderTable(string $key, array $config, array $records) {
                 html += `<label>GM:</label><input type="number" name="gm" min="0" value="${val('gm') || '0'}">
                          <label>Manager store:</label><input type="number" name="manager_store" min="0" value="${val('manager_store') || '0'}">
                          <label>Manager stock:</label><input type="number" name="manager_stock" min="0" value="${val('manager_stock') || '0'}">
+                         <label>SKKS2:</label><input type="number" name="staff_skks2" min="0" value="${val('staff_skks2') || '0'}">
+                         <label>NR3:</label><input type="number" name="staff_nr3" min="0" value="${val('staff_nr3') || '0'}">
                          <label>ថ្ងៃរាយការណ៍:</label><input type="date" name="reports_date" value="${record ? val('reports_date') : selectedDate}" required>`;
                 break;
             case 'warehouse':
@@ -843,7 +863,7 @@ function renderTable(string $key, array $config, array $records) {
             if (record._key === 'office_staff') {
                 description += `IT: ${record.it || 0}, Admin: ${record.admin || 0}, Sale: ${record.sale || 0}, 318: ${record.staff_318 || 0}`;
             } else if (tableConfigs[record._key].type === 'store') {
-                description += `GM: ${record.gm || 0}, Manager store: ${record.manager_store || 0}, Manager stock: ${record.manager_stock || 0}`;
+                description += `GM: ${record.gm || 0}, Manager store: ${record.manager_store || 0}, Manager stock: ${record.manager_stock || 0}, SKKS2: ${record.staff_skks2 || 0}, NR3: ${record.staff_nr3 || 0}`;
             } else if (record._key === 'warehouse_staff') {
                 description += `CKD: ${record.ckd || 0}, PSP: ${record.psp || 0}`;
             } else if (record._key === 'new_staff') {
