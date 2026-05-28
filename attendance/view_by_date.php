@@ -178,6 +178,39 @@ try {
                     exit();
                 }
 
+                if (!$id && $config['type'] === 'new_staff') {
+                    $report_date = $_POST['reports_date'] ?? $selected_date;
+                    $new_record = [
+                        'number' => '',
+                        'name' => '',
+                        'role' => '',
+                        'note' => '',
+                        'reports_date' => $report_date ?: $selected_date
+                    ];
+
+                    if ($column === 'reports_date') {
+                        $new_record['reports_date'] = $value ?: $selected_date;
+                    } else {
+                        $new_record[$column] = $value;
+                    }
+
+                    $stmt = $pdo->prepare("INSERT INTO {$config['db_table']} (number, name, role, note, reports_date) VALUES (?, ?, ?, ?, ?)");
+                    $stmt->execute([
+                        $new_record['number'],
+                        $new_record['name'],
+                        $new_record['role'],
+                        $new_record['note'],
+                        $new_record['reports_date']
+                    ]);
+
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'បានបង្កើត និងរក្សាទុកទិន្នន័យ!',
+                        'id' => (int)$pdo->lastInsertId()
+                    ]);
+                    exit();
+                }
+
                 if (!$id) {
                     echo json_encode(['success' => false, 'message' => 'ទិន្នន័យមិនត្រឹមត្រូវ']);
                     exit();
@@ -392,7 +425,17 @@ function renderTable(string $key, array $config, array $records) {
                         <td class='actions-column'><button class='action-btn delete-btn' onclick=\"deleteRecord({$row['id']}, '{$key}_delete', 'តើអ្នកប្រាកដជាចង់លុប?')\">លុប</button></td>
                     </tr>";
         }
-        if (empty($records)) echo "<tr><td colspan='6'>មិនមានទិន្នន័យសម្រាប់ថ្ងៃនេះទេ។</td></tr>";
+        if (empty($records)) {
+            $date = htmlspecialchars($selected_date);
+            echo "<tr data-key='{$key}' data-new-row='1'>
+                        <td class='editable' data-column='number'></td>
+                        <td class='editable' data-column='name'></td>
+                        <td class='editable' data-column='role'></td>
+                        <td class='editable' data-column='note' style='white-space: pre-wrap;'></td>
+                        <td class='editable' data-column='reports_date'>{$date}</td>
+                        <td class='actions-column'><span class='inline-hint'>ចុចកែ</span></td>
+                    </tr>";
+        }
     }
 
     echo "</tbody></table>";
