@@ -261,17 +261,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reportLink = "https://" . $_SERVER['HTTP_HOST'] . "/view_report.php?id=" . $report_id;
 
         // --- START OF TELEGRAM SENDING LOGIC ---
+        $telegramHtml = function ($value) {
+            return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        };
+
         // Only attempt to send if a bot token is available and there are configured groups
         if (!empty($telegramBotToken) && !empty($telegramGroups)) {
             // Loop through each configured group and send a message
             foreach ($telegramGroups as $group) {
                 // Prepare message header (common for both formats)
-                $messageHeader = "📝 *របាយការណ៍ប្រចាំថ្ងៃ*\n"
-                    . "ឈ្មោះ ៖ " . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . "\n"
-                    . "តួនាទី ៖ " . htmlspecialchars($position, ENT_QUOTES, 'UTF-8') . "\n"
-                    . "ថ្ងៃខែឆ្នាំ និងម៉ោង ៖ " . htmlspecialchars($telegramDate, ENT_QUOTES, 'UTF-8') . "\n";
+                $messageHeader = "📝 <b>របាយការណ៍ប្រចាំថ្ងៃ</b>\n"
+                    . "ឈ្មោះ ៖ " . $telegramHtml($name) . "\n"
+                    . "តួនាទី ៖ " . $telegramHtml($position) . "\n"
+                    . "ថ្ងៃខែឆ្នាំ និងម៉ោង ៖ " . $telegramHtml($telegramDate) . "\n";
                 if (!empty($email)) {
-                    $messageHeader .= "អ៊ីមែល ៖ " . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . "\n";
+                    $messageHeader .= "អ៊ីមែល ៖ " . $telegramHtml($email) . "\n";
                 }
 
                 // Prepare the final message based on the group's report format
@@ -280,8 +284,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Group with 'full' content format
                     $telegramMessage = $messageHeader
                         . "--------------------------------------\n"
-                        . "*របាយការណ៍ពេលល្ងាច*:\n"
-                        . htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
+                        . "<b>របាយការណ៍ពេលល្ងាច</b>:\n"
+                        . $telegramHtml($content);
                 } else {
                     // Group with 'link' format
                     $telegramMessage = $messageHeader;
@@ -296,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $telegramData = [
                     'chat_id' => $group['chat_id'],
                     'text' => $telegramMessage,
-                    'parse_mode' => 'Markdown',
+                    'parse_mode' => 'HTML',
                 ];
                 if ($threadId) {
                     $telegramData['message_thread_id'] = $threadId;
@@ -313,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'chat_id' => $group['chat_id'],
                         'photo' => new CURLFile($tempPhotoPath, 'image/png', 'report.png'),
                         'caption' => $telegramMessage,
-                        'parse_mode' => 'Markdown'
+                        'parse_mode' => 'HTML'
                     ];
                     if ($threadId) {
                         $photoPayload['message_thread_id'] = $threadId;
